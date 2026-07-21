@@ -438,3 +438,41 @@ export const ORIGINAL_PROVINCES: Province[] = [
     placedTokens: []
   }
 ];
+
+// Словник суміжних провінцій (сусідів)
+export const PROVINCE_ADJACENCY: { [id: string]: string[] } = {
+  // Краби
+  'crab-capital': ['crab-sub-1', 'merchant-sunken-ships', 'shadowlands-north', 'shadowlands-south'],
+  'crab-sub-1': ['crab-capital', 'crab-sub-3', 'crab-sub-2', 'shadowlands-north', 'merchant-sunken-ships', 'merchant-three-trees'],
+  'crab-sub-2': ['crab-sub-1', 'crab-sub-3', 'merchant-three-trees', 'scorpion-sub-2', 'scorpion-capital', 'crane-sub-1'],
+  'crab-sub-3': ['unicorn-sub-2', 'scorpion-sub-2', 'crab-sub-2', 'crab-sub-1', 'shadowlands-north'],
+
+  // Журавлі
+  'crane-capital': ['dragon-sub-2', 'crane-sub-2', 'lion-capital'],
+  'crane-sub-1': ['crane-sub-2', 'scorpion-capital','crab-sub-2','merchant-three-trees', 'merchant-small-bay'],
+  'crane-sub-2': ['crane-capital', 'lion-capital', 'scorpion-capital', 'crane-sub-1'],
+
+  // Дракони
+  'dragon-capital': ['dragon-sub-1', 'lion-sub-2', 'dragon-sub-1', 'phoenix-capital'],
+  'dragon-sub-1': ['dragon-capital', 'lion-sub-2', 'lion-capital', 'phoenix-capital', 'lion-sub-1'],
+  'dragon-sub-2': ['dragon-capital', 'lion-sub-2', 'unicorn-capital'],
+
+  // Леви
+  'lion-capital': ['dragon-sub-1', 'lion-sub-2', 'lion-sub-1', 'crane-capital', 'crane-sub-2', 'scorpion-capital', 'scorpion-sub-1'],
+  'lion-sub-1': ['phoenix-sub-1', 'phoenix-sub-2', 'phoenix-capital', 'lion-capital', 'dragon-sub-1', 'crane-capital'],
+  'lion-sub-2': ['lion-capital', 'dragon-sub-2','dragon-sub-1', 'dragon-capital', 'scorpion-sub-1', 'unicorn-sub-1', 'unicorn-capital'],
+  // Фенікси
+  'phoenix-capital': ['phoenix-sub-1', 'lion-sub-1', 'dragon-capital', 'dragon-sub-1'],
+  'phoenix-sub-1': ['phoenix-capital', 'phoenix-sub-2', 'lion-sub-1'],
+  'phoenix-sub-2': ['lion-sub-1', 'phoenix-sub-1'],
+
+  // Скорпіони
+  'scorpion-capital': ['scorpion-sub-1', 'scorpion-sub-2', 'crane-sub-1', 'crane-sub-2', 'lion-capital', 'crab-sub-2'],
+  'scorpion-sub-1': ['scorpion-capital', 'scorpion-sub-2', 'lion-sub-2', 'lion-capital', 'unicorn-sub-1'],
+  'scorpion-sub-2': ['scorpion-capital', 'scorpion-sub-1', 'crab-sub-2', 'crab-sub-3', 'unicorn-sub-1', 'unicorn-sub-2'],
+
+  // Єдинороги
+  'unicorn-capital': ['unicorn-sub-1', 'unicorn-sub-2', 'dragon-sub-2', 'lion-sub-2'],
+  'unicorn-sub-1': ['unicorn-capital', 'unicorn-sub-2', 'lion-sub-2', 'scorpion-sub-1', 'scorpion-sub-2'],
+  'unicorn-sub-2': ['unicorn-capital', 'unicorn-sub-1', 'scorpion-sub-2', 'crab-sub-3'],
+};

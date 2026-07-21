@@ -185,7 +185,14 @@
 .crab .sashimono-flag { background: #4f5255; }
 .crane .sashimono-flag { background: #2472c8; }
 .dragon .sashimono-flag { background: #1f8a4c; }
-
+/* Фіксуємо колір прапору відносно КЛАНУ ВІЙСЬКА, а не території */
+.army-unit-sprite.crab .sashimono-flag { background: #4f5255 !important; border-color: #a0a5aa; }
+.army-unit-sprite.crane .sashimono-flag { background: #2472c8 !important; border-color: #79b3ec; }
+.army-unit-sprite.dragon .sashimono-flag { background: #1f8a4c !important; border-color: #63e295; }
+.army-unit-sprite.lion .sashimono-flag { background: #d4af37 !important; border-color: #fff2a3; }
+.army-unit-sprite.phoenix .sashimono-flag { background: #c43c21 !important; border-color: #ffa18f; }
+.army-unit-sprite.scorpion .sashimono-flag { background: #781c1c !important; border-color: #ff6b6b; }
+.army-unit-sprite.unicorn .sashimono-flag { background: #8a4199 !important; border-color: #ebadff; }
 /* Анімація появи загону на карті */
 @keyframes unitMarchIn {
   0% { transform: translateY(-20px) scale(0); opacity: 0; }

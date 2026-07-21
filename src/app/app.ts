@@ -11,6 +11,6 @@ export class App implements OnInit {
 
   ngOnInit() {
     // Симулюємо старт гри для трьох кланів: Краб, Журавель та Дракон
-    this.gameStateService.createNewGame(['Crab', 'Crane', 'Dragon']);
+    // this.gameStateService.createNewGame(['Crab', 'Crane', 'Dragon']);
   }
 }

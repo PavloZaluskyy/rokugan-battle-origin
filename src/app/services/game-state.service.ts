@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { GameState, ClanType, BattleToken, BattleTokenType, PlayerState, Province } from '../models/game.model';
-import { ORIGINAL_PROVINCES } from '../models/provinces-data';
+import { ORIGINAL_PROVINCES, PROVINCE_ADJACENCY } from '../models/provinces-data';
 
 @Injectable({
   providedIn: 'root' // Завдяки цьому Angular AppModule автоматично бачить цей сервіс як Singleton
@@ -195,41 +195,68 @@ export class GameStateService {
    * Перевірка за правилами гри: чи можна викласти вибрану карту на цю провінцію?
    */
   isProvinceValidTarget(province: Province, playerClan: ClanType): boolean {
-    if (!this.selectedToken) return false;
+    if (!this.selectedToken || !this.state) return false;
 
     const token = this.selectedToken;
     const isOwner = province.controllingClan === playerClan;
+    const player = this.state.players[playerClan as Exclude<ClanType, 'Neutral'>];
 
-    // 1. Блеф (Blank) або Синобі можна викладати куди завгодно
-    if (token.type === 'Blank' || token.type === 'Shinobi') {
+    // 1. Синобі (Shinobi) та Блеф (Blank) можути йти в будь-яку точку Рокугану
+    if (token.type === 'Shinobi' || token.type === 'Blank') {
       return true;
     }
 
-    // 2. Благословення або Дипломатія викладаються ТІЛЬКИ у свої провінції
-    if (token.type === 'Blessing' || token.type === 'Diplomacy') {
-      return isOwner;
+    // 2. Якщо гравець потрапив у стан Роніна (не має жодної землі), він може атакувати будь-яку сухопутну граніцу
+    if (player?.isRonin && !isOwner) {
+      return token.type === 'Army';
     }
 
-    // 3. Захист Армією/Флотом — у свої землі
+    // 3. Захист ВЛАСНИХ земель (Армія, Флот, Дипломатія, Благословення)
     if (isOwner) {
-      if (token.type === 'Navy') return province.isCoastal; // Флот захищає тільки прибережні
-      return true; // Армія захищає будь-які свої
+      if (token.type === 'Navy') return province.isCoastal;
+      return true;
     }
 
-    // 4. Атака Армією/Флотом — у чужі або нейтральні землі
+    // 4. АТАКА ВОРОЖОЇ ЧИ НЕЙТРАЛЬНОЇ ТЕРИТОРІЇ
     if (!isOwner) {
-      // Погром (Raid) або Атака
-      if (token.type === 'Navy') {
-        return province.isCoastal; // Флот атакує тільки прибережні провінції
-      }
+      // 4.1. Перевірка: чи є у гравця хоча б одна СУСІДНЯ підконтрольна провінція?
+      const adjacentProvinces = PROVINCE_ADJACENCY[province.id] || [];
       
-      // За правилами армія може атакувати суміжну провінцію (або будь-яку, якщо гравець — ронін)
-      // На першому етапі дозволяємо атакувати будь-яку суходільну провінцію
+      // Рахуємо, скільки наших провінцій межують із цією ціллю
+      const sharedBordersCount = adjacentProvinces.filter(adjId => {
+        const adjProv = this.state?.provinces[adjId];
+        return adjProv && adjProv.controllingClan === playerClan;
+      }).length;
+
+      // Якщо немає жодного спільного кордону — звичайна Армія чи Погром не можуть атакувати!
+      if (sharedBordersCount === 0) {
+        // Флот може атакувати прибережні провінції навіть без сухопутного кордону
+        if (token.type === 'Navy' && province.isCoastal) {
+          return true;
+        }
+        return false; // Немає кордону — атака заборонена!
+      }
+
+      // 4.2. ПЕРЕВІРКА ЛІМІТУ АТАК (Кількість викладених карт <= Кількість спільних кордонів)
+      const currentAttacksFromPlayer = (province.placedTokens || []).filter(
+        pt => pt.clan === playerClan && pt.token.type !== 'Shinobi'
+      ).length;
+
+      // Якщо викладено стільки ж карт, скільки є кордонів — більше ставити не можна!
+      if (currentAttacksFromPlayer >= sharedBordersCount) {
+        console.warn(`Ліміт атак вичерпано! Спільних кордонів: ${sharedBordersCount}, вже викладено: ${currentAttacksFromPlayer}`);
+        return false;
+      }
+
+      // Перевірка типу війська для прибережних/материкових
+      if (token.type === 'Navy') return province.isCoastal;
+
       return true;
     }
 
     return false;
   }
+  
   placeTokenOnProvince(provinceId: string, playerClan: ClanType): boolean {
     if (!this.selectedToken || !this.state) return false;
 
