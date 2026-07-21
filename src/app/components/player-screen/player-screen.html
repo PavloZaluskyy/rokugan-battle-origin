@@ -1,0 +1,69 @@
+<svg style="position: absolute; width: 0; height: 0; pointer-events: none;">
+  <filter id="fog-turbulence">
+    <!-- feTurbulence генерує текстуру хмар, анімуємо параметр baseFrequency для руху "переливання" -->
+    <feTurbulence type="fractalNoise" baseFrequency="0.01 0.01" numOctaves="4" result="noise">
+      <animate attributeName="baseFrequency" dur="30s" values="0.01 0.01; 0.02 0.03; 0.01 0.01" repeatCount="indefinite" />
+    </feTurbulence>
+    <!-- feDisplacementMap зсуває пікселі нашого білого блоку відповідно до згенерованого шуму -->
+    <feDisplacementMap in="SourceGraphic" in2="noise" scale="50" xChannelSelector="R" yChannelSelector="G" />
+  </filter>
+</svg>
+<div class="mb-inventory-root" *ngIf="playerState" [class.open]="isScreenOpen">
+  
+  <!-- Нижній ярлик-кнопка, яка завжди стирчить знизу екрана для виклику ширми -->
+  <div class="screen-trigger-tab" (click)="toggleScreen()">
+    <span class="tab-arrow">{{ isScreenOpen ? '▼ ЗАКРИТИ ШИРМУ' : '▲ ВІДКРИТИ ШИРМУ КЛАНУ' }}</span>
+  </div>
+
+  <!-- Атмосферні ефекти диму та частинок на фоні -->
+  <div class="smoke-layer"></div>
+  <div class="particles-layer"></div>
+
+  <!-- Верхня панель у стилі інтерфейсу Bannerlord -->
+  <div class="inventory-header">
+    <div class="clan-badge-wrapper">
+      <div class="clan-mon" [ngClass]="playerState.clan.toLowerCase()" [style.backgroundImage]="'url(\'' + getClanImage(playerState.clan.toLowerCase()) + '\')'"></div>
+      <div class="clan-info">
+        <span class="clan-title">ДАЙМЬО ВЕЛИКОГО КЛАНУ</span>
+        <h2 class="clan-name">{{ playerState.clan }}</h2>
+      </div>
+    </div>
+    
+    <div class="inventory-stats">
+      <div class="stat-box">
+        <span class="stat-label">🏅 ЧЕСТЬ КЛАНУ</span>
+        <span class="stat-value">{{ playerState.honorPoints }}</span>
+      </div>
+      <div class="stat-box">
+        <span class="stat-label">🛡️ ЗАПАС КОНТРОЛЮ</span>
+        <span class="stat-value">{{ playerState.remainingControlTokens }}</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Ігровий стіл (Бамбуковий килимок / Дерев'яна дошка) -->
+  <div class="bamboo-mat">
+    <div class="mat-title">ВІЙСЬКОВИЙ АКТИВ НА ПОТОЧНИЙ РАУНД (ЗА ШИРМОЮ)</div>
+    
+    <div class="cards-grid">
+      <!-- Стилізована Карта-Жетон -->
+        <div class="clan-card" 
+          *ngFor="let token of playerState.activeHandTokens" 
+          [ngClass]="token.type.toLowerCase()"
+          [class.active-card]="isSelected(token)"
+          (click)="selectCard(token)">
+          <div class="card-illustration" [style.backgroundImage]="'url(' + getCardImage(token.type) + ')'">
+            <div class="card-overlay"></div>
+            <div class="card-strength" *ngIf="token.strength > 0">{{ token.strength }}</div>
+          </div>
+          <div class="card-footer">
+          <div class="card-type-name">{{ getTokenLabel(token) }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div *ngIf="!playerState" class="error-msg">
+  Ширму не вдалося завантажити.
+</div>

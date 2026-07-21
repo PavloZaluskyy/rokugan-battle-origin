@@ -1,0 +1,51 @@
+private coordMap: { [id: string]: { x: number; y: number } } = {
+    // Краби
+    'crab-capital': { x: 33, y: 79 },
+    'crab-sub-1': { x: 29, y: 60 },
+    'crab-sub-2': { x: 30, y: 50 },
+    'crab-sub-3': { x: 10, y: 50 },
+
+    // Журавлі
+    'crane-capital': { x: 67, y: 41 },
+    'crane-sub-1': { x: 57, y: 54 },
+    'crane-sub-2': { x: 57, y: 46 },
+
+    // Дракони
+    'dragon-capital': { x: 52, y: 17.5 },
+    'dragon-sub-1': { x: 55, y: 25 },
+    'dragon-sub-2': { x: 30 , y: 10 },
+
+    // Леви
+    'lion-capital': { x: 55.8, y: 35.5 },
+    'lion-sub-1': { x: 70, y: 29 },
+    'lion-sub-2': { x: 41, y: 26 },
+
+    // Фенікси
+    'phoenix-capital': { x: 63, y: 14 },
+    'phoenix-sub-1': { x: 74, y: 12 },
+    'phoenix-sub-2': { x: 82, y: 13 },
+
+    // Скорпіони
+    'scorpion-capital': { x: 46.5, y: 46 },
+    'scorpion-sub-1': { x: 40, y: 38 },
+    'scorpion-sub-2': { x: 25, y: 40 },
+
+    // Єдинороги
+    'unicorn-capital': { x: 20.5, y: 19.5 },
+    'unicorn-sub-1': { x: 31, y: 29 },
+    'unicorn-sub-2': { x: 15, y: 27 },
+
+    // Теневі землі
+    'shadowlands-north': { x: 8, y: 65 },
+    'shadowlands-south': { x: 15, y: 85 },
+
+    // 🏝️ Острови Шовкових Шляхів (Архіпелаг знизу праворуч)
+    'silk-sun-island': { x: 79, y: 73 },
+    'silk-silkworm-island': { x: 68, y: 82.5 },
+    'silk-golden-sand-island': { x: 78.5, y: 83 },
+
+    // 🌊 Узбережжя Торговців (Східна прибережна смуга)
+    'merchant-three-trees': { x: 47, y: 61 },
+    'merchant-small-bay': { x: 59, y: 61 },
+    'merchant-sunken-ships': { x: 43, y: 75 }
+  };

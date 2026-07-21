@@ -1,0 +1,539 @@
+/* ==========================================================================
+   ОНОВЛЕНИЙ КОРІНЬ (На весь екран)
+   ========================================================================== */
+.mb-inventory-root {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  
+  /* Коли закрита — висота дорівнює лише висоті нашої кнопки-ярлика */
+  height: 75px; 
+  padding: 0; /* Прибираємо внутрішні відступи, щоб контент не стирчав */
+  
+  background: radial-gradient(circle at center, #16110e 0%, #080605 100%);
+  border-top: 3px solid #c7a783;
+  z-index: 999;
+  overflow: hidden; /* Ховаємо все, що не влазить у 45px */
+  box-sizing: border-box;
+  box-shadow: 0 -10px 35px rgba(0,0,0,0.9);
+  
+  /* Плавна і стабільна анімація зміни висоти та падінгів */
+  transition: height 0.4s cubic-bezier(0.19, 1, 0.22, 1), 
+              padding 0.4s cubic-bezier(0.19, 1, 0.22, 1);
+
+}
+
+/* Клас, який Angular вішає при відкритті */
+.mb-inventory-root.open {
+  height: 90vh; /* Плавно виростає на 90% екрана */
+  padding: 50px 60px 40px 60px; /* Повертаємо красиві відступи для контенту */
+  /* overflow-y: auto; Скролбар з'явиться ТІЛЬКИ всередині ширми, якщо карт буде забагато */
+}
+
+/* Ярлик-кнопка для відкриття ширми */
+.screen-trigger-tab {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #1c140e;
+  border: 1px solid #c7a783;
+  border-top: none;
+  padding: 10px 30px;
+  border-bottom-left-radius: 6px;
+  border-bottom-right-radius: 6px;
+  cursor: pointer;
+  z-index: 1000;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+  height: 42px;
+  box-sizing: border-box;
+}
+
+.tab-arrow {
+  font-family: 'Cinzel', serif;
+  font-size: 0.85rem;
+  font-weight: bold;
+  color: #ffd699;
+  letter-spacing: 2px;
+  white-space: nowrap;
+}
+.inventory-content-wrapper {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  z-index: 2;
+  margin-top: 15px;
+}
+
+.screen-trigger-tab:hover .tab-arrow {
+  color: #fff;
+  text-shadow: 0 0 8px #ffd699;
+}
+
+/* Огортаємо контент, щоб він не збивався при згортанні */
+.inventory-content-wrapper {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  z-index: 2;
+}
+
+/* ==========================================================================
+   ГУСТИЙ ЖИВИЙ ТУМАН (Ефект переливання та плавного руху)
+   ========================================================================== */
+.smoke-layer {
+  position: absolute;
+  left: -20%; right: -20%; bottom: -10px;
+  height: 40%; /* Висота туману низом екрана */
+  pointer-events: none;
+  z-index: 5; /* Ставте поверх фону, або карт, залежно від дизайну */
+  display: flex;
+  align-items: flex-end;
+}
+
+/* Перша хвиля диму */
+.smoke-layer::before {
+  content: "";
+  position: absolute;
+  width: 140%; height: 100%;
+  bottom: -20px;
+  /* Робимо білу м'яку основу */
+  background: linear-gradient(to top, rgba(245, 247, 250, 0.7) 10%, rgba(230, 235, 240, 0.4) 40%, transparent 100%);
+  
+  /* 🪄 МАГІЯ: Прив'язуємо наш SVG фільтр турбулентності */
+  filter: url(#fog-turbulence) blur(4px);
+  
+  /* Запускаємо рух пливу вбік */
+  animation: fogDriftLeft 35s infinite linear;
+  opacity: 0.75;
+}
+
+/* Друга хвиля диму (для більшої густини та об'єму) */
+.smoke-layer::after {
+  content: "";
+  position: absolute;
+  width: 140%; height: 120%;
+  bottom: -30px;
+  background: radial-gradient(ellipse at 70% 100%, rgba(255, 255, 255, 0.6) 0%, rgba(240, 240, 245, 0.3) 50%, transparent 100%);
+  
+  /* Застосовуємо той самий фільтр, але з іншою швидкістю анімації */
+  filter: url(#fog-turbulence) blur(6px);
+  animation: fogDriftRight 25s infinite linear;
+  opacity: 0.65;
+}
+
+/* ==========================================================================
+   АНІМАЦІЇ ПЛИВУ (Дим повільно пливе над землею)
+   ========================================================================== */
+@keyframes fogDriftLeft {
+  0% {
+    transform: translateX(0) scaleY(1);
+  }
+  50% {
+    transform: translateX(-10%) scaleY(1.15) skewX(-3deg);
+  }
+  100% {
+    transform: translateX(0) scaleY(1);
+  }
+}
+
+@keyframes fogDriftRight {
+  0% {
+    transform: translateX(-10%) scaleY(1.1);
+  }
+  50% {
+    transform: translateX(0) scaleY(0.9) skewX(4deg);
+  }
+  100% {
+    transform: translateX(-10%) scaleY(1.1);
+  }
+}
+
+
+/* ==========================================================================
+   ЧАСТИНКИ ПОПЕЛУ ТА ЖАРУ (ЛІТАЮТЬ НА ФОНІ)
+   ========================================================================== */
+.particles-layer {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  pointer-events: none;
+  z-index: 1;
+  /* Об'єднуємо сірий попіл та помаранчевий/червоний жар */
+  background-image: 
+    /* Сірий попіл (маленький і великий) */
+    radial-gradient(circle at 15% 20%, rgba(200, 200, 200, 0.3) 1.5px, transparent 1.5px),
+    radial-gradient(circle at 70% 15%, rgba(180, 180, 180, 0.25) 2.5px, transparent 2.5px),
+    radial-gradient(circle at 30% 80%, rgba(220, 220, 220, 0.2) 1.2px, transparent 1.2px),
+    
+    /* Розжарений жар (Ефект вогняних іскор) */
+    radial-gradient(circle at 40% 45%, rgba(255, 115, 0, 0.6) 2px, transparent 2px),
+    radial-gradient(circle at 85% 65%, rgba(255, 60, 0, 0.5) 3px, transparent 3px),
+    radial-gradient(circle at 55% 25%, rgba(255, 204, 0, 0.7) 1.5px, transparent 1.5px),
+    radial-gradient(circle at 75% 75%, rgba(255, 94, 0, 0.4) 3.5px, transparent 3.5px);
+    
+  background-size: 600px 600px;
+  opacity: 0.9;
+  /* Анімація підйому по діагоналі (імітація потоку гарячого повітря) */
+  animation: embersRising 14s infinite linear;
+}
+
+/* ==========================================================================
+   АНІМАЦІЇ РУХУ
+   ========================================================================== */
+
+/* Туман колишеться вліво-вправо і злегка дихає вгору */
+@keyframes fogMovingLeft {
+  0% { transform: translate(0, 0) scaleY(1); opacity: 0.6; }
+  50% { transform: translate(-5%, -3%) scaleY(1.1); opacity: 0.9; }
+  100% { transform: translate(2%, 0) scaleY(1); opacity: 0.6; }
+}
+
+@keyframes fogMovingRight {
+  0% { transform: translate(-2%, -2%) scaleY(1.05); opacity: 0.7; }
+  50% { transform: translate(4%, 2%) scaleY(0.95); opacity: 0.9; }
+  100% { transform: translate(-2%, -2%) scaleY(1.05); opacity: 0.7; }
+}
+
+/* Попіл та жар летять знизу-вгору та вбік, створюючи динаміку згарища */
+@keyframes embersRising {
+  0% { 
+    background-position: 0 0; 
+  }
+  100% { 
+    /* Рух вгору на 600px (цикл без швів) та зсув вправо на 80px */
+    background-position: 80px -600px; 
+  }
+}
+
+/* ==========================================================================
+   ВЕРХНЯ ПАНЕЛЬ (HEADER)
+   ========================================================================== */
+.inventory-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 2px solid #3d3128;
+  padding-bottom: 20px;
+  margin-bottom: 35px;
+  z-index: 2;
+  position: relative;
+}
+
+.clan-badge-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+/* Імпровізований монітор/логотип клану */
+.clan-mon {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  border: 2px solid #8c6d53;
+  background: #261f1a;
+  box-shadow: 0 0 15px rgba(140, 109, 83, 0.3);
+  background-size: cover;
+  background-position: center;
+}
+/* .clan-mon.crab {  } */
+
+.clan-title {
+  font-size: 0.75rem;
+  letter-spacing: 2px;
+  color: #8c6d53;
+  display: block;
+}
+
+.clan-name {
+  margin: 2px 0 0 0;
+  font-size: 1.8rem;
+  font-weight: 400;
+  color: #eee3d5;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.6);
+}
+
+.inventory-stats {
+  display: flex;
+  gap: 20px;
+}
+
+.stat-box {
+  background: rgba(26, 20, 16, 0.7);
+  border: 1px solid #47392e;
+  padding: 10px 20px;
+  border-radius: 2px;
+  text-align: center;
+  min-width: 120px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+}
+
+.stat-label {
+  font-size: 0.7rem;
+  color: #8c6d53;
+  display: block;
+  margin-bottom: 4px;
+  letter-spacing: 1px;
+}
+
+.stat-value {
+  font-size: 1.4rem;
+  color: #ffd699;
+  font-weight: bold;
+}
+
+/* ==========================================================================
+   БАМБУКОВИЙ КИЛИМОК / ПЛАНШЕТ СТОЛУ
+   ========================================================================== */
+.bamboo-mat {
+  position: relative;
+  z-index: 2;
+  /* Градієнт, що імітує текстуру бамбукових планок */
+  background: linear-gradient(90deg, 
+    #2c1f16 0%, #251a12 4%, #2c1f16 8%, 
+    #251a12 12%, #2c1f16 16%, #251a12 20%,
+    #2c1f16 24%, #251a12 28%, #2c1f16 32%,
+    #251a12 36%, #2c1f16 40%, #251a12 44%,
+    #2c1f16 48%, #251a12 52%, #2c1f16 56%,
+    #251a12 60%, #2c1f16 64%, #251a12 68%,
+    #2c1f16 72%, #251a12 76%, #2c1f16 80%,
+    #251a12 84%, #2c1f16 88%, #251a12 92%,
+    #2c1f16 96%, #251a12 100%
+  );
+  border: 4px solid #1c140e;
+  border-top: 10px solid #150f0a;
+  border-bottom: 10px solid #150f0a;
+  border-radius: 4px;
+  padding: 25px;
+  box-shadow: 0 15px 35px rgba(0,0,0,0.7), inset 0 0 30px rgba(0,0,0,0.5);
+}
+
+.mat-title {
+  font-size: 0.8rem;
+  letter-spacing: 1.5px;
+  color: #a8927e;
+  text-align: center;
+  margin-bottom: 20px;
+  text-shadow: 0 2px 2px rgba(0,0,0,0.8);
+}
+
+.cards-grid {
+  display: flex;
+  gap: 20px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+/* ==========================================================================
+   СТИЛІЗОВАНА СТРАТЕГІЧНА КАРТА
+   ========================================================================== */
+.clan-card {
+  width: 130px;
+  height: 200px;
+  background: #1e1814;
+  border: 1px solid #4a3c31;
+  border-radius: 4px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 8px 16px rgba(0,0,0,0.6);
+  transition: transform 0.25s cubic-bezier(0.25, 0.8, 0.25, 1), border-color 0.25s, box-shadow 0.25s;
+  cursor: pointer;
+}
+
+.clan-card:hover {
+  transform: translateY(-10px) scale(1.03);
+  border-color: #c7a783;
+  box-shadow: 0 15px 25px rgba(0,0,0,0.8), 0 0 15px rgba(199, 167, 131, 0.2);
+}
+
+/* Блок ілюстрації */
+.card-illustration {
+  flex: 1;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  position: relative;
+  background-color: #2b231d; /* Заглушка, доки фото завантажується */
+}
+
+.card-overlay {
+  position: absolute;
+  bottom: 0; left: 0; right: 0; top: 50%;
+  background: linear-gradient(to bottom, transparent, rgba(30, 24, 20, 0.95));
+}
+
+/* Круглий красивий індикатор сили карти */
+.card-strength {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: radial-gradient(circle, #b83b23 0%, #801d0a 100%);
+  border: 1px solid #e0684f;
+  color: #fff;
+  font-weight: bold;
+  font-size: 0.9rem;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+  text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+}
+
+/* Підсвічування особливих типів карт */
+.clan-card.blessing { border-color: #66502b; }
+.clan-card.blessing:hover { border-color: #ffd699; box-shadow: 0 0 15px rgba(255, 214, 153, 0.3); }
+.clan-card.diplomacy { border-color: #2b4754; }
+.clan-card.diplomacy:hover { border-color: #8ce3ff; box-shadow: 0 0 15px rgba(140, 227, 255, 0.3); }
+/* ==========================================================================
+   АКТИВНА ВИБРАНА КАРТА (Ефект сяйва)
+   ========================================================================== */
+.clan-card.active-card {
+  transform: translateY(-18px) scale(1.08) !important;
+  border-color: #ffd699 !important;
+  box-shadow: 0 0 25px rgba(255, 214, 153, 0.8), 0 10px 20px rgba(0,0,0,0.9) !important;
+  z-index: 10;
+}
+
+.clan-card.active-card::after {
+  content: "ВИБРАНО";
+  position: absolute;
+  top: 5px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #ffd699;
+  color: #000;
+  font-size: 0.6rem;
+  font-weight: bold;
+  padding: 2px 6px;
+  border-radius: 2px;
+  letter-spacing: 1px;
+}
+/* Футер карти */
+.card-footer {
+  padding: 8px 5px;
+  background: #17120e;
+  text-align: center;
+  border-top: 1px solid #2e251f;
+}
+
+.card-type-name {
+  font-size: 0.75rem;
+  color: #bfa48f;
+  letter-spacing: 0.5px;
+}
+
+/* ==========================================================================
+   МОБІЛЬНА АДАПТИВНІСТЬ ШИРМИ (Смартфони та планшети)
+   ========================================================================== */
+@media (max-width: 768px) {
+  /* 1. Налаштування основного контейнера */
+  .mb-inventory-root.open {
+    height: 85vh; /* На мобілках залишаємо трохи більше карти зверху */
+    padding: 40px 15px 20px 15px; /* Зменшуємо бокові відступи */
+  }
+
+  /* 2. Кнопка-ярлик відкриття (більша область для тапа) */
+  .screen-trigger-tab {
+    padding: 8px 20px;
+    height: 38px;
+  }
+
+  .tab-arrow {
+    font-size: 0.75rem;
+    letter-spacing: 1px;
+  }
+
+  /* 3. Перебудова шапки (Header) */
+  .inventory-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 15px;
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+  }
+
+  .clan-badge-wrapper {
+    gap: 10px;
+  }
+
+  .clan-mon {
+    width: 40px;
+    height: 40px;
+  }
+
+  .clan-name {
+    font-size: 1.4rem;
+  }
+
+  .clan-title {
+    font-size: 0.65rem;
+  }
+
+  /* Блок статистики (Честь і Запас) у два компактних блоки на всю ширину */
+  .inventory-stats {
+    width: 100%;
+    justify-content: space-between;
+    gap: 10px;
+  }
+
+  .stat-box {
+    flex: 1;
+    min-width: 0;
+    padding: 8px 10px;
+  }
+
+  .stat-label {
+    font-size: 0.6rem;
+    white-space: nowrap;
+  }
+
+  .stat-value {
+    font-size: 1.1rem;
+  }
+
+  /* 4. Бамбуковий килимок та Карти */
+  .bamboo-mat {
+    padding: 15px 10px;
+  }
+
+  .mat-title {
+    font-size: 0.7rem;
+    margin-bottom: 15px;
+  }
+
+  /* Горизонтальний свайп для карт на мобільних пристроях */
+  .cards-grid {
+    display: flex;
+    justify-content: flex-start;
+    flex-wrap: nowrap; /* Не переносимо карти на новий рядок */
+    overflow-x: auto;  /* Вмикаємо плавну горизонтальну прокрутку */
+    padding-bottom: 15px; /* Запас для скролбару/пальця */
+    gap: 12px;
+    -webkit-overflow-scrolling: touch; /* Плавний скрол на iOS */
+  }
+
+  /* Фіксуємо розмір карт, щоб вони не стискалися при скролі */
+  .clan-card {
+    min-width: 110px;
+    width: 110px;
+    height: 170px;
+    flex-shrink: 0; /* Забороняємо стиснення карт */
+  }
+
+  .card-strength {
+    width: 20px;
+    height: 20px;
+    font-size: 0.75rem;
+    top: 5px;
+    right: 5px;
+  }
+
+  .card-type-name {
+    font-size: 0.65rem;
+  }
+}

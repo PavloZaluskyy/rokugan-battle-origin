@@ -1,0 +1,7 @@
+<div style="background-color: #050403; width: 100vw; height: 100vh; overflow: hidden; margin: 0; padding: 0;">
+  <!-- Карта займає основну площу -->
+  <app-game-map></app-game-map>
+
+  <!-- Висувна ширма завантажується САМЕ ДЛЯ ТОГО КЛАНУ, який обрав гравець -->
+  <app-player-screen [clanType]="playerClan"></app-player-screen>
+</div>

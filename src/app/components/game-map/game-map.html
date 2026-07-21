@@ -1,0 +1,103 @@
+<div class="map-viewport" 
+     (mousedown)="startDrag($event)" 
+     (mousemove)="onDrag($event)" 
+     (mouseup)="stopDrag()" 
+     (mouseleave)="stopDrag()"
+     (touchstart)="onTouchStart($event)"
+     (touchmove)="onTouchMove($event)"
+     (touchend)="stopDrag()"
+     [class.grabbing]="isDragging">
+  
+  <div class="zoom-controls">
+    <button (click)="zoomIn()">➕</button>
+    <button (click)="zoomOut()">➖</button>
+  </div>
+
+  <!-- Шар трансформації карти -->
+  <div class="map-transform-layer" 
+       [style.transform]="'translate(' + translateX + 'px, ' + translateY + 'px) scale(' + scale + ')'">
+    
+    <!-- Контейнер-підкладка, який чітко зв'язує картинку і точки разом -->
+    <div class="map-image-container">
+      <img src="assets/images/maps/rokugan-map.webp"  alt="Rokugan Map" class="map-image" />
+
+      <!-- Тепер точки позиціонуються всередині контейнера картинки і нікуди не злітають -->
+        <div 
+  *ngFor="let prov of provinces" 
+  class="province-node" 
+  [ngClass]="prov.controllingClan.toLowerCase()"
+  [class.targetable]="isProvinceTargetable(prov)"
+  [style.top]="getProvinceStyle(prov.id)['top']"
+  [style.left]="getProvinceStyle(prov.id)['left']"
+  (click)="onProvinceClick(prov); $event.stopPropagation()"
+>
+  <!-- Іконка столиці чи замку -->
+  <span class="capital-icon" *ngIf="prov.isCapital">🏯</span>
+  <span class="defense-value">{{ prov.baseDefense + prov.controlTokensFaceUp }}</span>
+
+  <!-- ВИНЕСЕНІ НА КАРТУ АНІМОВАНІ ЗАГОНИ / ТАБОРИ -->
+  <div class="placed-units-container" *ngIf="prov.placedTokens && prov.placedTokens.length > 0">
+    <div 
+      *ngFor="let pt of prov.placedTokens" 
+      class="army-unit-sprite"
+      [ngClass]="[pt.clan.toLowerCase(), pt.isFaceUp ? pt.token.type.toLowerCase() : 'hidden-camp']"
+      [title]="pt.isFaceUp ? pt.token.type : 'Табір війська (Приховано)'"
+    >
+      <!-- Прапор Клана над загоном -->
+      <div class="sashimono-flag"></div>
+
+      <!-- Візуальне відображення загону -->
+      <div class="unit-figure">
+        <span *ngIf="!pt.isFaceUp" class="figure-icon">⛺</span> <!-- Намет прихованого війська -->
+        <span *ngIf="pt.isFaceUp && pt.token.type === 'Army'" class="figure-icon">⚔️</span>
+        <span *ngIf="pt.isFaceUp && pt.token.type === 'Navy'" class="figure-icon">⛵</span>
+        <span *ngIf="pt.isFaceUp && pt.token.type === 'Shinobi'" class="figure-icon">🥷</span>
+        <span *ngIf="pt.isFaceUp && pt.token.type === 'Blessing'" class="figure-icon">⛩️</span>
+        <span *ngIf="pt.isFaceUp && pt.token.type === 'Blank'" class="figure-icon">💨</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="target-ring" *ngIf="isProvinceTargetable(prov)"></div>
+</div>
+  <!-- КАСТОМНИЙ ТУЛТІП ПРОВІНЦІЇ (З'являється при кліку) -->
+  <div class="custom-tooltip-card" *ngIf="selectedProvince" [ngClass]="selectedProvince.controllingClan.toLowerCase()">
+    <div class="tooltip-header">
+      <span class="tooltip-region">{{ selectedProvince.regionId.replace('_', ' ') }}</span>
+      <button class="close-btn" (click)="closeTooltip()">✕</button>
+    </div>
+    
+    <h3 class="tooltip-title">
+      <span *ngIf="selectedProvince.isCapital">🏯 </span>{{ selectedProvince.name }}
+    </h3>
+    
+    <div class="tooltip-body">
+      <div class="tooltip-row">
+        <span>🚩 Контроль:</span>
+        <span class="clan-text-badge">{{ selectedProvince.controllingClan }}</span>
+      </div>
+      <div class="tooltip-row">
+        <span>🏅 Квітки честі:</span>
+        <span class="flowers-count">
+          <span *ngFor="let i of [].constructor(selectedProvince.honorFlowers)">🌸</span>
+          <span *ngIf="selectedProvince.honorFlowers === 0">—</span>
+        </span>
+      </div>
+      <div class="tooltip-row">
+        <span>🛡️ Базовий захист:</span>
+        <span>{{ selectedProvince.baseDefense }}</span>
+      </div>
+      <div class="tooltip-row">
+        <span>➕ Додатковий захист:</span>
+        <span>+{{ selectedProvince.controlTokensFaceUp }} (від жетонів)</span>
+      </div>
+      <div class="tooltip-row">
+        <span>🌊 Тип регіону:</span>
+        <span>{{ selectedProvince.isCoastal ? 'Прибережний' : 'Материковий' }}</span>
+      </div>
+      <div class="tooltip-row" *ngIf="selectedProvince.specialToken !== 'None'">
+        <span>✨ Статус території:</span>
+        <span class="status-badge">{{ selectedProvince.specialToken }}</span>
+      </div>
+    </div>
+</div>

@@ -1,0 +1,56 @@
+<div class="clan-select-root">
+  
+  <!-- АНІМОВАНЕ ВІДЕО ТА ДИМ НА ФОНІ -->
+  <div class="video-container">
+    <video #videoPlayer 
+       class="clan-video" 
+       [src]="currentVideoSource" 
+       (ended)="onVideoEnded()" 
+       autoplay
+       muted 
+       playsinline>
+    </video>
+    <div class="video-overlay-dark"></div>
+    <div class="smoke-layer"></div>
+    <div class="particles-layer"></div>
+  </div>
+
+  <!-- КНОПКИ КАРУСЕЛІ ЛІВОРУЧ / ПРАВОРУЧ -->
+  <button class="nav-arrow left" (click)="prevClan()">❮</button>
+  <button class="nav-arrow right" (click)="nextClan()">❯</button>
+
+  <!-- ПРАПОР З ЛОГОТИПОМ ЗЗАДУ (ФОНОВИЙ БАННЕР) -->
+  <!-- <div class="background-banner-wrapper">
+    <div class="clan-kanji">{{ currentClan.kanji }}</div>
+  </div> -->
+
+  <!-- БОКОВА ПАНЕЛЬ ІНФОРМАЦІЇ КЛАНУ (ПОЗА СЛАЙДЕРОМ) -->
+  <div class="clan-info-panel">
+    <div class="panel-header">
+      <span class="sub-title">ОБЕРІТЬ СВІЙ КЛАН</span>
+      <h1 class="clan-name" [style.color]="currentClan.primaryColor">{{ currentClan.name }}</h1>
+      <p class="clan-motto">«{{ currentClan.motto }}»</p>
+    </div>
+
+    <div class="panel-section">
+      <h3>📜 УНІКАЛЬНА ЗДІБНІСТЬ</h3>
+      <div class="ability-box" [style.borderColor]="currentClan.primaryColor">
+        <h4>{{ currentClan.specialAbilityTitle }}</h4>
+        <p>{{ currentClan.specialAbilityDesc }}</p>
+      </div>
+    </div>
+
+    <div class="panel-section">
+      <h3>🗡️ ЛОР КЛАНУ</h3>
+      <p class="lore-text">{{ currentClan.lore }}</p>
+    </div>
+
+    <!-- КНОПКА ПІДТВЕРДЖЕННЯ ВИБОРУ -->
+    <div class="panel-action">
+      <button class="select-btn" (click)="selectClan()">
+        ВСТУПИТИ В БИТВУ ЗА {{ currentClan.name.toUpperCase() }}
+      </button>
+    </div>
+  </div>
+
+</div>

@@ -3,10 +3,18 @@ import { BrowserModule } from '@angular/platform-browser';
 
 import { AppRoutingModule } from './app-routing-module';
 import { App } from './app';
+import { PlayerScreen } from './components/player-screen/player-screen';
+import { GameMap } from './components/game-map/game-map';
+import { ClanSelection } from './pages/clan-selection/clan-selection';
+import { GamePage } from './pages/game-page/game-page';
 
 @NgModule({
   declarations: [
-    App
+    App,
+    PlayerScreen,
+    GameMap,
+    ClanSelection,
+    GamePage
   ],
   imports: [
     BrowserModule,

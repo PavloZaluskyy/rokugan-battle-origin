@@ -1,0 +1,318 @@
+/* Вікно перегляду карти — 85% від висоти екрана розробника */
+.map-viewport {
+  width: 100vw;
+  height: 85vh;
+  position: relative;
+  overflow: hidden;
+  background: #080605;
+  cursor: grab;
+  border-bottom: 2px solid #2e251f;
+  box-sizing: border-box;
+}
+
+.map-viewport.grabbing {
+  cursor: grabbing;
+}
+
+/* Шар трансформації */
+.map-transform-layer {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start; /* Прив'язка до верхнього краю для вертикальних карт */
+  transform-origin: center center;
+  transition: transform 0.05s ease-out;
+}
+
+/* Контейнер картинки розширюється на всю ширину екрана */
+.map-image-container {
+  position: relative;
+  width: 95vw;
+  height: auto;
+  display: inline-block;
+}
+
+.map-image {
+  width: 100%; /* Розтягуємо зображення по ширині */
+  height: auto; /* Пропорції зберігаються автоматично */
+  display: block;
+  filter: sepia(0.12) brightness(0.8) contrast(1.05);
+  pointer-events: none;
+  -moz-user-select: none;    /* Firefox */
+  -ms-user-select: none;     /* IE/Edge */
+   user-select: none; 
+}
+
+/* Елементи керування зумом */
+.zoom-controls {
+  position: absolute;
+  top: 25px;
+  right: 25px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  z-index: 20;
+}
+
+.zoom-controls button {
+  width: 45px;
+  height: 45px;
+  background: rgba(26, 20, 16, 0.9);
+  border: 1px solid #c7a783;
+  color: white;
+  font-size: 1.2rem;
+  border-radius: 4px;
+  cursor: pointer;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+}
+
+/* Координаційні вузли провінцій */
+.province-node {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #42362c 0%, #211a14 100%);
+  border: 2px solid #c7a783;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.6);
+  z-index: 5;
+  transition: transform 0.2s;
+}
+
+.province-node:hover {
+  transform: translate(-50%, -50%) scale(1.2);
+}
+
+.defense-value { font-family: 'Cinzel', serif; font-size: 0.85rem; color: #ffd699; font-weight: bold; }
+.capital-icon { position: absolute; top: -14px; font-size: 0.9rem; }
+
+/* Кланові кольори */
+.province-node.crab { background: radial-gradient(circle, #4f5255 0%, #202224 100%); border-color: #a0a5aa; }
+.province-node.crane { background: radial-gradient(circle, #2472c8 0%, #0c3a70 100%); border-color: #79b3ec; }
+.province-node.dragon { background: radial-gradient(circle, #1f8a4c 0%, #0a4722 100%); border-color: #63e295; }
+.province-node.lion { background: radial-gradient(circle, #d4af37 0%, #6e5605 100%); border-color: #fff2a3; }
+.province-node.phoenix { background: radial-gradient(circle, #c43c21 0%, #611507 100%); border-color: #ffa18f; }
+.province-node.scorpion { background: radial-gradient(circle, #781c1c 0%, #3b0505 100%); border-color: #ff6b6b; }
+.province-node.unicorn { background: radial-gradient(circle, #8a4199 0%, #3f1547 100%); border-color: #ebadff; }
+.province-node.neutral { background: radial-gradient(circle, #5e544b 0%, #2b2520 100%); border-color: #8c8174; }
+/* ==========================================================================
+   ПІДСВІЧУВАННЯ ЦІЛЕЙ НА КАРТІ
+   ========================================================================== */
+.province-node.targetable {
+  border-color: #ffd699 !important;
+  box-shadow: 0 0 20px #ffd699, 0 0 35px rgba(255, 214, 153, 0.6) !important;
+  animation: pulseNode 1.2s infinite alternate ease-in-out;
+  z-index: 10;
+}
+
+.target-ring {
+  position: absolute;
+  top: -8px; left: -8px; right: -8px; bottom: -8px;
+  border: 2px dashed #ffd699;
+  border-radius: 50%;
+  animation: spinRing 8s linear infinite;
+  pointer-events: none;
+}
+
+@keyframes pulseNode {
+  0% { transform: translate(-50%, -50%) scale(1); filter: brightness(1); }
+  100% { transform: translate(-50%, -50%) scale(1.3); filter: brightness(1.4); }
+}
+
+@keyframes spinRing {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+/* ==========================================================================
+   АНІМОВАНІ САМУРАЙСЬКІ ЗАГОНИ (3D-Мініатюри на карті)
+   ========================================================================== */
+.placed-units-container {
+  position: absolute;
+  top: -25px;
+  display: flex;
+  gap: 4px;
+  justify-content: center;
+  align-items: center;
+  pointer-events: none;
+}
+
+.army-unit-sprite {
+  position: relative;
+  width: 28px;
+  height: 32px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  animation: unitMarchIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+/* Прихований табір (сорочка) */
+.army-unit-sprite.hidden-camp .figure-icon {
+  font-size: 1.2rem;
+  filter: drop-shadow(0 3px 5px rgba(0,0,0,0.8));
+  animation: campBreathe 2s infinite alternate ease-in-out;
+}
+
+/* Відкритий самурайський загін */
+.army-unit-sprite .figure-icon {
+  font-size: 1rem;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.9));
+  animation: unitIdle 1.8s infinite alternate ease-in-out;
+}
+
+/* Маленький клановий прапор Сашімоно над загоном */
+.sashimono-flag {
+  width: 6px;
+  height: 14px;
+  background: #c7a783;
+  border: 1px solid #000;
+  border-radius: 1px;
+  position: absolute;
+  top: -6px;
+  right: 2px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.5);
+  animation: flagWave 1.5s infinite alternate ease-in-out;
+}
+
+.crab .sashimono-flag { background: #4f5255; }
+.crane .sashimono-flag { background: #2472c8; }
+.dragon .sashimono-flag { background: #1f8a4c; }
+
+/* Анімація появи загону на карті */
+@keyframes unitMarchIn {
+  0% { transform: translateY(-20px) scale(0); opacity: 0; }
+  100% { transform: translateY(0) scale(1); opacity: 1; }
+}
+
+/* Дихання загону */
+@keyframes unitIdle {
+  0% { transform: translateY(0); }
+  100% { transform: translateY(-3px); }
+}
+
+/* Погойдування намету та диму */
+@keyframes campBreathe {
+  0% { transform: scale(1); }
+  100% { transform: scale(1.1); }
+}
+
+/* Погойдування прапора на вітрі */
+@keyframes flagWave {
+  0% { transform: skewY(0deg); }
+  100% { transform: skewY(-8deg); }
+}
+/* ==========================================================================
+   КАСТОМНИЙ ТУЛТІП (ІНФО-КАРТКА)
+   ========================================================================== */
+.custom-tooltip-card {
+  position: absolute;
+  bottom: 25px;
+  left: 25px;
+  width: 300px;
+  background: radial-gradient(circle at center, #1c140e 0%, #0d0a08 100%);
+  border: 2px solid #c7a783;
+  border-radius: 4px;
+  padding: 15px 20px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.8), inset 0 0 20px rgba(0,0,0,0.6);
+  z-index: 100;
+  color: #dac7b5;
+  font-family: 'Cinzel', 'Noto Serif JP', serif;
+  animation: fadeInTooltip 0.25s cubic-bezier(0.19, 1, 0.22, 1);
+}
+
+@keyframes fadeInTooltip {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.tooltip-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 5px;
+}
+
+.tooltip-region {
+  font-size: 0.7rem;
+  letter-spacing: 1.5px;
+  color: #8c6d53;
+  text-transform: uppercase;
+}
+
+.close-btn {
+  background: transparent;
+  border: none;
+  color: #a8927e;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.close-btn:hover {
+  color: #ffd699;
+}
+
+.tooltip-title {
+  margin: 0 0 15px 0;
+  font-size: 1.3rem;
+  font-weight: 400;
+  color: #eee3d5;
+  border-bottom: 1px solid #3d3128;
+  padding-bottom: 8px;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+}
+
+.tooltip-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.tooltip-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.85rem;
+}
+
+.tooltip-row span:first-child {
+  color: #a8927e; /* Сіро-коричневе підсвічування міток */
+}
+
+.flowers-count {
+  font-size: 0.9rem;
+  letter-spacing: 2px;
+}
+
+/* Кольорові рамки-індикатори тултіпа залежно від клану хазяїна */
+.custom-tooltip-card.crab { border-color: #70757a; box-shadow: 0 0 15px rgba(112, 117, 122, 0.2); }
+.custom-tooltip-card.crane { border-color: #2472c8; box-shadow: 0 0 15px rgba(36, 114, 200, 0.2); }
+.custom-tooltip-card.dragon { border-color: #1f8a4c; box-shadow: 0 0 15px rgba(31, 138, 76, 0.2); }
+.custom-tooltip-card.scorpion { border-color: #781c1c; box-shadow: 0 0 15px rgba(120, 28, 28, 0.2); }
+
+.clan-text-badge {
+  font-weight: bold;
+  letter-spacing: 1px;
+}
+
+/* Динамічні кольори для тексту назви клану */
+.crab .clan-text-badge { color: #ced4da; }
+.crane .clan-text-badge { color: #79b3ec; }
+.dragon .clan-text-badge { color: #63e295; }
+.scorpion .clan-text-badge { color: #ff6b6b; }
+.neutral .clan-text-badge { color: #8c8174; }
+
+.status-badge {
+  background: #801d0a;
+  color: white;
+  padding: 1px 6px;
+  border-radius: 2px;
+  font-size: 0.75rem;
+}

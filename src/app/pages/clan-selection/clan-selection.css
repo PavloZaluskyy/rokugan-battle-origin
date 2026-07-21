@@ -1,0 +1,213 @@
+.clan-select-root {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  background: #050403;
+  font-family: 'Cinzel', 'Noto Serif JP', serif;
+  color: #dac7b5;
+}
+
+/* Відео як повноекранний фон */
+.video-container {
+  position: absolute;
+  top: 0; left: 0; width: 100%; height: 100%;
+  z-index: 1;
+}
+
+.clan-video {
+  width: 70%;
+  height: 100%;
+  object-fit: cover;
+  filter: brightness(0.7) contrast(1.1);
+}
+
+.video-overlay-dark {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  /* background: linear-gradient(90deg, rgba(5,4,3,0.2) 0%, rgba(5,4,3,0.85) 70%, rgba(5,4,3,0.98) 100%); */
+}
+
+/* Навігаційні стрілки каруселі */
+.nav-arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(20, 15, 12, 0.6);
+  border: 1px solid #c7a783;
+  color: #ffd699;
+  font-size: 2.5rem;
+  padding: 20px 15px;
+  cursor: pointer;
+  z-index: 10;
+  transition: background 0.2s, transform 0.2s;
+}
+
+.nav-arrow:hover {
+  background: #c7a783;
+  color: #000;
+}
+
+.nav-arrow.left { left: 30px; }
+.nav-arrow.right { right: 480px; } /* Щоб не перекривати бокову інфо-панель */
+
+/* Кандзі фон */
+.background-banner-wrapper {
+  position: absolute;
+  top: 10%;
+  left: 20%;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.clan-kanji {
+  font-size: 18rem;
+  color: rgba(255, 214, 153, 0.05);
+  font-weight: bold;
+  user-select: none;
+}
+
+/* Інформаційна панель праворуч */
+.clan-info-panel {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 440px;
+  height: 100%;
+  background: rgba(13, 10, 8, 0.92);
+  border-left: 2px solid #3d3128;
+  padding: 50px 40px;
+  box-sizing: border-box;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  box-shadow: -10px 0 30px rgba(0,0,0,0.8);
+}
+
+.sub-title {
+  font-size: 0.75rem;
+  letter-spacing: 3px;
+  color: #8c6d53;
+}
+
+.clan-name {
+  font-size: 2.4rem;
+  margin: 5px 0;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+}
+
+.clan-motto {
+  font-style: italic;
+  color: #a8927e;
+  margin-bottom: 30px;
+}
+
+.panel-section {
+  margin-bottom: 25px;
+}
+
+.panel-section h3 {
+  font-size: 0.85rem;
+  letter-spacing: 1.5px;
+  color: #ffd699;
+  border-bottom: 1px solid #2e251f;
+  padding-bottom: 5px;
+  margin-bottom: 10px;
+}
+
+.ability-box {
+  background: rgba(28, 20, 14, 0.8);
+  border-left: 3px solid #c7a783;
+  padding: 12px 15px;
+  border-radius: 2px;
+}
+
+.ability-box h4 {
+  margin: 0 0 5px 0;
+  color: #eee3d5;
+}
+
+.ability-box p {
+  margin: 0;
+  font-size: 0.85rem;
+  color: #bfa48f;
+}
+
+.lore-text {
+  font-size: 0.85rem;
+  line-height: 1.6;
+  color: #bfa48f;
+}
+
+.select-btn {
+  width: 100%;
+  padding: 18px;
+  background: linear-gradient(180deg, #801d0a 0%, #4a0f05 100%);
+  border: 1px solid #e0684f;
+  color: #fff;
+  font-family: 'Cinzel', serif;
+  font-size: 0.95rem;
+  font-weight: bold;
+  letter-spacing: 1.5px;
+  cursor: pointer;
+  box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+  transition: transform 0.2s, filter 0.2s;
+}
+
+.select-btn:hover {
+  transform: translateY(-2px);
+  filter: brightness(1.2);
+}
+/* ==========================================================================
+   МОБІЛЬНА АДАПТИВНІСТЬ (Планшети та Смартфони)
+   ========================================================================== */
+@media (max-width: 900px) {
+  .clan-video {
+    width: 100%;
+  }
+  /* Перебудовуємо сітку з фіксованого права на нижній блок */
+  .clan-info-panel {
+    position: absolute;
+    bottom: 0;
+    top: auto;
+    right: 0;
+    left: 0;
+    width: 100%;
+    height: 55vh; /* Займає нижню половину екрана */
+    background: linear-gradient(180deg, rgba(13, 10, 8, 0.7) 0%, rgba(13, 10, 8, 0.98) 30%);
+    border-left: none;
+    border-top: 2px solid #3d3128;
+    padding: 20px 25px;
+    overflow-y: auto; /* Можливість згорнути/скролити текст лору */
+  }
+
+  /* Позиціонування стрілок поверх відео */
+  .nav-arrow {
+    font-size: 1.8rem;
+    padding: 12px 10px;
+    top: 22vh; /* Стрілки розташовані по центру самураю */
+  }
+
+  .nav-arrow.left { left: 10px; }
+  .nav-arrow.right { right: 10px; }
+
+  /* Зменшуємо розміри фонового кандзі */
+  .clan-kanji {
+    font-size: 10rem;
+  }
+
+  .background-banner-wrapper {
+    top: 5%;
+    left: 10%;
+  }
+
+  .clan-name {
+    font-size: 1.8rem;
+  }
+
+  .select-btn {
+    padding: 14px;
+    font-size: 0.85rem;
+  }
+}
