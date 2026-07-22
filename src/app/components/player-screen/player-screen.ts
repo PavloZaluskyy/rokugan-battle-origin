@@ -21,6 +21,9 @@ export class PlayerScreen implements OnInit {
   }
   toggleScreen(): void {
     this.isScreenOpen = !this.isScreenOpen;
+    if (this.isScreenOpen) {
+      this.updateScreenData(); // Перечитуємо активні карти з сервісу
+    }
   }
   getCardImage(tokenType: string): string {
     const type = tokenType.toLowerCase();

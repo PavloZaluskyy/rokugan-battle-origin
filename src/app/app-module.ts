@@ -7,6 +7,7 @@ import { PlayerScreen } from './components/player-screen/player-screen';
 import { GameMap } from './components/game-map/game-map';
 import { ClanSelection } from './pages/clan-selection/clan-selection';
 import { GamePage } from './pages/game-page/game-page';
+import { GameHud } from './components/game-hud/game-hud';
 
 @NgModule({
   declarations: [
@@ -14,7 +15,8 @@ import { GamePage } from './pages/game-page/game-page';
     PlayerScreen,
     GameMap,
     ClanSelection,
-    GamePage
+    GamePage,
+    GameHud
   ],
   imports: [
     BrowserModule,

@@ -1,6 +1,11 @@
 <div style="background-color: #050403; width: 100vw; height: 100vh; overflow: hidden; margin: 0; padding: 0;">
-  <!-- Карта займає основну площу -->
-  <app-game-map></app-game-map>
+  <!-- Верхня панель раундів та фаз -->
+  <app-game-hud></app-game-hud>
+  
+  <!-- Карта зміщена трохи вниз, щоб не перекриватися з HUD (можна адаптувати в стилях мапи) -->
+  <div style="margin-top: 60px; height: calc(85vh - 60px);">
+    <app-game-map></app-game-map>
+  </div>
 
   <!-- Висувна ширма завантажується САМЕ ДЛЯ ТОГО КЛАНУ, який обрав гравець -->
   <app-player-screen [clanType]="playerClan"></app-player-screen>

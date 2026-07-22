@@ -174,25 +174,24 @@
   height: 14px;
   background: #c7a783;
   border: 1px solid #000;
-  border-radius: 1px;
   position: absolute;
   top: -6px;
   right: 2px;
   box-shadow: 0 2px 4px rgba(0,0,0,0.5);
-  animation: flagWave 1.5s infinite alternate ease-in-out;
+  z-index: 5;
 }
 
 .crab .sashimono-flag { background: #4f5255; }
 .crane .sashimono-flag { background: #2472c8; }
 .dragon .sashimono-flag { background: #1f8a4c; }
 /* Фіксуємо колір прапору відносно КЛАНУ ВІЙСЬКА, а не території */
-.army-unit-sprite.crab .sashimono-flag { background: #4f5255 !important; border-color: #a0a5aa; }
-.army-unit-sprite.crane .sashimono-flag { background: #2472c8 !important; border-color: #79b3ec; }
-.army-unit-sprite.dragon .sashimono-flag { background: #1f8a4c !important; border-color: #63e295; }
-.army-unit-sprite.lion .sashimono-flag { background: #d4af37 !important; border-color: #fff2a3; }
-.army-unit-sprite.phoenix .sashimono-flag { background: #c43c21 !important; border-color: #ffa18f; }
-.army-unit-sprite.scorpion .sashimono-flag { background: #781c1c !important; border-color: #ff6b6b; }
-.army-unit-sprite.unicorn .sashimono-flag { background: #8a4199 !important; border-color: #ebadff; }
+.army-unit-sprite.crab .sashimono-flag { background-color: #4f5255 !important; border-color: #a0a5aa !important; }
+.army-unit-sprite.crane .sashimono-flag { background-color: #2472c8 !important; border-color: #79b3ec !important; }
+.army-unit-sprite.dragon .sashimono-flag { background-color: #1f8a4c !important; border-color: #63e295 !important; }
+.army-unit-sprite.lion .sashimono-flag { background-color: #d4af37 !important; border-color: #fff2a3 !important; }
+.army-unit-sprite.phoenix .sashimono-flag { background-color: #c43c21 !important; border-color: #ffa18f !important; }
+.army-unit-sprite.scorpion .sashimono-flag { background-color: #781c1c !important; border-color: #ff6b6b !important; }
+.army-unit-sprite.unicorn .sashimono-flag { background-color: #8a4199 !important; border-color: #ebadff !important; }
 /* Анімація появи загону на карті */
 @keyframes unitMarchIn {
   0% { transform: translateY(-20px) scale(0); opacity: 0; }
@@ -223,16 +222,14 @@
   position: absolute;
   bottom: 25px;
   left: 25px;
-  width: 300px;
+  transform: none; /* Прибираємо зсув */
+  width: 280px;
   background: radial-gradient(circle at center, #1c140e 0%, #0d0a08 100%);
   border: 2px solid #c7a783;
   border-radius: 4px;
-  padding: 15px 20px;
-  box-shadow: 0 10px 25px rgba(0,0,0,0.8), inset 0 0 20px rgba(0,0,0,0.6);
-  z-index: 100;
-  color: #dac7b5;
-  font-family: 'Cinzel', 'Noto Serif JP', serif;
-  animation: fadeInTooltip 0.25s cubic-bezier(0.19, 1, 0.22, 1);
+  padding: 12px 15px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.9);
+  z-index: 1000;
 }
 
 @keyframes fadeInTooltip {

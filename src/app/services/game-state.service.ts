@@ -290,4 +290,35 @@ export class GameStateService {
     this.saveGame();
     return true;
   }
+  nextPhase(): void {
+    if (!this.state) return;
+
+    if (this.state.currentPhase === 'Planning' || this.state.currentPhase === 'Placement') {
+      // Після фази розміщення переходимо до виконання
+      this.state.currentPhase = 'Execution';
+      this.state.roundLog.push(`Раунд ${this.state.currentRound}: Фаза виконання розпочалася.`);
+    } else if (this.state.currentPhase === 'Execution') {
+      // Після виконання перевіряємо, чи це був 5-й раунд
+      if (this.state.currentRound >= 5) {
+        this.state.roundLog.push(`Гра завершена! Підрахунок очок честі.`);
+        alert('Гра завершена! Час підраховувати очки честі за правила гри.');
+      } else {
+        // Переходимо до нового раунду (Раунд + 1) та фази розміщення (планування)
+        this.state.currentRound++;
+        this.state.currentPhase = 'Placement';
+        this.state.roundLog.push(`Розпочався раунд ${this.state.currentRound}. Фаза розміщення.`);
+      }
+    }
+
+    this.saveGame();
+  }
+
+  getPhaseName(phase: string): string {
+    switch (phase) {
+      case 'Planning':
+      case 'Placement': return 'Фаза Розміщення (Ходи)';
+      case 'Execution': return 'Фаза Виконання (Битви)';
+      default: return phase;
+    }
+  }
 }

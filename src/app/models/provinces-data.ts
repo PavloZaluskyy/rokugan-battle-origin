@@ -439,7 +439,6 @@ export const ORIGINAL_PROVINCES: Province[] = [
   }
 ];
 
-// Словник суміжних провінцій (сусідів)
 export const PROVINCE_ADJACENCY: { [id: string]: string[] } = {
   // Краби
   'crab-capital': ['crab-sub-1', 'merchant-sunken-ships', 'shadowlands-north', 'shadowlands-south'],
@@ -475,4 +474,15 @@ export const PROVINCE_ADJACENCY: { [id: string]: string[] } = {
   'unicorn-capital': ['unicorn-sub-1', 'unicorn-sub-2', 'dragon-sub-2', 'lion-sub-2'],
   'unicorn-sub-1': ['unicorn-capital', 'unicorn-sub-2', 'lion-sub-2', 'scorpion-sub-1', 'scorpion-sub-2'],
   'unicorn-sub-2': ['unicorn-capital', 'unicorn-sub-1', 'scorpion-sub-2', 'crab-sub-3'],
+  // Тіньові землі
+  'shadowlands-north': ['crab-capital', 'crab-sub-1', 'crab-sub-3', 'shadowlands-south'],
+  'shadowlands-south': ['crab-capital', 'shadowlands-north'],
+  // Острови Шовкових Шляхів
+  'silk-sun-island-north': ['silk-silkworm-island', 'silk-golden-sand-island'],
+  'silk-silkworm-island': ['silk-sun-island-north', 'silk-golden-sand-island'],
+  'silk-golden-sand-island': ['silk-sun-island-north', 'silk-silkworm-island'],
+  // Узбережжя Торговців
+  'merchant-sunken-ships': ['crab-capital', 'crab-sub-1', 'merchant-three-trees', 'merchant-small-bay'],
+  'merchant-three-trees': ['merchant-sunken-ships', 'merchant-small-bay','crab-sub-1', 'crab-sub-2', 'crane-sub-1'],
+  'merchant-small-bay': ['crane-sub-1', 'merchant-three-trees', 'merchant-sunken-ships'],
 };

@@ -1,0 +1,26 @@
+<div class="game-hud-container" *ngIf="gameState">
+  <!-- Лічильник раундів (від 1 до 5, як на полі настілки) -->
+  <div class="round-indicator">
+    <span class="hud-label">РАУНД</span>
+    <div class="round-circles">
+       <div *ngFor="let r of [1, 2, 3, 4, 5]" 
+         class="round-circle" 
+         [class.active]="(gameState?.currentRound ?? 0) === r"
+         [class.passed]="(gameState?.currentRound ?? 0) > r">
+        {{ r }}
+      </div>
+    </div>
+  </div>
+
+  <!-- Поточна фаза гри -->
+  <div class="phase-indicator">
+    <span class="phase-title">{{ phaseDisplayName }}</span>
+  </div>
+
+  <!-- Кнопка передачі ходу / зміни фази -->
+  <div class="hud-action">
+    <button class="next-phase-btn" (click)="onNextPhaseClick()">
+      {{ gameState?.currentPhase === 'Execution' ? 'НАСТУПНИЙ РАУНД ➔' : 'РОЗКРИТТИ ЖЕТОНИ / БИТВИ ⚔️' }}
+    </button>
+  </div>
+</div>

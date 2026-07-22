@@ -60,7 +60,9 @@
 
   <div class="target-ring" *ngIf="isProvinceTargetable(prov)"></div>
 </div>
-  <!-- КАСТОМНИЙ ТУЛТІП ПРОВІНЦІЇ (З'являється при кліку) -->
+ </div>
+</div>
+ <!-- КАСТОМНИЙ ТУЛТІП ПРОВІНЦІЇ (З'являється при кліку) -->
   <div class="custom-tooltip-card" *ngIf="selectedProvince" [ngClass]="selectedProvince.controllingClan.toLowerCase()">
     <div class="tooltip-header">
       <span class="tooltip-region">{{ selectedProvince.regionId.replace('_', ' ') }}</span>
@@ -100,4 +102,6 @@
         <span class="status-badge">{{ selectedProvince.specialToken }}</span>
       </div>
     </div>
+</div>
+
 </div>

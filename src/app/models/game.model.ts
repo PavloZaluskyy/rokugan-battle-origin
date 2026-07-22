@@ -64,3 +64,4 @@ export interface PlacedToken {
   token: BattleToken;
   isFaceUp: boolean; // false під час розміщення, true у фазі виконання
 }
+export type GamePhase = 'Regroup' | 'Placement' | 'Execution';

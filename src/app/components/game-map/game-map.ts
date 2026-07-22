@@ -1,6 +1,6 @@
 import { Component, OnInit, HostListener, ElementRef, ViewChild } from '@angular/core';
 import { GameStateService } from '../../services/game-state.service';
-import { Province } from '../../models/game.model';
+import { ClanType, Province } from '../../models/game.model';
 @Component({
   selector: 'app-game-map',
   standalone: false,
@@ -80,6 +80,10 @@ selectedProvince: Province | null = null;
     if (gameState) {
       this.provinces = Object.values(gameState.provinces);
     }
+  }
+  get activePlayerClan(): ClanType {
+    const state = this.gameStateService.getGameState();
+    return state ? state.firstPlayerClan : 'Crab';
   }
 
   getProvinceStyle(provinceId: string): { [key: string]: string } {
@@ -219,7 +223,7 @@ selectedProvince: Province | null = null;
     if (!selectedToken) return false;
     
     // Вважаємо поточним гравцем того, чия ширма відкрита (наприклад, Crab)
-    return this.gameStateService.isProvinceValidTarget(province, 'Crab');
+    return this.gameStateService.isProvinceValidTarget(province, this.activePlayerClan);
   }
 
   onProvinceClick(province: Province): void {
@@ -227,8 +231,7 @@ selectedProvince: Province | null = null;
 
     // Якщо карта виділена і провінція підходить — ставимо анімований загін!
     if (selectedToken && this.isProvinceTargetable(province)) {
-      const success = this.gameStateService.placeTokenOnProvince(province.id, 'Crab');
-      
+const success = this.gameStateService.placeTokenOnProvince(province.id, this.activePlayerClan);      
       if (success) {
         console.log(`Загін увійшов у провінцію ${province.name}!`);
         // Оновлюємо списки провінцій з сейву
