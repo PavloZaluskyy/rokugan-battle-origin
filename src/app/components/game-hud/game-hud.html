@@ -5,8 +5,8 @@
     <div class="round-circles">
        <div *ngFor="let r of [1, 2, 3, 4, 5]" 
          class="round-circle" 
-         [class.active]="(gameState?.currentRound ?? 0) === r"
-         [class.passed]="(gameState?.currentRound ?? 0) > r">
+         [class.active]="gameState.currentRound === r"
+         [class.passed]="gameState.currentRound > r">
         {{ r }}
       </div>
     </div>
@@ -20,7 +20,7 @@
   <!-- Кнопка передачі ходу / зміни фази -->
   <div class="hud-action">
     <button class="next-phase-btn" (click)="onNextPhaseClick()">
-      {{ gameState?.currentPhase === 'Execution' ? 'НАСТУПНИЙ РАУНД ➔' : 'РОЗКРИТТИ ЖЕТОНИ / БИТВИ ⚔️' }}
+      {{ actionButtonText }}
     </button>
   </div>
 </div>

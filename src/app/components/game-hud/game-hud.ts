@@ -19,7 +19,26 @@ export class GameHud implements OnInit {
 
   get phaseDisplayName(): string {
     if (!this.gameState) return '';
+    
+    if (this.gameStateService.getInitialPlacementStatus()) {
+      return 'РОЗСТАНОВКА КОНТРОЛЮ (Кликайте на сусідні землі)';
+    }
+
     return this.gameStateService.getPhaseName(this.gameState.currentPhase);
+  }
+  
+  get actionButtonText(): string {
+    if (!this.gameState) return '';
+
+    if (this.gameStateService.getInitialPlacementStatus()) {
+      return 'ЗАВЕРШИТИ РОЗСТАНОВКУ ➔';
+    }
+
+    if (this.gameState.currentPhase === 'Placement') {
+      return 'РОЗКРИТТИ ЖЕТОНИ / БИТВИ ⚔️';
+    }
+
+    return 'НАСТУПНИЙ РАУНД ➔';
   }
 
   onNextPhaseClick(): void {

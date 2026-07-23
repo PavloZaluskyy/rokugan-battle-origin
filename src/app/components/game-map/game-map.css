@@ -92,9 +92,9 @@
 
 .defense-value { font-family: 'Cinzel', serif; font-size: 0.85rem; color: #ffd699; font-weight: bold; }
 .capital-icon { position: absolute; top: -14px; font-size: 0.9rem; }
-
+.crab .defense-value{ color: #050505; }
 /* Кланові кольори */
-.province-node.crab { background: radial-gradient(circle, #4f5255 0%, #202224 100%); border-color: #a0a5aa; }
+.province-node.crab { background: radial-gradient(circle, #ced4da 0%, #55585c 100%); border-color: #ced4da; }
 .province-node.crane { background: radial-gradient(circle, #2472c8 0%, #0c3a70 100%); border-color: #79b3ec; }
 .province-node.dragon { background: radial-gradient(circle, #1f8a4c 0%, #0a4722 100%); border-color: #63e295; }
 .province-node.lion { background: radial-gradient(circle, #d4af37 0%, #6e5605 100%); border-color: #fff2a3; }
@@ -230,12 +230,35 @@
   padding: 12px 15px;
   box-shadow: 0 10px 25px rgba(0,0,0,0.9);
   z-index: 1000;
+  /* ГАРАНТОВАНИЙ СВІТЛИЙ КОЛІРС ТЕКСТУ */
+  color: #dac7b5 !important;
+  font-family: 'Cinzel', serif;
 }
 
 @keyframes fadeInTooltip {
   from { opacity: 0; transform: translateY(10px); }
   to { opacity: 1; transform: translateY(0); }
 }
+.custom-tooltip-card .tooltip-title {
+  color: #ffd699 !important;
+  font-size: 1.05rem;
+  margin: 5px 0 10px 0;
+  border-bottom: 1px solid #3d3128;
+  padding-bottom: 5px;
+}
+
+.custom-tooltip-card .tooltip-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.85rem;
+  margin-bottom: 6px;
+  color: #bfa48f !important;
+}
+
+/* .custom-tooltip-card .clan-text-badge {
+  color: #fff !important;
+  font-weight: bold;
+} */
 
 .tooltip-header {
   display: flex;
@@ -295,21 +318,27 @@
   letter-spacing: 2px;
 }
 
-/* Кольорові рамки-індикатори тултіпа залежно від клану хазяїна */
-.custom-tooltip-card.crab { border-color: #70757a; box-shadow: 0 0 15px rgba(112, 117, 122, 0.2); }
+.custom-tooltip-card.crab { border-color: #ced4da; box-shadow: 0 0 15px rgba(112, 117, 122, 0.2); }
 .custom-tooltip-card.crane { border-color: #2472c8; box-shadow: 0 0 15px rgba(36, 114, 200, 0.2); }
 .custom-tooltip-card.dragon { border-color: #1f8a4c; box-shadow: 0 0 15px rgba(31, 138, 76, 0.2); }
+.custom-tooltip-card.lion { border-color: #d4af37; box-shadow: 0 0 15px rgba(212, 175, 55, 0.2); }
+.custom-tooltip-card.phoenix { border-color: #c43c21; box-shadow: 0 0 15px rgba(196, 60, 33, 0.2); }
 .custom-tooltip-card.scorpion { border-color: #781c1c; box-shadow: 0 0 15px rgba(120, 28, 28, 0.2); }
+.custom-tooltip-card.unicorn { border-color: #8a4199; box-shadow: 0 0 15px rgba(138, 65, 153, 0.2); }
+.custom-tooltip-card.neutral { border-color: #555555; box-shadow: 0 0 15px rgba(85, 85, 85, 0.2); }
 
 .clan-text-badge {
   font-weight: bold;
   letter-spacing: 1px;
-}
+}і
 
 /* Динамічні кольори для тексту назви клану */
 .crab .clan-text-badge { color: #ced4da; }
 .crane .clan-text-badge { color: #79b3ec; }
 .dragon .clan-text-badge { color: #63e295; }
+.lion .clan-text-badge { color: #d4af37; }
+.phoenix .clan-text-badge { color: #c43c21; }
+.unicorn .clan-text-badge { color: #8a4199; }
 .scorpion .clan-text-badge { color: #ff6b6b; }
 .neutral .clan-text-badge { color: #8c8174; }
 
@@ -319,4 +348,28 @@
   padding: 1px 6px;
   border-radius: 2px;
   font-size: 0.75rem;
+}
+/* ==========================================================================
+   БЕЙДЖ ЖЕТОНІВ КОНТРОЛЮ НА ВУЗЛІ
+   ========================================================================== */
+.control-token-badge {
+  position: absolute;
+  bottom: -6px;
+  right: -6px;
+  background: radial-gradient(circle, #2a2118 0%, #120d09 100%);
+  border: 1px solid #ffd699;
+  border-radius: 50%;
+  width: 18px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.8);
+  z-index: 6;
+}
+
+.token-count {
+  font-size: 0.55rem;
+  color: #ffd699;
+  font-weight: bold;
 }

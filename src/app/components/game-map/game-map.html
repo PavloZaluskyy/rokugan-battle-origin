@@ -23,18 +23,21 @@
 
       <!-- Тепер точки позиціонуються всередині контейнера картинки і нікуди не злітають -->
         <div 
-  *ngFor="let prov of provinces" 
-  class="province-node" 
-  [ngClass]="prov.controllingClan.toLowerCase()"
-  [class.targetable]="isProvinceTargetable(prov)"
-  [style.top]="getProvinceStyle(prov.id)['top']"
-  [style.left]="getProvinceStyle(prov.id)['left']"
-  (click)="onProvinceClick(prov); $event.stopPropagation()"
->
-  <!-- Іконка столиці чи замку -->
-  <span class="capital-icon" *ngIf="prov.isCapital">🏯</span>
-  <span class="defense-value">{{ prov.baseDefense + prov.controlTokensFaceUp }}</span>
-
+          *ngFor="let prov of provinces" 
+          class="province-node" 
+          [ngClass]="prov.controllingClan.toLowerCase()"
+          [class.targetable]="isProvinceTargetable(prov)"
+          [style.top]="getProvinceStyle(prov.id)['top']"
+          [style.left]="getProvinceStyle(prov.id)['left']"
+          (click)="onProvinceClick(prov); $event.stopPropagation()"
+            >
+      <!-- Іконка столиці чи замку -->
+      <span class="capital-icon" *ngIf="prov.isCapital">🏯</span>
+      <span class="defense-value">{{ prov.baseDefense + prov.controlTokensFaceUp }}</span>
+      <!-- МІНІАТЮРНИЙ ЖЕТОН КОНТРОЛЮ (Печатка власника на вузлі) -->
+      <div class="control-token-badge" *ngIf="prov.controlTokensFaceUp > 0" [title]="'Жетонів контролю: ' + prov.controlTokensFaceUp">
+        <span class="token-count">👑 {{ prov.controlTokensFaceUp }}</span>
+      </div>
   <!-- ВИНЕСЕНІ НА КАРТУ АНІМОВАНІ ЗАГОНИ / ТАБОРИ -->
   <div class="placed-units-container" *ngIf="prov.placedTokens && prov.placedTokens.length > 0">
     <div 

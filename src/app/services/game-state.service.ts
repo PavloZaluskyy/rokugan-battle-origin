@@ -40,68 +40,102 @@ export class GameStateService {
    * Створення нової гри з базовими параметрами
    */
  createNewGame(selectedClans: ClanType[]): void {
-    const provinceMap: { [id: string]: any } = {};
-    
-    // Ініціалізація мапи
+    const playerCount = selectedClans.length;
+    let startingControlTokens = 11;
+    if (playerCount === 3) startingControlTokens = 7;
+    else if (playerCount === 4) startingControlTokens = 5;
+    else if (playerCount >= 5) startingControlTokens = 4;
+
+    const playersMap: { [key: string]: any } = {};
+
+    selectedClans.forEach(clan => {
+      playersMap[clan] = {
+        clan: clan,
+        honorPoints: 0,
+        // Оскільки 1 жетон автоматично витрачається на столицю, в резерві лишається на 1 менше!
+        remainingControlTokens: startingControlTokens - 1, 
+        activeHandTokens: this.generateInitialHand()
+      };
+    });
+
+    const provincesMap: { [key: string]: Province } = {};
     ORIGINAL_PROVINCES.forEach(prov => {
-      provinceMap[prov.id] = { ...prov };
-      if (prov.isCapital && prov.capitalOf && !selectedClans.includes(prov.capitalOf)) {
-        provinceMap[prov.id].controllingClan = 'Neutral';
+      // Повністю клонуємо оригінальну провінцію з усіма її полями (name, regionId, baseDefense, isCoastal тощо)
+      provincesMap[prov.id] = { 
+        ...prov, 
+        placedTokens: [],
+        controlTokensFaceUp: 0,
+        controllingClan: prov.isCapital && selectedClans.includes(prov.capitalOf as ClanType) ? prov.capitalOf! : 'Neutral'
+      };
+    });
+
+    // Ставимо 1 стартовий жетон контролю горілиць ВИКЛЮЧНО на столиці активних кланів
+    selectedClans.forEach(clan => {
+      const capital = Object.values(provincesMap).find(p => p.capitalOf === clan);
+      if (capital) {
+        capital.controllingClan = clan;
+        capital.controlTokensFaceUp = 1;
       }
     });
 
-    const playerMap: { [clan in Exclude<ClanType, 'Neutral'>]?: PlayerState } = {};
-
-    // Генеруємо стан для кожного живого гравця
-    selectedClans.forEach(clan => {
-      if (clan === 'Neutral') return;
-
-      // 1. Отримуємо повний мішок жетонів і перемішуємо його
-      let shuffledPool = this.shuffleArray(this.generateInitialTokenPool(clan));
-
-      // 2. Створюємо пустий жетон (Blank), який за правилами завжди в активі
-      const blankToken: BattleToken = {
-        id: `${clan.toLowerCase()}-blank-init`,
-        clan: clan,
-        type: 'Blank',
-        strength: 0
-      };
-
-      // 3. Беремо 5 випадкових жетонів з мішка на руку (до ширми)
-      const activeHand = shuffledPool.splice(0, 5);
-      activeHand.push(blankToken); // Разом виходить 6 жетонів за ширмою
-
-      // Определяємо кількість стартових жетонів контролю залежно від кількості гравців
-      // 2 гравці = 11, 3 гравці = 7, 4 гравці = 5, 5 гравців = 4
-      const controlTokensCount = selectedClans.length === 2 ? 11 : (selectedClans.length === 3 ? 7 : 5);
-
-      playerMap[clan] = {
-        clan: clan,
-        honorPoints: 0,
-        isFirstPlayer: selectedClans[0] === clan,
-        isRonin: false,
-        secretObjectiveCardId: null,
-        combatTokenPool: shuffledPool, // Решта жетонів лишається в мішку
-        activeHandTokens: activeHand,   // 6 жетонів на руках
-        discardedTokens: [],
-        remainingControlTokens: controlTokensCount
-      };
-    });
+    this.isInitialPlacementPhase = true; // Активуємо пре-фазу розстановки
 
     this.state = {
       gameId: Math.random().toString(36).substring(2, 9),
       currentRound: 1,
-      currentPhase: 'Planning',
-      firstPlayerClan: selectedClans[0] || 'Neutral',
-      provinces: provinceMap,
-      players: playerMap,
-      roundLog: ['The Battle for Rokugan has begun. Players set up behind their screens!']
+      currentPhase: 'Placement',
+      firstPlayerClan: selectedClans[0],
+      players: playersMap as any,
+      provinces: provincesMap,
+      roundLog: [`Розпочалася пре-фаза розстановки жетонів контролю. Доступно жетонів у резерві: ${startingControlTokens - 1}.`]
     };
 
-    // Фіксуємо повний стартовий стан у LocalStorage
     this.saveGame();
   }
 
+  /**
+   * Фаза перегрупування: гравець бере 5 карт атаки + 1 пустий (блеф) = разом 6 карток у руку
+   */
+  private generateInitialHand(): BattleToken[] {
+    const hand: BattleToken[] = [];
+    let idCounter = 1;
+
+    // 5 бойових / спеціальних жетонів (наприклад, Армії різної сили, Флот, Синобі тощо)
+    const tokenTypes: ('Army' | 'Navy' | 'Shinobi' | 'Blessing' | 'Diplomacy' | 'Raid')[] = [
+      'Army', 'Army', 'Navy', 'Shinobi', 'Blessing'
+    ];
+
+    tokenTypes.forEach(type => {
+      hand.push({
+        id: `token-${idCounter++}-${Math.random()}`,
+        type: type,
+        strength: type === 'Army' || type === 'Navy' || type === 'Shinobi' ? Math.floor(Math.random() * 3) + 1 : 0,
+        clan: 'Crab'
+      });
+    });
+
+    // +1 пустий жетон (Блеф / Blank)
+    hand.push({
+      id: `token-${idCounter++}-${Math.random()}`,
+      type: 'Blank',
+      strength: 0,
+      clan: 'Crab'
+    });
+
+    return hand;
+  }
+  /**
+   * Оновлення рук гравців на початку нового раунду (Фаза перегрупування)
+   */
+  private replenishPlayerHands(): void {
+    if (!this.state) return;
+
+    Object.values(this.state.players).forEach(player => {
+      // Добираємо карти до стандарту (якщо лишилися малі залишки, відновлюємо повну руку)
+      player.activeHandTokens = this.generateInitialHand();
+      this.state!.roundLog.push(`Клан ${player.clan} отримав нові жетони на руку (5 бойових + 1 блеф).`);
+    });
+  }
   /**
    * Збереження поточного стану в localStorage
    */
@@ -290,22 +324,87 @@ export class GameStateService {
     this.saveGame();
     return true;
   }
+  // Стан: чи триває зараз пре-гральна фаза розстановки жетонів контролю
+  private isInitialPlacementPhase: boolean = true;
+
+  getInitialPlacementStatus(): boolean {
+    return this.isInitialPlacementPhase;
+  }
+
+  /**
+   * Перевірка: чи може гравець поставити жетон контролю на цю провінцію під час пре-гральної розстановки
+   */
+  isValidInitialControlPlacement(province: Province, playerClan: ClanType): boolean {
+    if (!this.isInitialPlacementPhase || !this.state) return false;
+
+    const player = this.state.players[playerClan as Exclude<ClanType, 'Neutral'>];
+    if (!player || player.remainingControlTokens <= 0) return false;
+
+    // Провінція вже належить цьому клану — не можна ставити вдруге
+    if (province.controllingClan === playerClan) return false;
+
+    // Перевіряємо, чи є хоча б один сусід, який вже належить цьому клану
+    const adjacentIds = PROVINCE_ADJACENCY[province.id] || [];
+    const hasControlledNeighbor = adjacentIds.some(adjId => {
+      const adjProv = this.state?.provinces[adjId];
+      return adjProv && adjProv.controllingClan === playerClan;
+    });
+
+    return hasControlledNeighbor;
+  }
+
+  /**
+   * Виконання розміщення жетона контролю на пре-гральному етапі
+   */
+  placeInitialControlToken(provinceId: string, playerClan: ClanType): boolean {
+    if (!this.state) return false;
+
+    const province = this.state.provinces[provinceId];
+    const player = this.state.players[playerClan as Exclude<ClanType, 'Neutral'>];
+
+    if (!province || !player) return false;
+    if (!this.isValidInitialControlPlacement(province, playerClan)) return false;
+
+    // 1. Захоплюємо провінцію (всі інші властивості провінції: name, regionId, isCoastal — залишаються недоторканими!)
+    province.controllingClan = playerClan;
+    province.controlTokensFaceUp += 1;
+    player.remainingControlTokens -= 1;
+
+    this.state.roundLog.push(`Клан ${playerClan} встановив жетон контролю на ${province.name}. Залишок: ${player.remainingControlTokens}`);
+
+    // 2. Перевірка завершення пре-фази
+    if (player.remainingControlTokens <= 0) {
+      this.isInitialPlacementPhase = false;
+      this.state.roundLog.push(`Пре-гральна розстановка контролю завершена! Починається Раунд 1.`);
+    }
+
+    this.saveGame();
+    return true;
+  }
+
+
   nextPhase(): void {
     if (!this.state) return;
 
-    if (this.state.currentPhase === 'Planning' || this.state.currentPhase === 'Placement') {
-      // Після фази розміщення переходимо до виконання
+    // Якщо гравець ще не закінчив розставляти жетони контролю вручну, але натиснув кнопку завершення
+    if (this.isInitialPlacementPhase) {
+      this.isInitialPlacementPhase = false;
+      this.state.roundLog.push(`Пре-фазу розстановки пропущено гравцем. Починається Раунд 1.`);
+      this.saveGame();
+      return;
+    }
+
+    if (this.state.currentPhase === 'Placement') {
       this.state.currentPhase = 'Execution';
       this.state.roundLog.push(`Раунд ${this.state.currentRound}: Фаза виконання розпочалася.`);
     } else if (this.state.currentPhase === 'Execution') {
-      // Після виконання перевіряємо, чи це був 5-й раунд
       if (this.state.currentRound >= 5) {
-        this.state.roundLog.push(`Гра завершена! Підрахунок очок честі.`);
-        alert('Гра завершена! Час підраховувати очки честі за правила гри.');
+        alert('Гра завершена! Час підраховувати очки честі.');
       } else {
-        // Переходимо до нового раунду (Раунд + 1) та фази розміщення (планування)
         this.state.currentRound++;
         this.state.currentPhase = 'Placement';
+        this.replenishPlayerHands();
+        this.distributeRoundControlTokens();
         this.state.roundLog.push(`Розпочався раунд ${this.state.currentRound}. Фаза розміщення.`);
       }
     }
@@ -320,5 +419,25 @@ export class GameStateService {
       case 'Execution': return 'Фаза Виконання (Битви)';
       default: return phase;
     }
+  }
+  /**
+   * Нарахування нових жетонів контролю на початку нового раунду (Фаза перегрупування)
+   */
+  private distributeRoundControlTokens(): void {
+    if (!this.state) return;
+
+    // Проходимо по всіх гравцях і даємо їм жетони за контроль над провінціями
+    Object.values(this.state.players).forEach(player => {
+      // Рахуємо, скільки провінцій контролює клан
+      const controlledProvincesCount = Object.values(this.state!.provinces).filter(
+        p => p.controllingClan === player.clan
+      ).length;
+
+      // Базове правило: гравець отримує жетони контролю за свої провінції (наприклад, мінімум 3 або за кількістю земель)
+      const tokensToAdd = Math.max(3, Math.floor(controlledProvincesCount / 2));
+      player.remainingControlTokens += tokensToAdd;
+
+      this.state!.roundLog.push(`Клан ${player.clan} отримав ${tokensToAdd} нових жетонів контролю в резерв.`);
+    });
   }
 }

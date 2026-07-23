@@ -219,22 +219,23 @@ selectedProvince: Province | null = null;
   }
   // Перевірка: чи підсвічувати цю провінцію як ціль для вибраної карти
   isProvinceTargetable(province: Province): boolean {
+    // 1. Перевіряємо пре-гральну фазу розстановки контролю
+    if (this.gameStateService.getInitialPlacementStatus()) {
+      return this.gameStateService.isValidInitialControlPlacement(province, this.activePlayerClan);
+    }
+    // 2. Звичайна фаза розміщення карток атаки
     const selectedToken = this.gameStateService.getSelectedToken();
     if (!selectedToken) return false;
     
-    // Вважаємо поточним гравцем того, чия ширма відкрита (наприклад, Crab)
     return this.gameStateService.isProvinceValidTarget(province, this.activePlayerClan);
   }
-
+  
   onProvinceClick(province: Province): void {
-    const selectedToken = this.gameStateService.getSelectedToken();
-
-    // Якщо карта виділена і провінція підходить — ставимо анімований загін!
-    if (selectedToken && this.isProvinceTargetable(province)) {
-const success = this.gameStateService.placeTokenOnProvince(province.id, this.activePlayerClan);      
+    // 1. ДІЯ У ПРЕ-ГРАЛЬНІЙ ФАЗІ РОЗСТАНОВКИ КОНТРОЛЮ
+    if (this.gameStateService.getInitialPlacementStatus()) {
+      const success = this.gameStateService.placeInitialControlToken(province.id, this.activePlayerClan);
       if (success) {
-        console.log(`Загін увійшов у провінцію ${province.name}!`);
-        // Оновлюємо списки провінцій з сейву
+        // Оновлюємо мапу після захоплення
         const gameState = this.gameStateService.getGameState();
         if (gameState) {
           this.provinces = Object.values(gameState.provinces);
@@ -243,7 +244,20 @@ const success = this.gameStateService.placeTokenOnProvince(province.id, this.act
       return;
     }
 
-    // Відкриття/закриття інфо-тултіпа
+    // 2. ЗВИЧАЙНА ДІЯ (Викладання карти з руки)
+    const selectedToken = this.gameStateService.getSelectedToken();
+    if (selectedToken && this.isProvinceTargetable(province)) {
+      const success = this.gameStateService.placeTokenOnProvince(province.id, this.activePlayerClan);
+      if (success) {
+        const gameState = this.gameStateService.getGameState();
+        if (gameState) {
+          this.provinces = Object.values(gameState.provinces);
+        }
+      }
+      return;
+    }
+
+    // 3. Відкриття тултіпа
     if (this.selectedProvince && this.selectedProvince.id === province.id) {
       this.closeTooltip();
     } else {
