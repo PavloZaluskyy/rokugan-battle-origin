@@ -100,7 +100,7 @@ export const CLAN_DETAILS_DATA: ClanDetails[] = [
     motto: 'Вершники Західних Степів',
     monBannerImg: 'assets/images/Clans/unicorn.jpg',
     videoUrlUrlIntro: 'assets/video/intro_clan_unicorn.mp4',
-    videoUrlIdle: 'assets/video/unicorn-idle.mp4',
+    videoUrlIdle: 'assets/video/idle_clan_unicorn.mp4',
     specialAbilityTitle: 'Степова Кіннота',
     specialAbilityDesc: 'Може атакувати наземні провінції, які знаходяться через одну провінцію від підконтрольної.',
     lore: 'Мандрівники, що повернулися з далеких земель. Їхня дика кіннота та чужоземні луки зносять будь-які шикування ворога.',

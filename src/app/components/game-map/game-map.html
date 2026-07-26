@@ -41,24 +41,30 @@
   <!-- ВИНЕСЕНІ НА КАРТУ АНІМОВАНІ ЗАГОНИ / ТАБОРИ -->
   <div class="placed-units-container" *ngIf="prov.placedTokens && prov.placedTokens.length > 0">
     <div 
-      *ngFor="let pt of prov.placedTokens" 
-      class="army-unit-sprite"
-      [ngClass]="[pt.clan.toLowerCase(), pt.isFaceUp ? pt.token.type.toLowerCase() : 'hidden-camp']"
-      [title]="pt.isFaceUp ? pt.token.type : 'Табір війська (Приховано)'"
-    >
-      <!-- Прапор Клана над загоном -->
-      <div class="sashimono-flag"></div>
-
-      <!-- Візуальне відображення загону -->
-      <div class="unit-figure">
-        <span *ngIf="!pt.isFaceUp" class="figure-icon">⛺</span> <!-- Намет прихованого війська -->
-        <span *ngIf="pt.isFaceUp && pt.token.type === 'Army'" class="figure-icon">⚔️</span>
-        <span *ngIf="pt.isFaceUp && pt.token.type === 'Navy'" class="figure-icon">⛵</span>
-        <span *ngIf="pt.isFaceUp && pt.token.type === 'Shinobi'" class="figure-icon">🥷</span>
-        <span *ngIf="pt.isFaceUp && pt.token.type === 'Blessing'" class="figure-icon">⛩️</span>
-        <span *ngIf="pt.isFaceUp && pt.token.type === 'Blank'" class="figure-icon">💨</span>
-      </div>
-    </div>
+            *ngFor="let pt of prov.placedTokens" 
+            class="army-unit-sprite"
+            [ngClass]="[pt.clan.toLowerCase(), pt.isFaceUp ? pt.token.type.toLowerCase() : 'hidden-camp']"
+          >
+            <div class="sashimono-flag"></div>
+            <div class="unit-figure">
+              <!-- Прихований табір -->
+              <span *ngIf="!pt.isFaceUp" class="figure-icon">⛺</span>
+              
+              <!-- Відкриті карти з цифровою силою -->
+              <span *ngIf="pt.isFaceUp && pt.token.type === 'Army'" class="figure-icon">
+                ⚔️<small class="unit-str" *ngIf="pt.token.strength > 0">{{ pt.token.strength }}</small>
+              </span>
+              <span *ngIf="pt.isFaceUp && pt.token.type === 'Navy'" class="figure-icon">
+                ⛵<small class="unit-str" *ngIf="pt.token.strength > 0">{{ pt.token.strength }}</small>
+              </span>
+              <span *ngIf="pt.isFaceUp && pt.token.type === 'Shinobi'" class="figure-icon">
+                🥷<small class="unit-str" *ngIf="pt.token.strength > 0">{{ pt.token.strength }}</small>
+              </span>
+              <span *ngIf="pt.isFaceUp && pt.token.type === 'Blessing'" class="figure-icon">⛩️</span>
+              <span *ngIf="pt.isFaceUp && pt.token.type === 'Diplomacy'" class="figure-icon">📜</span>
+              <span *ngIf="pt.isFaceUp && pt.token.type === 'Blank'" class="figure-icon">💨</span>
+            </div>
+          </div>
   </div>
 
   <div class="target-ring" *ngIf="isProvinceTargetable(prov)"></div>

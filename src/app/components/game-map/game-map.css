@@ -373,3 +373,76 @@
   color: #ffd699;
   font-weight: bold;
 }
+/* ==========================================================================
+   КІНЕМАТОГРАФІЧНЕ РОЗКРИТТЯ ЖЕТОНІВ (ФАЗА ВИКОНАННЯ)
+   ========================================================================== */
+
+/* Коли жетон перевертається (isFaceUp стає true) */
+.army-unit-sprite {
+  transition: transform 0.6s cubic-bezier(0.4, 0.2, 0.2, 1);
+  transform-style: preserve-3d;
+}
+
+/* Ефект різкого спалаху та перевороту при розкритті */
+.army-unit-sprite:not(.hidden-camp) {
+  animation: cardRevealFlip 0.6s cubic-bezier(0.175, 0.885, 0.32, 1) forwards;
+}
+
+@keyframes cardRevealFlip {
+  0% {
+    transform: scale(0.6) rotateY(90deg);
+    filter: brightness(2) drop-shadow(0 0 15px rgba(255, 214, 153, 0.9));
+  }
+  50% {
+    transform: scale(1.2) rotateY(45deg);
+    filter: brightness(1.5) drop-shadow(0 0 10px rgba(255, 214, 153, 0.6));
+  }
+  100% {
+    transform: scale(1) rotateY(0deg);
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.9));
+  }
+}
+
+/* Стилі для різних відкритих типів військ під час битви */
+.army-unit-sprite.army {
+  background: radial-gradient(circle, rgba(128,29,10,0.8) 0%, rgba(20,15,12,0.95) 100%);
+  border: 1px solid #e0684f;
+  border-radius: 4px;
+}
+
+.army-unit-sprite.navy {
+  background: radial-gradient(circle, rgba(36,114,200,0.8) 0%, rgba(12,20,30,0.95) 100%);
+  border: 1px solid #79b3ec;
+  border-radius: 4px;
+}
+
+.army-unit-sprite.shinobi {
+  background: radial-gradient(circle, rgba(50,40,60,0.8) 0%, rgba(15,10,20,0.95) 100%);
+  border: 1px solid #b38fe0;
+  border-radius: 4px;
+}
+
+.army-unit-sprite.blessing, 
+.army-unit-sprite.diplomacy {
+  background: radial-gradient(circle, rgba(212,175,55,0.8) 0%, rgba(30,25,10,0.95) 100%);
+  border: 1px solid #ffd699;
+  border-radius: 4px;
+}
+
+.army-unit-sprite.blank {
+  background: radial-gradient(circle, rgba(80,80,80,0.7) 0%, rgba(20,20,20,0.95) 100%);
+  border: 1px solid #aaaaaa;
+  border-radius: 4px;
+}
+
+.unit-str {
+  position: absolute;
+  bottom: -2px;
+  right: 2px;
+  font-size: 0.6rem;
+  font-weight: bold;
+  color: #ffd699;
+  background: rgba(0, 0, 0, 0.8);
+  padding: 0 2px;
+  border-radius: 2px;
+}
