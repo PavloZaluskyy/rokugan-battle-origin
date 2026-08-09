@@ -32,39 +32,70 @@
           (click)="onProvinceClick(prov); $event.stopPropagation()"
             >
       <!-- Іконка столиці чи замку -->
-      <span class="capital-icon" *ngIf="prov.isCapital">🏯</span>
+      <!-- ТВОЯ 3D-МІНІАТЮРА ЗАМКУ / МІСТА ПО ЦЕНТРУ -->
+        <div class="province-miniature-wrapper">
+          <img [src]="prov.imageUrl" [alt]="prov.name" class="province-3d-img" onerror="this.style.display='none'" />
+          <!-- ЕФЕКТ ДИМУ / ПОЖЕЖІ ПІД ЧАС АТАКИ -->
+          <div class="battle-smoke-effect" [style.opacity]="scale > 1.2 ? '0.6' : '1'" *ngIf="prov.placedTokens && prov.placedTokens.length > 0">
+            <div class="smoke-particle p1"></div>
+            <div class="smoke-particle p2"></div>
+            <div class="smoke-particle p3"></div>
+          </div>
+          <!-- Кольорова облямівка / підставка власника навколо мініатюри -->
+          <div class="owner-ring" [ngClass]="prov.controllingClan.toLowerCase()"></div>
+        </div>
       <span class="defense-value">{{ prov.baseDefense + prov.controlTokensFaceUp }}</span>
       <!-- МІНІАТЮРНИЙ ЖЕТОН КОНТРОЛЮ (Печатка власника на вузлі) -->
-      <div class="control-token-badge" *ngIf="prov.controlTokensFaceUp > 0" [title]="'Жетонів контролю: ' + prov.controlTokensFaceUp">
+      <!-- <div class="control-token-badge" *ngIf="prov.controlTokensFaceUp > 0" [title]="'Жетонів контролю: ' + prov.controlTokensFaceUp">
         <span class="token-count">👑 {{ prov.controlTokensFaceUp }}</span>
-      </div>
+      </div> -->
+      <!-- Великі та красиві маркери спеціальних станів провінції з твоїми PNG -->
+  <div class="province-markers-container" *ngIf="prov.hasPeaceToken || prov.hasScorchedEarth || prov.hasShrine || prov.hasGlory || prov.hasHarbor">
+    <div class="map-badge" *ngIf="prov.hasPeaceToken" title="Мир">
+      <img src="assets/images/units/peace.png" alt="Peace" class="badge-png" />
+    </div>
+    <div class="map-badge" *ngIf="prov.hasScorchedEarth" title="Випалена земля">
+      <img src="assets/images/units/raid.png" alt="Scorched Earth" class="badge-png" />
+    </div>
+    <div class="map-badge" *ngIf="prov.hasShrine" title="Святиня">
+      <img src="assets/images/units/shrine.png" alt="Shrine" class="badge-png" />
+    </div>
+    <div class="map-badge" *ngIf="prov.hasGlory" title="Слава">
+      <img src="assets/images/units/glory.png" alt="Glory" class="badge-png" />
+    </div>
+    <div class="map-badge" *ngIf="prov.hasHarbor" title="Гавань">
+      <img src="assets/images/units/harbor.png" alt="Harbor" class="badge-png" />
+    </div>
+  </div>
   <!-- ВИНЕСЕНІ НА КАРТУ АНІМОВАНІ ЗАГОНИ / ТАБОРИ -->
+  <!-- ЗАГОНИ / ТАБОРИ НА КАРТІ -->
   <div class="placed-units-container" *ngIf="prov.placedTokens && prov.placedTokens.length > 0">
     <div 
-            *ngFor="let pt of prov.placedTokens" 
-            class="army-unit-sprite"
-            [ngClass]="[pt.clan.toLowerCase(), pt.isFaceUp ? pt.token.type.toLowerCase() : 'hidden-camp']"
-          >
-            <div class="sashimono-flag"></div>
-            <div class="unit-figure">
-              <!-- Прихований табір -->
-              <span *ngIf="!pt.isFaceUp" class="figure-icon">⛺</span>
-              
-              <!-- Відкриті карти з цифровою силою -->
-              <span *ngIf="pt.isFaceUp && pt.token.type === 'Army'" class="figure-icon">
-                ⚔️<small class="unit-str" *ngIf="pt.token.strength > 0">{{ pt.token.strength }}</small>
-              </span>
-              <span *ngIf="pt.isFaceUp && pt.token.type === 'Navy'" class="figure-icon">
-                ⛵<small class="unit-str" *ngIf="pt.token.strength > 0">{{ pt.token.strength }}</small>
-              </span>
-              <span *ngIf="pt.isFaceUp && pt.token.type === 'Shinobi'" class="figure-icon">
-                🥷<small class="unit-str" *ngIf="pt.token.strength > 0">{{ pt.token.strength }}</small>
-              </span>
-              <span *ngIf="pt.isFaceUp && pt.token.type === 'Blessing'" class="figure-icon">⛩️</span>
-              <span *ngIf="pt.isFaceUp && pt.token.type === 'Diplomacy'" class="figure-icon">📜</span>
-              <span *ngIf="pt.isFaceUp && pt.token.type === 'Blank'" class="figure-icon">💨</span>
-            </div>
-          </div>
+      *ngFor="let pt of prov.placedTokens" 
+      class="army-unit-sprite"
+      [ngClass]="[pt.clan.toLowerCase(), pt.isFaceUp ? pt.token.type.toLowerCase() : 'hidden-camp']"
+    >
+      <div class="sashimono-flag"></div>
+      
+      <div class="unit-figure">
+        <!-- Прихований табір (сорочка) -->
+        <img *ngIf="!pt.isFaceUp" 
+             [src]="'assets/images/units/tent-' + pt.clan.toLowerCase() + '.png'" 
+             [alt]="'Camp ' + pt.clan"
+             class="token-png-icon tent-icon"
+             onerror="this.src='assets/images/units/tent-crab.png'" />
+        
+        <!-- Відкритий юніт: підтягуємо твою унікальну PNG-картинку залежно від типу та клану -->
+        <img *ngIf="pt.isFaceUp" 
+             [src]="'assets/images/units/' + pt.token.type.toLowerCase() + '-' + pt.clan.toLowerCase() + '.png'" 
+             [alt]="pt.token.type"
+             class="token-png-icon"
+             onerror="this.src='assets/images/units/army-crab.png'" /> <!-- Запасний варіант, якщо картинки раптом немає -->
+
+        <!-- Цифрова сила юніта поверх картинки -->
+        <small class="unit-str" *ngIf="pt.isFaceUp && pt.token.strength > 0">{{ pt.token.strength }}</small>
+      </div>
+    </div>
   </div>
 
   <div class="target-ring" *ngIf="isProvinceTargetable(prov)"></div>

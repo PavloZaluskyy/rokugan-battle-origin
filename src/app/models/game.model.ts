@@ -31,6 +31,15 @@ export interface Province {
   controllingClan: ClanType;    // Хто зараз контролює
   controlTokensFaceUp: number;  // Кількість жетонів контролю горілиць (+1 до захисту кожен)
   specialToken: SpecialTokenType; // Особливий жетон (Мир, Випалена земля тощо)
+
+  hasPeaceToken?: boolean;          // Маркер Миру (від Дипломатії)
+  hasScorchedEarth?: boolean;       // Випалена земля (від Погрому)
+  hasShrine?: boolean;              // Святиня
+  hasGlory?: boolean;               // Слава
+  hasHarbor?: boolean;              // Гавань (робить материкову провінцію прибережною)
+  blessedTokenId?: string;          // ID жетона, на який покладено Благословення
+
+  imageUrl?: string;                // Шлях до унікальної мініатюри замку/міста
 }
 
 // 6. Стан конкретного гравця (Клана)
@@ -59,6 +68,7 @@ export interface GameState {
   roundLog: string[]; // Історія подій
 }
 export interface PlacedToken {
+  strength: number;
   id: string;
   clan: ClanType;
   token: BattleToken;

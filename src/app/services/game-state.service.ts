@@ -8,7 +8,9 @@ import { ORIGINAL_PROVINCES, PROVINCE_ADJACENCY } from '../models/provinces-data
 export class GameStateService {
  
   private readonly STORAGE_KEY = 'rokugan_battle_save';
-  
+  // Стан кінематографічної битви
+  private isCinematicBattleActive: boolean = false;
+  private currentBattleProvinceId: string | null = null;
   // Внутрішній стан гри (поки null, доки не почнеться гра)
   private state: GameState | null = null;
   selectedToken: BattleToken | null = null;
@@ -65,7 +67,8 @@ export class GameStateService {
         ...prov, 
         placedTokens: [],
         controlTokensFaceUp: 0,
-        controllingClan: prov.isCapital && selectedClans.includes(prov.capitalOf as ClanType) ? prov.capitalOf! : 'Neutral'
+        controllingClan: prov.isCapital && selectedClans.includes(prov.capitalOf as ClanType) ? prov.capitalOf! : 'Neutral',
+        imageUrl: `assets/images/provinces/${prov.id}.png`
       };
     });
 
@@ -246,54 +249,69 @@ export class GameStateService {
     if (!this.selectedToken || !this.state) return false;
 
     const token = this.selectedToken;
+    const tokenType = token.type as string;
     const isOwner = province.controllingClan === playerClan;
-    const player = this.state.players[playerClan as Exclude<ClanType, 'Neutral'>];
 
-    // 1. Блеф та Синобі куди завгодно
+    // 1. ЗАБОРОНИ на випалену землю та мир
+    if (province.hasScorchedEarth || province.hasPeaceToken) {
+      return false; // Ніхто не може розміщувати жетони у випалених або мирних провінціях
+    }
+
+    // 2. Якщо є Святиня і гравець НЕ контролює її — не можна нічого туди ставити
+    if (province.hasShrine && !isOwner) {
+      return false;
+    }
+
+    // 3. Гавань можна ставити ТІЛЬКИ у свої материкові провінції
+    if (tokenType === 'Harbor') {
+      return isOwner && !province.isCoastal;
+    }
+
+    // 4. Благословення: ставиться ТІЛЬКИ на свої жетони (Армію, Флот, Синобі), що вже лежать на полі
+    if (token.type === 'Blessing') {
+      if (!isOwner) return false;
+      // Має бути хоча б один власний нерозкритий загін на цій провінції
+      return (province.placedTokens || []).some(pt => pt.clan === playerClan && pt.token.type !== 'Blessing');
+    }
+
+    // 5. Дипломатія: ставиться на свою провінцію (якщо там немає маркера Слави, де заборонена дипломатія)
+    if (token.type === 'Diplomacy') {
+      return isOwner && !province.hasGlory;
+    }
+
+    // 6. Погром (Raid): ставиться на ворожу або нейтральну провінцію (якщо немає Слави)
+    if (token.type === 'Raid') {
+      if (isOwner || province.hasGlory) return false;
+      // Вимагає сусіднього кордону або флоту
+      return this.hasValidBorderOrNavy(province, playerClan);
+    }
+
+    // 7. Синобі та Блеф
     if (token.type === 'Shinobi' || token.type === 'Blank') {
       return true;
     }
 
-    // 2. БЛАГОСЛОВЕННЯ та ДИПЛОМАТІЯ — викладаються ТІЛЬКИ у свої провінції
-    if (token.type === 'Blessing' || token.type === 'Diplomacy') {
-      return isOwner;
-    }
-
-    // 3. Ронін чи базовий захист власних земель
+    // 8. Звичайний захист своїх земель
     if (isOwner) {
-      if (token.type === 'Navy') return province.isCoastal;
+      if (token.type === 'Navy') return Boolean(province.isCoastal || province.hasHarbor);
       return true;
     }
 
-    // 4. АТАКА (Армія, Флот, ПОГРОМ / Raid) на ворожі чи нейтральні землі
+    // 9. Атака ворожих земель
     if (!isOwner) {
-      // Погром вимагає сусіднього кордону, так само як і звичайна атака армією
-      const adjacentProvinces = PROVINCE_ADJACENCY[province.id] || [];
-      const sharedBordersCount = adjacentProvinces.filter(adjId => {
-        const adjProv = this.state?.provinces[adjId];
-        return adjProv && adjProv.controllingClan === playerClan;
-      }).length;
-
-      if (sharedBordersCount === 0) {
-        if (token.type === 'Navy' && province.isCoastal) return true;
-        return false;
-      }
-
-      // Перевірка ліміту атак
-      const currentAttacksFromPlayer = (province.placedTokens || []).filter(
-        pt => pt.clan === playerClan && pt.token.type !== 'Shinobi'
-      ).length;
-
-      if (currentAttacksFromPlayer >= sharedBordersCount) {
-        return false;
-      }
-
-      if (token.type === 'Navy') return province.isCoastal;
-
-      return true; // Армія або Погром (Raid)
+      if (!this.hasValidBorderOrNavy(province, playerClan)) return false;
+      if (token.type === 'Navy') return Boolean(province.isCoastal || province.hasHarbor);
+      return true;
     }
 
     return false;
+  }
+
+  private hasValidBorderOrNavy(province: Province, playerClan: ClanType): boolean {
+    const adjacentProvinces = PROVINCE_ADJACENCY[province.id] || [];
+    const hasBorder = adjacentProvinces.some(adjId => this.state?.provinces[adjId]?.controllingClan === playerClan);
+    const hasCoastalAccess = Boolean(province.isCoastal || province.hasHarbor);
+    return hasBorder || hasCoastalAccess;
   }
   
   placeTokenOnProvince(provinceId: string, playerClan: ClanType): boolean {
@@ -311,6 +329,7 @@ export class GameStateService {
     const newPlacedToken = {
       id: `placed-${Date.now()}`,
       clan: playerClan,
+      strength: this.selectedToken.strength,
       token: { ...this.selectedToken },
       isFaceUp: false // Сховано від ворогів під час розміщення
     };
@@ -456,110 +475,145 @@ export class GameStateService {
   resolveExecutionPhase(): void {
     if (!this.state) return;
 
-    this.state.roundLog.push(`--- Фаза виконання Раунду ${this.state.currentRound} (Спеціальні жетони) ---`);
+    this.state.roundLog.push(`--- Фаза виконання Раунду ${this.state.currentRound} ---`);
 
     Object.values(this.state.provinces).forEach(province => {
       const placedTokens = province.placedTokens || [];
 
+      // Якщо провінція випалена, вона ігнорується у боях і не може контролюватися
+      if (province.hasScorchedEarth) {
+        return;
+      }
+
+      // Якщо провінція має Мир, атаки та розміщення заборонені
+      if (province.hasPeaceToken) {
+        this.state!.roundLog.push(`🕊️ Провінція ${province.name} охороняється Миром.`);
+        return;
+      }
+
       if (placedTokens.length === 0) {
-        if (province.controllingClan !== 'Neutral') {
+        if (province.controllingClan !== 'Neutral' && !province.hasShrine) {
           province.controlTokensFaceUp += 1;
-          this.state!.roundLog.push(`Провінція ${province.name} мирно утримана кланом ${province.controllingClan}.`);
         }
         return;
       }
 
-      // 1. Розкриваємо жетони
       placedTokens.forEach(pt => pt.isFaceUp = true);
 
-      // 2. ПЕРЕВІРКА ДИПЛОМАТІЇ (Diplomacy 📜)
-      // Якщо власник виклав Дипломатію на свою територію, будь-які атаки ворогів скасовуються!
-      const hasDiplomacy = placedTokens.some(pt => pt.clan === province.controllingClan && pt.token.type === 'Diplomacy');
-      if (hasDiplomacy) {
-        this.state!.roundLog.push(`📜 Дипломатія захистила провінцію ${province.name}! Усі атаки противників скасовано в цьому раунді.`);
-        // Захисник отримує бонусний жетон контролю за мирний захист завдяки дипломатії
-        province.controlTokensFaceUp += 1;
-        return; // Виходимо з обробки цієї провінції, бо тут мир
+      // Обробка ДИПЛОМАТІЇ -> Ставимо жетон МИРУ
+      const diplomacyToken = placedTokens.find(pt => pt.clan === province.controllingClan && pt.token.type === 'Diplomacy');
+      if (diplomacyToken) {
+        province.hasPeaceToken = true;
+        this.state!.roundLog.push(`📜 Дипломатія в ${province.name} встановила вічний МИР.`);
+        province.placedTokens = [];
+        return;
       }
 
-      // 3. ПІДРАХУНОК СИЛИ ЗАХИСНИКА (включаючи Благословення ✨)
+      // Обробка ПОГРОМУ -> Ставимо ВИПАЛЕНУ ЗЕМЛЮ якщо спрацювало
+      const raidTokens = placedTokens.filter(pt => pt.token.type === 'Raid');
+      raidTokens.forEach(rt => {
+        const hasShinobiHere = placedTokens.some(pt => pt.clan === rt.clan && pt.token.type === 'Shinobi');
+        const hasBorder = this.hasValidBorderOrNavy(province, rt.clan);
+
+        if (hasShinobiHere || hasBorder) {
+          province.hasScorchedEarth = true;
+          province.controllingClan = 'Neutral'; // Втрачає контроль
+          province.controlTokensFaceUp = 0;
+          province.placedTokens = [];
+          this.state!.roundLog.push(`🔥 Погром клану ${rt.clan} перетворив провінцію ${province.name} на ВИПАЛЕНУ ЗЕМЛЮ!`);
+        }
+      });
+
+      if (province.hasScorchedEarth) return;
+
+      // Обробка БЛАГОСЛОВЕННЯ: шукаємо жетон благословення і застосовуємо до сусіда по стопці
+      const blessingToken = placedTokens.find(pt => pt.token.type === 'Blessing');
+      if (blessingToken) {
+        // Знаходимо інший жетон цього ж клану на провінції, щоб дати йому +рейтинг і захист
+        const targetToken = placedTokens.find(pt => pt.clan === blessingToken.clan && pt.token.type !== 'Blessing');
+        if (targetToken) {
+          targetToken.strength += 3; // Канонічне посилення
+          this.state!.roundLog.push(`✨ Благословення дарувало +3 сили загону на ${province.name}!`);
+        }
+      }
+
+      // Підрахунок захисту та атак (з урахуванням Святині)
       let defenseTotal = province.baseDefense + province.controlTokensFaceUp;
       const defenderClan = province.controllingClan;
-      
+
       placedTokens
         .filter(pt => pt.clan === defenderClan)
         .forEach(pt => {
-          if (pt.token.type === 'Army' || pt.token.type === 'Navy') {
+          if (pt.token.type === 'Army' || pt.token.type === 'Navy' || pt.token.type === 'Shinobi') {
             defenseTotal += pt.token.strength;
-          }
-          // Благословення додає фіксовану потужну підтримку захисту (+3 до сили)
-          if (pt.token.type === 'Blessing') {
-            defenseTotal += 3;
-            this.state!.roundLog.push(`✨ Благословення дарувало +3 до захисту провінції ${province.name}!`);
           }
         });
 
-      // 4. ПІДРАХУНОК АТАК (Розрізняємо звичайні атаки та ПОГРОМ / Raid 🔥)
       const attackerClans = Array.from(new Set(
         placedTokens.filter(pt => pt.clan !== defenderClan).map(pt => pt.clan)
       ));
 
-      if (attackerClans.length === 0) {
-        province.controlTokensFaceUp += 1;
-        this.state!.roundLog.push() ? null : this.state!.roundLog.push(`Клан ${defenderClan} зміцнив провінцію ${province.name}.`);
-      } else {
-        // Перевіряємо, чи є тут жетони Погрому (Raid)
-        const raidTokens = placedTokens.filter(pt => pt.token.type === 'Raid');
-        const armyTokens = placedTokens.filter(pt => pt.token.type === 'Army' || pt.token.type === 'Navy');
+      if (attackerClans.length > 0) {
+        let strongestAttackerClan: ClanType | null = null;
+        let maxAttackStrength = -1;
 
-        // Якщо це чистий Погром без армій
-        if (raidTokens.length > 0 && armyTokens.length === 0) {
-          raidTokens.forEach(rt => {
-            // Якщо сила погрому перевищує захист, він руйнує 1 жетон контролю ворога
-            if (rt.token.strength >= defenseTotal && province.controlTokensFaceUp > 0) {
-              province.controlTokensFaceUp -= 1;
-              this.state!.roundLog.push(`🔥 Погром клану ${rt.clan} успішно спустошив провінцію ${province.name}! Знищено 1 жетон контролю.`);
-            } else {
-              this.state!.roundLog.push(`🔥 Погром клану ${rt.clan} на провінцію ${province.name} відбито захистом.`);
-            }
-          });
-        } else {
-          // Стандартна битва з урахуванням атак
-          let strongestAttackerClan: ClanType | null = null;
-          let maxAttackStrength = -1;
-          let isTie = false;
+        attackerClans.forEach(attackerClan => {
+          let clanAttackSum = 0;
+          placedTokens
+            .filter(pt => pt.clan === attackerClan)
+            .forEach(pt => {
+              if (pt.token.type === 'Army' || pt.token.type === 'Navy' || pt.token.type === 'Shinobi') {
+                clanAttackSum += pt.token.strength;
+              }
+            });
 
-          attackerClans.forEach(attackerClan => {
-            let clanAttackSum = 0;
-            placedTokens
-              .filter(pt => pt.clan === attackerClan)
-              .forEach(pt => {
-                if (pt.token.type === 'Army' || pt.token.type === 'Navy' || pt.token.type === 'Raid') {
-                  clanAttackSum += pt.token.strength;
-                }
-              });
-
-            if (clanAttackSum > maxAttackStrength) {
-              maxAttackStrength = clanAttackSum;
-              strongestAttackerClan = attackerClan;
-              isTie = false;
-            } else if (clanAttackSum === maxAttackStrength) {
-              isTie = true;
-            }
-          });
-
-          if (strongestAttackerClan && !isTie && maxAttackStrength > defenseTotal) {
-            this.state!.roundLog.push(`Клан ${strongestAttackerClan} завоював ${province.name} (Сила ${maxAttackStrength} vs Захист ${defenseTotal})!`);
-            province.controllingClan = strongestAttackerClan;
-            province.controlTokensFaceUp = 1;
-          } else {
-            this.state!.roundLog.push(`Клан ${defenderClan} відбив атаку на ${province.name}!`);
-            province.controlTokensFaceUp += 1;
+          if (clanAttackSum > maxAttackStrength) {
+            maxAttackStrength = clanAttackSum;
+            strongestAttackerClan = attackerClan;
           }
+        });
+
+        if (strongestAttackerClan && maxAttackStrength > defenseTotal) {
+          this.state!.roundLog.push(`Клан ${strongestAttackerClan} захопив ${province.name}!`);
+          province.controllingClan = strongestAttackerClan;
+          province.controlTokensFaceUp = 1;
+        } else {
+          province.controlTokensFaceUp += 1;
         }
       }
     });
 
     this.saveGame();
+  }
+  getCinematicStatus() {
+    return {
+      isActive: this.isCinematicBattleActive,
+      provinceId: this.currentBattleProvinceId
+    };
+  }
+  startCinematicResolution(callbackOnComplete: () => void): void {
+    if (!this.state) return;
+    console.log('Starting cinematic resolution for round', this.state.currentRound);
+    this.state.roundLog.push(`--- Фаза виконання Раунду ${this.state.currentRound} розпочалася ---`);
+
+    // 1. Робимо всі жетони видимими (розкриваємо намети)
+    Object.values(this.state.provinces).forEach(province => {
+      const placedTokens = province.placedTokens || [];
+      placedTokens.forEach(pt => pt.isFaceUp = true);
+    });
+
+    this.saveGame();
+
+    // 2. Робимо невелику затримку для анімації розкриття, потім виконуємо розрахунок битв
+    setTimeout(() => {
+      this.resolveExecutionPhase();
+
+      // Переводимо у фазу виконання або завершуємо цикл раунду
+      this.state!.currentPhase = 'Execution';
+      this.saveGame();
+
+      // Викликаємо колбек оновлення інтерфейсу
+      callbackOnComplete();
+    }, 1200); // 1.2 секунди на ефект розкриття
   }
 }

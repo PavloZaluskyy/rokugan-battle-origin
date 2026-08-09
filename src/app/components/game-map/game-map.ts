@@ -15,6 +15,9 @@ selectedProvince: Province | null = null;
   scale: number = 1;
   translateX: number = 0;
   translateY: number = 0;
+  // Поточні параметри зуму та зсуву камери для кінематографа
+ 
+  
 
   // Стан для перетягування мишкою (Panning)
   isDragging: boolean = false;
@@ -263,5 +266,20 @@ selectedProvince: Province | null = null;
     } else {
       this.selectedProvince = province;
     }
+  }
+  // Метод для фокусування камери на конкретній провінції під час битви
+  focusCameraOnProvince(provinceId: string) {
+    const provStyle = this.getProvinceStyle(provinceId);
+    // Вираховуємо відсотки і переводимо в пікселі або зміщуємо центр карти
+    // Для плавності використовуємо CSS transform на контейнері мапи
+    this.scale = 2.2; // Сильне наближення на місто
+    
+    // Тут можна прив'язати точні координати вузла до центру екрана
+    // this.stateLog(`Кінематографічна камера фокусується на провінції: ${provinceId}`);
+  }
+  resetCamera() {
+    this.scale = 1;
+    this.translateX = 0;
+    this.translateY = 0;
   }
 }

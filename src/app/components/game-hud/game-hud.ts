@@ -42,7 +42,21 @@ export class GameHud implements OnInit {
   }
 
   onNextPhaseClick(): void {
-    this.gameStateService.nextPhase();
-    this.gameState = this.gameStateService.getGameState(); // оновлюємо дані
+    if (this.gameStateService.getInitialPlacementStatus()) {
+      this.gameStateService.nextPhase();
+      return;
+    }
+
+    if (this.gameStateService.getGameState()?.currentPhase === 'Placement') {
+      // Запускаємо кінематограф битв!
+      this.gameStateService.startCinematicResolution(() => {
+        // Оновлюємо мапу після завершення всіх анімацій
+        this.gameState = this.gameStateService.getGameState();
+      });
+    } else {
+      this.gameStateService.nextPhase();
+      this.gameState = this.gameStateService.getGameState();
+    }
+    // this.gameState = this.gameStateService.getGameState(); // оновлюємо дані
   }
 }
