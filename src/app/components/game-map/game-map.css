@@ -1,4 +1,6 @@
-/* Вікно перегляду карти — 85% від висоти екрана розробника */
+/* ==========================================================================
+   ВІКНО ПЕРЕГЛЯДУ ТА ШАРУВАННЯ КАРТИ
+   ========================================================================== */
 .map-viewport {
   width: 100vw;
   height: 85vh;
@@ -14,38 +16,37 @@
   cursor: grabbing;
 }
 
-/* Шар трансформації */
 .map-transform-layer {
   position: relative;
   width: 100%;
   height: 100%;
   display: flex;
   justify-content: center;
-  align-items: flex-start; /* Прив'язка до верхнього краю для вертикальних карт */
+  align-items: flex-start;
   transform-origin: center center;
   transition: transform 0.05s ease-out;
 }
 
-/* Контейнер картинки розширюється на всю ширину екрана */
 .map-image-container {
   position: relative;
   width: 95vw;
   height: auto;
-  display: inline-block;
+  transform-origin: 0 0 !important;
+  transition: transform 0.8s cubic-bezier(0.25, 1, 0.5, 1);
 }
 
 .map-image {
-  width: 100%; /* Розтягуємо зображення по ширині */
-  height: auto; /* Пропорції зберігаються автоматично */
+  width: 100%;
+  height: auto;
   display: block;
   filter: sepia(0.12) brightness(0.8) contrast(1.05);
   pointer-events: none;
-  -moz-user-select: none;    /* Firefox */
-  -ms-user-select: none;     /* IE/Edge */
-   user-select: none; 
+  user-select: none;
 }
 
-/* Елементи керування зумом */
+/* ==========================================================================
+   ЕЛЕМЕНТИ КЕРУВАННЯ ЗУМОМ
+   ========================================================================== */
 .zoom-controls {
   position: absolute;
   top: 25px;
@@ -68,7 +69,9 @@
   box-shadow: 0 4px 10px rgba(0,0,0,0.5);
 }
 
-/* Координаційні вузли провінцій */
+/* ==========================================================================
+   ВУЗЛИ ПРОВІНЦІЙ ТА КЛАНОВІ КОЛЬОРИ
+   ========================================================================== */
 .province-node {
   position: absolute;
   transform: translate(-50%, -50%);
@@ -90,30 +93,6 @@
   transform: translate(-50%, -50%) scale(1.2);
 }
 
-.defense-value {
-  position: absolute;
-  right: -22px;
-  bottom: -15px;
-  
-  border: 1px solid #ffd699;
-  color: #ffd699;
-  font-size: 0.75rem;
-  font-weight: і;
-  padding: 1px 5px;
-  border-radius: 4px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.8);
-  z-index: 6;
-}
-.capital-icon { position: absolute; top: -14px; font-size: 0.9rem; }
-/* .crab .defense-value { color: #f2f8fe; } */
-/* .crane .defense-value { color: #82c0ff; }
-.dragon .defense-value { color: #71ffaa; }
-.lion .defense-value { color: #fdd244; }
-.phoenix .defense-value { color: #901800; }
-.unicorn .defense-value { color: #e66cff; }
-.scorpion .defense-value { color: #ff6b6b; }
-.neutral .defense-value { color: #ffd699; }
-Кланові кольори */
 .province-node.crab { background: radial-gradient(circle, #ced4da 0%, #55585c 100%); border-color: #ced4da; }
 .province-node.crane { background: radial-gradient(circle, #2472c8 0%, #0c3a70 100%); border-color: #79b3ec; }
 .province-node.dragon { background: radial-gradient(circle, #1f8a4c 0%, #0a4722 100%); border-color: #63e295; }
@@ -122,8 +101,22 @@
 .province-node.scorpion { background: radial-gradient(circle, #781c1c 0%, #3b0505 100%); border-color: #ff6b6b; }
 .province-node.unicorn { background: radial-gradient(circle, #8a4199 0%, #3f1547 100%); border-color: #ebadff; }
 .province-node.neutral { background: radial-gradient(circle, #5e544b 0%, #2b2520 100%); border-color: #8c8174; }
+
+.defense-value {
+  position: absolute;
+  right: -22px;
+  bottom: -15px;
+  border: 1px solid #ffd699;
+  color: #ffd699;
+  font-size: 0.75rem;
+  padding: 1px 5px;
+  border-radius: 4px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.8);
+  z-index: 6;
+}
+
 /* ==========================================================================
-   ПІДСВІЧУВАННЯ ЦІЛЕЙ НА КАРТІ
+   ПІДСВІЧУВАННЯ ЦІЛЕЙ (ТАРГЕТИНГ)
    ========================================================================== */
 .province-node.targetable {
   border-color: #ffd699 !important;
@@ -150,8 +143,9 @@
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
 }
+
 /* ==========================================================================
-   АНІМОВАНІ САМУРАЙСЬКІ ЗАГОНИ (3D-Мініатюри на карті)
+   ЗАГОНИ ТА ТАБОРИ НА КАРТІ
    ========================================================================== */
 .placed-units-container {
   position: absolute;
@@ -172,23 +166,10 @@
   align-items: center;
   justify-content: flex-end;
   animation: unitMarchIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  transition: transform 0.6s cubic-bezier(0.4, 0.2, 0.2, 1);
+  transform-style: preserve-3d;
 }
 
-/* Прихований табір (сорочка) */
-.army-unit-sprite.hidden-camp .figure-icon {
-  font-size: 1.2rem;
-  filter: drop-shadow(0 3px 5px rgba(0,0,0,0.8));
-  animation: campBreathe 2s infinite alternate ease-in-out;
-}
-
-/* Відкритий самурайський загін */
-.army-unit-sprite .figure-icon {
-  font-size: 1rem;
-  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.9));
-  animation: unitIdle 1.8s infinite alternate ease-in-out;
-}
-
-/* Маленький клановий прапор Сашімоно над загоном */
 .sashimono-flag {
   width: 6px;
   height: 14px;
@@ -201,10 +182,6 @@
   z-index: 5;
 }
 
-.crab .sashimono-flag { background: #4f5255; }
-.crane .sashimono-flag { background: #2472c8; }
-.dragon .sashimono-flag { background: #1f8a4c; }
-/* Фіксуємо колір прапору відносно КЛАНУ ВІЙСЬКА, а не території */
 .army-unit-sprite.crab .sashimono-flag { background-color: #4f5255 !important; border-color: #a0a5aa !important; }
 .army-unit-sprite.crane .sashimono-flag { background-color: #2472c8 !important; border-color: #79b3ec !important; }
 .army-unit-sprite.dragon .sashimono-flag { background-color: #1f8a4c !important; border-color: #63e295 !important; }
@@ -212,37 +189,210 @@
 .army-unit-sprite.phoenix .sashimono-flag { background-color: #c43c21 !important; border-color: #ffa18f !important; }
 .army-unit-sprite.scorpion .sashimono-flag { background-color: #781c1c !important; border-color: #ff6b6b !important; }
 .army-unit-sprite.unicorn .sashimono-flag { background-color: #8a4199 !important; border-color: #ebadff !important; }
-/* Анімація появи загону на карті */
+
 @keyframes unitMarchIn {
   0% { transform: translateY(-20px) scale(0); opacity: 0; }
   100% { transform: translateY(0) scale(1); opacity: 1; }
 }
 
-/* Дихання загону */
 @keyframes unitIdle {
   0% { transform: translateY(0); }
   100% { transform: translateY(-3px); }
 }
 
-/* Погойдування намету та диму */
-@keyframes campBreathe {
-  0% { transform: scale(1); }
-  100% { transform: scale(1.1); }
+/* ==========================================================================
+   ІКОНКИ ТА PNG ЕЛЕМЕНТИ
+   ========================================================================== */
+.token-png-icon {
+  width: 26px;
+  height: 26px;
+  object-fit: contain;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.9));
+  animation: unitIdle 1.8s infinite alternate ease-in-out;
 }
 
-/* Погойдування прапора на вітрі */
-@keyframes flagWave {
-  0% { transform: skewY(0deg); }
-  100% { transform: skewY(-8deg); }
+.tent-icon {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+  filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.9));
 }
+
+.badge-png {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+}
+
+.map-badge {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #2a2118 0%, #120d09 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.8), 0 0 5px rgba(255, 214, 153, 0.4);
+  border: 1.5px solid #c7a783;
+}
+
+.army-unit-sprite .unit-str {
+  position: absolute;
+  bottom: -4px;
+  right: -2px;
+  font-size: 0.6rem;
+  font-weight: bold;
+  color: #fff;
+  background: rgba(128, 29, 10, 0.9);
+  border: 1px solid #ffd699;
+  padding: 0 3px;
+  border-radius: 3px;
+  z-index: 5;
+}
+
 /* ==========================================================================
-   КАСТОМНИЙ ТУЛТІП (ІНФО-КАРТКА)
+   МІНІАТЮРИ ЗАМКІВ ТА ЕФЕКТИ БИТВИ (ДИМ І УДАРИ)
+   ========================================================================== */
+.province-miniature-wrapper {
+  position: relative;
+  width: 64px;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.province-3d-img {
+  width: 60px;
+  height: 60px;
+  object-fit: contain;
+  filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.8));
+  transition: transform 0.2s ease;
+  z-index: 2;
+}
+
+.province-node:hover .province-3d-img {
+  transform: scale(1.12);
+}
+
+.owner-ring {
+  position: absolute;
+  bottom: 0;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.6);
+  border: 1px solid #c7a783;
+  z-index: 1;
+}
+
+.owner-ring.crab { border-color: #70757a; background: rgba(112, 117, 122, 0.4); }
+.owner-ring.crane { border-color: #2472c8; background: rgba(36, 114, 200, 0.4); }
+.owner-ring.dragon { border-color: #1f8a4c; background: rgba(31, 138, 76, 0.4); }
+.owner-ring.lion { border-color: #d4af37; background: rgba(212, 175, 55, 0.4); }
+.owner-ring.phoenix { border-color: #c43c21; background: rgba(196, 60, 33, 0.4); }
+.owner-ring.scorpion { border-color: #781c1c; background: rgba(120, 28, 28, 0.4); }
+.owner-ring.unicorn { border-color: #8a4199; background: rgba(138, 65, 153, 0.4); }
+.owner-ring.neutral { border-color: #555555; background: rgba(85, 85, 85, 0.4); }
+
+.province-markers-container {
+  position: absolute;
+  top: -16px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 3px;
+  z-index: 10;
+  pointer-events: none;
+}
+
+/* Ефект диму під час атаки */
+.province-miniature-wrapper.under-attack .province-3d-img {
+  animation: castleShake 0.4s infinite ease-in-out, castleGlow 1.5s infinite alternate;
+}
+
+@keyframes castleShake {
+  0% { transform: translate(0, 0) rotate(0deg); }
+  25% { transform: translate(-1px, 1px) rotate(-1deg); }
+  50% { transform: translate(1px, -1px) rotate(1deg); }
+  75% { transform: translate(-1px, -1px) rotate(0deg); }
+  100% { transform: translate(0, 0) rotate(0deg); }
+}
+
+@keyframes castleGlow {
+  0% { filter: drop-shadow(0 6px 8px rgba(0, 0, 0, 0.9)) brightness(1); }
+  100% { filter: drop-shadow(0 0 15px rgba(255, 69, 0, 0.9)) brightness(1.25); }
+}
+
+.battle-smoke-effect {
+  position: absolute;
+  top: -16px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 40px;
+  height: 40px;
+  pointer-events: none;
+  z-index: 4;
+}
+
+.smoke-particle {
+  position: absolute;
+  background: radial-gradient(circle, rgba(30, 30, 30, 0.95) 0%, rgba(10, 10, 10, 0.6) 50%, rgba(0, 0, 0, 0) 80%);
+  border-radius: 50%;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.7);
+  animation: riseBigSmoke 2s infinite linear;
+}
+
+.smoke-particle.p1 { width: 20px; height: 20px; left: 2px; animation-delay: 0s; }
+.smoke-particle.p2 { width: 28px; height: 28px; left: 8px; animation-delay: 0.5s; }
+.smoke-particle.p3 { width: 22px; height: 22px; left: 16px; animation-delay: 1.1s; }
+
+@keyframes riseBigSmoke {
+  0% { transform: translateY(5px) scale(0.5); opacity: 0.9; }
+  50% { opacity: 0.7; }
+  100% { transform: translateY(-35px) scale(2.2); opacity: 0; }
+}
+
+/* ==========================================================================
+   ВИПРАВЛЕНА АНІМАЦІЯ УДАРІВ КАРТКИ БИТВИ
+   ========================================================================== */
+.province-node.active-battle-target {
+  z-index: 100 !important;
+}
+
+.province-node.active-battle-target .province-miniature-wrapper {
+  filter: drop-shadow(0 0 18px rgba(255, 69, 0, 0.95));
+}
+
+/* Прямий селектор перекриває стандартний idle і запускає серію ударів */
+.token-png-icon.attacking-strike {
+  animation: cardStrikeAction 0.35s ease-in-out infinite !important;
+}
+
+@keyframes cardStrikeAction {
+  0% { 
+    transform: scale(1) translate(0, 0); 
+  }
+  30% { 
+    transform: scale(1.4) translate(0, -16px) rotate(-12deg); 
+    filter: brightness(1.8) drop-shadow(0 12px 8px rgba(255, 69, 0, 0.9)); 
+  }
+  50% { 
+    transform: scale(1.1) translate(0, 6px) rotate(6deg); 
+  }
+  100% { 
+    transform: scale(1) translate(0, 0); 
+  }
+}
+
+/* ==========================================================================
+   КАСТОМНИЙ ТУЛТІП ПРОВІНЦІЇ
    ========================================================================== */
 .custom-tooltip-card {
   position: absolute;
   bottom: 25px;
   left: 25px;
-  transform: none; /* Прибираємо зсув */
   width: 280px;
   background: radial-gradient(circle at center, #1c140e 0%, #0d0a08 100%);
   border: 2px solid #c7a783;
@@ -250,35 +400,9 @@
   padding: 12px 15px;
   box-shadow: 0 10px 25px rgba(0,0,0,0.9);
   z-index: 1000;
-  /* ГАРАНТОВАНИЙ СВІТЛИЙ КОЛІРС ТЕКСТУ */
   color: #dac7b5 !important;
   font-family: 'Cinzel', serif;
 }
-
-@keyframes fadeInTooltip {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-.custom-tooltip-card .tooltip-title {
-  color: #ffd699 !important;
-  font-size: 1.05rem;
-  margin: 5px 0 10px 0;
-  border-bottom: 1px solid #3d3128;
-  padding-bottom: 5px;
-}
-
-.custom-tooltip-card .tooltip-row {
-  display: flex;
-  justify-content: space-between;
-  font-size: 0.85rem;
-  margin-bottom: 6px;
-  color: #bfa48f !important;
-}
-
-/* .custom-tooltip-card .clan-text-badge {
-  color: #fff !important;
-  font-weight: bold;
-} */
 
 .tooltip-header {
   display: flex;
@@ -307,14 +431,12 @@
   color: #ffd699;
 }
 
-.tooltip-title {
-  margin: 0 0 15px 0;
-  font-size: 1.3rem;
-  font-weight: 400;
-  color: #eee3d5;
+.custom-tooltip-card .tooltip-title {
+  color: #ffd699 !important;
+  font-size: 1.05rem;
+  margin: 5px 0 10px 0;
   border-bottom: 1px solid #3d3128;
-  padding-bottom: 8px;
-  text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+  padding-bottom: 5px;
 }
 
 .tooltip-body {
@@ -323,14 +445,11 @@
   gap: 8px;
 }
 
-.tooltip-row {
+.custom-tooltip-card .tooltip-row {
   display: flex;
   justify-content: space-between;
   font-size: 0.85rem;
-}
-
-.tooltip-row span:first-child {
-  color: #a8927e; /* Сіро-коричневе підсвічування міток */
+  color: #bfa48f !important;
 }
 
 .flowers-count {
@@ -338,77 +457,19 @@
   letter-spacing: 2px;
 }
 
-.custom-tooltip-card.crab { border-color: #ced4da; box-shadow: 0 0 15px rgba(112, 117, 122, 0.2); }
-.custom-tooltip-card.crane { border-color: #2472c8; box-shadow: 0 0 15px rgba(36, 114, 200, 0.2); }
-.custom-tooltip-card.dragon { border-color: #1f8a4c; box-shadow: 0 0 15px rgba(31, 138, 76, 0.2); }
-.custom-tooltip-card.lion { border-color: #d4af37; box-shadow: 0 0 15px rgba(212, 175, 55, 0.2); }
-.custom-tooltip-card.phoenix { border-color: #c43c21; box-shadow: 0 0 15px rgba(196, 60, 33, 0.2); }
-.custom-tooltip-card.scorpion { border-color: #781c1c; box-shadow: 0 0 15px rgba(120, 28, 28, 0.2); }
-.custom-tooltip-card.unicorn { border-color: #8a4199; box-shadow: 0 0 15px rgba(138, 65, 153, 0.2); }
-.custom-tooltip-card.neutral { border-color: #555555; box-shadow: 0 0 15px rgba(85, 85, 85, 0.2); }
+.status-badge {
+  background: #801d0a;
+  color: white;
+  padding: 1px 6px;
+  border-radius: 2px;
+  font-size: 0.75rem;
+}
 
 .clan-text-badge {
   font-weight: bold;
   letter-spacing: 1px;
 }
-/* Стилі для PNG іконок юнітів на мапі */
-.token-png-icon {
-  width: 26px;
-  height: 26px;
-  object-fit: contain;
-  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.9));
-  animation: unitIdle 1.8s infinite alternate ease-in-out;
-}
 
-/* Стилі для PNG іконок спеціальних маркерів (Святиня, Мир тощо) */
-.badge-png {
-  width: 20px;
-  height: 20px;
-  object-fit: contain;
-}
-
-.map-badge {
-  width: 26px;
-  height: 26px;
-  border-radius: 50%;
-  background: radial-gradient(circle, #2a2118 0%, #120d09 100%);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.8), 0 0 5px rgba(255, 214, 153, 0.4);
-  border: 1.5px solid #c7a783;
-}
-
-/* Позиція цифри сили на відкритому юніті */
-.army-unit-sprite .unit-str {
-  position: absolute;
-  bottom: -4px;
-  right: -2px;
-  font-size: 0.6rem;
-  font-weight: bold;
-  color: #fff;
-  background: rgba(128, 29, 10, 0.9);
-  border: 1px solid #ffd699;
-  padding: 0 3px;
-  border-radius: 3px;
-  z-index: 5;
-}
-
-.tent-icon {
-  width: 28px;
-  height: 28px;
-  object-fit: contain;
-  filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.9));
-  animation: tentPulse 2s infinite ease-in-out;
-}
-
-@keyframes tentPulse {
-  0% { transform: scale(1); }
-  50% { transform: scale(1.05); }
-  100% { transform: scale(1); }
-}
-
-/* Динамічні кольори для тексту назви клану */
 .crab .clan-text-badge { color: #ced4da; }
 .crane .clan-text-badge { color: #79b3ec; }
 .dragon .clan-text-badge { color: #63e295; }
@@ -418,310 +479,95 @@
 .scorpion .clan-text-badge { color: #ff6b6b; }
 .neutral .clan-text-badge { color: #8c8174; }
 
-.status-badge {
-  background: #801d0a;
-  color: white;
-  padding: 1px 6px;
-  border-radius: 2px;
-  font-size: 0.75rem;
-}
 /* ==========================================================================
-   БЕЙДЖ ЖЕТОНІВ КОНТРОЛЮ НА ВУЗЛІ
+   ЕФЕКТ ВІТРУ ТА ДИНАМІЧНОГО РОЗМИТТЯ ПРИ ЗУМІ КАМЕРИ
    ========================================================================== */
-.control-token-badge {
+.wind-effect-overlay {
   position: absolute;
-  bottom: -6px;
-  right: -6px;
-  background: radial-gradient(circle, #2a2118 0%, #120d09 100%);
-  border: 1px solid #ffd699;
-  border-radius: 50%;
-  width: 18px;
-  height: 18px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.8);
-  z-index: 6;
-}
-
-.token-count {
-  font-size: 0.55rem;
-  color: #ffd699;
-  font-weight: bold;
-}
-/* ==========================================================================
-   КІНЕМАТОГРАФІЧНЕ РОЗКРИТТЯ ЖЕТОНІВ (ФАЗА ВИКОНАННЯ)
-   ========================================================================== */
-
-/* Коли жетон перевертається (isFaceUp стає true) */
-.army-unit-sprite {
-  transition: transform 0.6s cubic-bezier(0.4, 0.2, 0.2, 1);
-  transform-style: preserve-3d;
-}
-
-/* Ефект різкого спалаху та перевороту при розкритті */
-.army-unit-sprite:not(.hidden-camp) {
-  animation: cardRevealFlip 0.6s cubic-bezier(0.175, 0.885, 0.32, 1) forwards;
-}
-
-@keyframes cardRevealFlip {
-  0% {
-    transform: scale(0.6) rotateY(90deg);
-    filter: brightness(2) drop-shadow(0 0 15px rgba(255, 214, 153, 0.9));
-  }
-  50% {
-    transform: scale(1.2) rotateY(45deg);
-    filter: brightness(1.5) drop-shadow(0 0 10px rgba(255, 214, 153, 0.6));
-  }
-  100% {
-    transform: scale(1) rotateY(0deg);
-    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.9));
-  }
-}
-
-/* Стилі для різних відкритих типів військ під час битви */
-.army-unit-sprite.army {
-  background: radial-gradient(circle, rgba(128,29,10,0.8) 0%, rgba(20,15,12,0.95) 100%);
-  border: 1px solid #e0684f;
-  border-radius: 4px;
-}
-
-.army-unit-sprite.navy {
-  background: radial-gradient(circle, rgba(36,114,200,0.8) 0%, rgba(12,20,30,0.95) 100%);
-  border: 1px solid #79b3ec;
-  border-radius: 4px;
-}
-
-.army-unit-sprite.shinobi {
-  background: radial-gradient(circle, rgba(50,40,60,0.8) 0%, rgba(15,10,20,0.95) 100%);
-  border: 1px solid #b38fe0;
-  border-radius: 4px;
-}
-
-.army-unit-sprite.blessing, 
-.army-unit-sprite.diplomacy {
-  background: radial-gradient(circle, rgba(212,175,55,0.8) 0%, rgba(30,25,10,0.95) 100%);
-  border: 1px solid #ffd699;
-  border-radius: 4px;
-}
-
-.army-unit-sprite.blank {
-  background: radial-gradient(circle, rgba(80,80,80,0.7) 0%, rgba(20,20,20,0.95) 100%);
-  border: 1px solid #aaaaaa;
-  border-radius: 4px;
-}
-
-.unit-str {
-  position: absolute;
-  bottom: -2px;
-  right: 2px;
-  font-size: 0.6rem;
-  font-weight: bold;
-  color: #ffd699;
-  background: rgba(0, 0, 0, 0.8);
-  padding: 0 2px;
-  border-radius: 2px;
-}
-
-/* Контейнер для 3D мініатюри провінції */
-.province-miniature-wrapper {
-  position: relative;
-  width: 64px;
-  height: 64px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  
-}
-
-.province-3d-img {
-  width: 60px;
-  height: 60px;
-  /* border-bottom: 4px solid #a9a7a5; */
-  object-fit: contain;
-  filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.8));
-  transition: transform 0.2s ease;
-  z-index: 2;
-}
-
-
-
-.province-node:hover .province-3d-img {
-  transform: scale(1.12);
-}
-
-
-/* Підставка-кільце навколо замку, що підсвічується кольором клану-власника */
-.owner-ring {
-  position: absolute;
-  bottom: 0;
-  width: 64px;
-  height: 64px;
-  border-radius: 50%;
-  background: rgba(0, 0, 0, 0.6);
-  border: 1px solid #c7a783;
-  z-index: 1;
-}
-
-/* Кольори підставок залежно від клану */
-.owner-ring.crab { border-color: #70757a; background: rgba(112, 117, 122, 0.4); }
-.owner-ring.crane { border-color: #2472c8; background: rgba(36, 114, 200, 0.4); }
-.owner-ring.dragon { border-color: #1f8a4c; background: rgba(31, 138, 76, 0.4); }
-.owner-ring.lion { border-color: #d4af37; background: rgba(212, 175, 55, 0.4); }
-.owner-ring.phoenix { border-color: #c43c21; background: rgba(196, 60, 33, 0.4); }
-.owner-ring.scorpion { border-color: #781c1c; background: rgba(120, 28, 28, 0.4); }
-.owner-ring.unicorn { border-color: #8a4199; background: rgba(138, 65, 153, 0.4); }
-.owner-ring.neutral { border-color: #555555; background: rgba(85, 85, 85, 0.4); }
-
-/* ==========================================================================
-   ВЕЛИКІ ТА КРАСИВІ МАРКЕРИ СПЕЦІАЛЬНИХ ОБ'ЄКТІВ НА КАРТІ
-   ========================================================================== */
-.province-markers-container {
-  position: absolute;
-  top: -16px;
-  left: 50%;
-  transform: translateX(-50%);
-  display: flex;
-  gap: 3px;
-  z-index: 10;
-  pointer-events: none; /* Щоб кліки проходили крізь іконки на саму провінцію */
-}
-
-.map-badge {
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.85rem;
-  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.8), 0 0 5px rgba(255, 214, 153, 0.4);
-  border: 1.5px solid #c7a783;
-  animation: badgePulse 2s infinite ease-in-out;
-}
-
-/* Індивідуальні стилі та підсвічування для кожного маркера */
-.peace-badge {
-  background: radial-gradient(circle, #2472c8 0%, #0d1b2a 100%);
-  border-color: #79b3ec;
-}
-
-.scorched-badge {
-  background: radial-gradient(circle, #801d0a 0%, #200502 100%);
-  border-color: #ff6b6b;
-}
-
-.shrine-badge {
-  background: radial-gradient(circle, #d4af37 0%, #2b2208 100%);
-  border-color: #ffe699;
-}
-
-.glory-badge {
-  background: radial-gradient(circle, #2e7d32 0%, #0a1f0c 100%);
-  border-color: #81c784;
-}
-
-.harbor-badge {
-  background: radial-gradient(circle, #00838f 0%, #002022 100%);
-  border-color: #4dd0e1;
-}
-
-/* Плавний ефект підсвічування (пульсація) для особливих значків */
-@keyframes badgePulse {
-  0% {
-    transform: scale(1);
-    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.8), 0 0 4px rgba(255, 214, 153, 0.3);
-  }
-  50% {
-    transform: scale(1.08);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.9), 0 0 8px rgba(255, 214, 153, 0.7);
-  }
-  100% {
-    transform: scale(1);
-    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.8), 0 0 4px rgba(255, 214, 153, 0.3);
-  }
-}
-
-/* Ефект великого темного диму та пожежі під час атаки */
-.province-miniature-wrapper.under-attack .province-3d-img {
-  animation: castleShake 0.4s infinite ease-in-out, castleGlow 1.5s infinite alternate;
-}
-
-@keyframes castleShake {
-  0% { transform: translate(0, 0) rotate(0deg); }
-  25% { transform: translate(-1px, 1px) rotate(-1deg); }
-  50% { transform: translate(1px, -1px) rotate(1deg); }
-  75% { transform: translate(-1px, -1px) rotate(0deg); }
-  100% { transform: translate(0, 0) rotate(0deg); }
-}
-
-@keyframes castleGlow {
-  0% { filter: drop-shadow(0 6px 8px rgba(0, 0, 0, 0.9)) brightness(1); }
-  100% { filter: drop-shadow(0 0 15px rgba(255, 69, 0, 0.9)) brightness(1.25); }
-}
-
-/* Контейнер диму */
-.battle-smoke-effect {
-  position: absolute;
-  top: -16px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 40px;
-  height: 40px;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
   pointer-events: none;
-  z-index: 4;
+  z-index: 50;
+  opacity: 0;
+  overflow: hidden;
+  transition: opacity 0.3s ease;
 }
 
-/* Великі чорно-сірі клуби диму */
-.smoke-particle {
+/* Коли камера зближується (вітер в обличчя) */
+.wind-effect-overlay.wind-zooming-in {
+  opacity: 1;
+  background: radial-gradient(circle, rgba(255,255,255,0) 40%, rgba(10, 8, 6, 0.4) 100%);
+  animation: windInPulse 0.8s ease-in-out;
+}
+
+/* Коли камера віддаляється (зворотний порив) */
+.wind-effect-overlay.wind-zooming-out {
+  opacity: 1;
+  background: radial-gradient(circle, rgba(10, 8, 6, 0.4) 40%, rgba(255,255,255,0) 100%);
+  animation: windOutPulse 0.8s ease-in-out;
+}
+
+/* Смуги вітру / пилу */
+.wind-streak {
   position: absolute;
-  background: radial-gradient(circle, rgba(30, 30, 30, 0.95) 0%, rgba(10, 10, 10, 0.6) 50%, rgba(0, 0, 0, 0) 80%);
-  border-radius: 50%;
-  box-shadow: 0 0 10px rgba(0, 0, 0, 0.7);
-  animation: riseBigSmoke 2s infinite linear;
-  transition: background 0.3s ease, opacity 0.3s ease;
+  background: linear-gradient(90deg, transparent, rgba(255, 240, 210, 0.35), transparent);
+  height: 2px;
+  filter: blur(1px);
+  opacity: 0;
 }
 
-/* Коли гравець наближає карту (додаємо клас .zoomed-in до контейнера мапи або при ховері) */
-.map-container.zoomed-in .smoke-particle,
-.province-node:hover .smoke-particle {
-  background: radial-gradient(circle, rgba(180, 180, 180, 0.75) 0%, rgba(120, 120, 120, 0.4) 50%, rgba(0, 0, 0, 0) 80%);
-  box-shadow: 0 0 8px rgba(255, 255, 255, 0.3);
+/* Анімації розходження ліній від центру при зближенні */
+.wind-zooming-in .wind-streak {
+  animation: streakZoomIn 0.6s linear infinite;
 }
 
-.smoke-particle.p1 { width: 20px; height: 20px; left: 2px; animation-delay: 0s; }
-.smoke-particle.p2 { width: 28px; height: 28px; left: 8px; animation-delay: 0.5s; }
-.smoke-particle.p3 { width: 22px; height: 22px; left: 16px; animation-delay: 1.1s; }
+.wind-zooming-out .wind-streak {
+  animation: streakZoomOut 0.6s linear infinite;
+}
 
-@keyframes riseBigSmoke {
+.wind-streak.s1 { top: 20%; width: 30%; animation-delay: 0s; }
+.wind-streak.s2 { top: 45%; width: 50%; animation-delay: 0.2s; }
+.wind-streak.s3 { top: 70%; width: 40%; animation-delay: 0.1s; }
+.wind-streak.s4 { top: 85%; width: 25%; animation-delay: 0.3s; }
+
+@keyframes streakZoomIn {
   0% {
-    transform: translateY(5px) scale(0.5);
-    opacity: 0.9;
+    transform: scaleX(0.2) translateX(-100px);
+    opacity: 0;
   }
   50% {
-    opacity: 0.7;
+    opacity: 0.8;
   }
   100% {
-    transform: translateY(-35px) scale(2.2);
+    transform: scaleX(1.8) translateX(600px);
     opacity: 0;
   }
 }
 
-/* Анімація ударів картки по замку під час кінематографічної битви */
-.token-png-icon.attacking-strike {
-  animation: cardStrikeAnim 0.4s ease-in-out infinite;
+@keyframes streakZoomOut {
+  0% {
+    transform: scaleX(1.8) translateX(600px);
+    opacity: 0;
+  }
+  50% {
+    opacity: 0.8;
+  }
+  100% {
+    transform: scaleX(0.2) translateX(-100px);
+    opacity: 0;
+  }
 }
 
-@keyframes cardStrikeAnim {
-  0% { transform: scale(1) translate(0, 0); }
-  30% { transform: scale(1.3) translate(0, -15px) rotate(-10deg); filter: brightness(1.5) drop-shadow(0 10px 5px rgba(255, 69, 0, 0.8)); }
-  50% { transform: scale(1.1) translate(0, 5px) rotate(5deg); }
-  100% { transform: scale(1) translate(0, 0); }
+@keyframes windInPulse {
+  0% { backdrop-filter: blur(0px); }
+  50% { backdrop-filter: blur(1.5px); }
+  100% { backdrop-filter: blur(0px); }
 }
 
-/* Контейнер мапи з підтримкою плавного зуму та переміщення камери */
-.game-board-container {
-  transition: transform 0.8s cubic-bezier(0.25, 1, 0.5, 1);
-  transform: scale(var(--map-scale, 1));
+@keyframes windOutPulse {
+  0% { backdrop-filter: blur(0px); }
+  50% { backdrop-filter: blur(1.5px); }
+  100% { backdrop-filter: blur(0px); }
 }

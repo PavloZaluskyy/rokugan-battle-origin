@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { GameState, ClanType, BattleToken, BattleTokenType, PlayerState, Province } from '../models/game.model';
 import { ORIGINAL_PROVINCES, PROVINCE_ADJACENCY } from '../models/provinces-data';
+import { Subject } from 'rxjs';
 
 @Injectable({
   providedIn: 'root' // Завдяки цьому Angular AppModule автоматично бачить цей сервіс як Singleton
@@ -15,6 +16,8 @@ export class GameStateService {
   private state: GameState | null = null;
   selectedToken: BattleToken | null = null;
 
+  // ID провінції, яка зараз у фокусі кінематографічної камери
+  isAttackingStrikeActive: boolean = false;
   constructor() {
     // При старті сервісу намагаємося автоматично завантажити збережену гру
     this.loadGame();
@@ -615,5 +618,11 @@ export class GameStateService {
       // Викликаємо колбек оновлення інтерфейсу
       callbackOnComplete();
     }, 1200); // 1.2 секунди на ефект розкриття
+  }
+  private triggerCinematicSubject = new Subject<void>();
+  triggerCinematic$ = this.triggerCinematicSubject.asObservable();
+
+  requestCinematicBattles() {
+    this.triggerCinematicSubject.next();
   }
 }
