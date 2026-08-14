@@ -51,7 +51,7 @@ export class PlayerScreen implements OnInit {
     if (token.type === 'Army') return `Армія (Сила: ${token.strength}) ⚔️`;
     if (token.type === 'Navy') return `Флот (Сила: ${token.strength}) 🌊`;
     if (token.type === 'Shinobi') return `Синобі (Сила: ${token.strength}) 🗡️`;
-    if (token.type === 'Blessing') return `Благословення ✨`;
+    if (token.type === 'Blessing') return `Благословення (Сила: ${token.strength}) ✨`;
     if (token.type === 'Diplomacy') return `Дипломатія 📜`;
     if (token.type === 'Raid') return `Погром 🔥`;
     return token.type;

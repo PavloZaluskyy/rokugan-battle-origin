@@ -11,6 +11,9 @@ import { ClanType, Province } from '../../models/game.model';
 export class GameMap implements OnInit {
   provinces: Province[] = [];
   selectedProvince: Province | null = null;
+  private touchStartX: number = 0;
+  private touchStartY: number = 0;
+  private isMoved: boolean = false;
 
   // Параметри трансформації карти (рух та звичайний зум)
   scale: number = 1;
@@ -22,12 +25,28 @@ export class GameMap implements OnInit {
   currentBattleProvinceId: string | null = null;
   isAttackingStrikeActive: boolean = false;
   isCinematicPlaying: boolean = false;
+  // Стани для ефекту вітру
+  isWindZoomingIn: boolean = false;
+  isWindZoomingOut: boolean = false;
+  private windTimeout: any = null;
   // Стан для перетягування мишкою (Panning)
   isDragging: boolean = false;
   startX: number = 0;
   startY: number = 0;
   isZoomingIn: boolean = false;
   isZoomingOut: boolean = false;
+
+  currentBannerState: { text: string; type: 'attack' | 'pogrom' | 'peace'; style?: any } | null = null;
+  private clanColors: { [key: string]: string } = {
+    'Crab': '#ced4da',
+    'Crane': '#79b3ec',
+    'Dragon': '#63e295',
+    'Lion': '#fff2a3',
+    'Phoenix': '#ffa18f',
+    'Scorpion': '#ff6b6b',
+    'Unicorn': '#ebadff',
+    'Neutral': '#ffd699'
+  };
 
   private coordMap: { [id: string]: { x: number; y: number } } = {
     'crab-capital': { x: 33, y: 79 },
@@ -141,19 +160,37 @@ export class GameMap implements OnInit {
   stopDrag() {
     this.isDragging = false;
   }
+onTouchStart(event: TouchEvent) {
+    if (event.touches.length !== 1) return;
+    
+    // Запам'ятовуємо координати початку дотику для перевірки кліку
+    this.touchStartX = event.touches[0].clientX;
+    this.touchStartY = event.touches[0].clientY;
+    this.isMoved = false;
 
-  onTouchStart(event: TouchEvent) {
-    if (this.scale === 1 || event.touches.length !== 1) return;
+    if (this.scale === 1) return;
+
     this.isDragging = true;
-    this.startX = event.touches[0].clientX - this.translateX;
-    this.startY = event.touches[0].clientY - this.startY;
+    this.startX = this.touchStartX - this.translateX;
+    this.startY = this.touchStartY - this.translateY;
   }
 
   onTouchMove(event: TouchEvent) {
-    if (!this.isDragging) return;
-    event.preventDefault();
-    this.translateX = event.touches[0].clientX - this.translateX;
-    this.translateY = event.touches[0].clientY - this.translateY;
+    if (!this.isDragging || event.touches.length !== 1) return;
+
+    const currentX = event.touches[0].clientX;
+    const currentY = event.touches[0].clientY;
+
+    // Якщо палець змістився більше ніж на 5 пікселів, вважаємо це перетягуванням карти
+    if (Math.abs(currentX - this.touchStartX) > 5 || Math.abs(currentY - this.touchStartY) > 5) {
+      this.isMoved = true;
+    }
+
+    if (this.isMoved) {
+      event.preventDefault(); // Забороняємо скрол тільки коли реально тягнемо карту
+      this.translateX = currentX - this.startX;
+      this.translateY = currentY - this.startY;
+    }
   }
 
   closeTooltip(): void {
@@ -214,11 +251,10 @@ export class GameMap implements OnInit {
   }
 
   
- // --- ПОКРОКОВИЙ КІНЕМАТОГРАФІЧНИЙ ЦИКЛ БИТВ З УДАРАМИ ЗА СИЛОЮ ---
-  async executeBattleCinematicSequence() {
+ async executeBattleCinematicSequence() {
     if (this.isCinematicPlaying) return;
 
-    // Збираємо унікальні провінції з боями
+    // 1. Збираємо всі унікальні провінції, де є бої або атаки
     const battleProvinces = Array.from(
       new Set(
         this.provinces
@@ -238,45 +274,95 @@ export class GameMap implements OnInit {
     this.translateX = 0;
     this.translateY = 0;
 
-    // Спочатку розкриваємо жетони
+    // Розкриваємо жетони через сервіс
     this.gameStateService.startCinematicResolution(() => {
       this.loadGameState();
     });
 
     try {
+      const totalProvincesCount = battleProvinces.length;
+
+      // Цільовий загальний час — 10 секунд (10000 мс)
+      // Виділяємо фіксований час на перельоти камери для кожного замку (наприклад, 800мс на вліт + 600мс на відліт = 1400мс на замок)
+      // решту часу ділимо на бої та удари.
+      
       for (const provId of battleProvinces) {
         this.currentBattleProvinceId = provId;
         
-        // Знаходимо саму провінцію, щоб дізнатися силу атаки
         const prov = this.provinces.find(p => p.id === provId);
-        
-        // 1. Зближення камери з містом
-        this.zoomToProvince(provId);
-        await this.delay(800); // Чекаємо завершення плавного зуму камери
+        if (prov) {
+          // ПЕРЕВІРКА СПЕЦІАЛЬНИХ СТАНІВ (МИР / ПОГРОМ / АТАКА)
+          if (prov.hasPeaceToken) {
+            this.currentBannerState = { text: 'МИР', type: 'peace' };
+          } else if (prov.hasScorchedEarth) {
+            this.currentBannerState = { text: 'ПОГРОМ', type: 'pogrom' };
+          } else {
+            const activeToken = prov.placedTokens?.find(pt => pt.isFaceUp);
+            const clan = activeToken ? activeToken.clan : 'Ворог';
+            const unitType = activeToken ? activeToken.token.type : 'Армія';
+            
+            let strength = 1;
+            if (prov.placedTokens) {
+              const faceUpTokens = prov.placedTokens.filter(pt => pt.isFaceUp && pt.token.strength > 0);
+              if (faceUpTokens.length > 0) {
+                strength = Math.max(...faceUpTokens.map(t => t.token.strength));
+              }
+            }
 
-        // Визначаємо кількість ударів на основі сили карти (наприклад, strength 3 -> 3 удари)
-        let strikesCount = 1;
-        if (prov && prov.placedTokens) {
-          const faceUpTokens = prov.placedTokens.filter(pt => pt.isFaceUp && pt.token.strength > 0);
-          if (faceUpTokens.length > 0) {
-            strikesCount = Math.max(...faceUpTokens.map(t => t.token.strength));
+            const clanColor = this.clanColors[clan] || '#ffd699';
+            this.currentBannerState = {
+              text: `ПРОВІНЦІЯ ${prov.name.toUpperCase()} БУЛО АТАКОВАНО ${unitType.toUpperCase()} (${strength})`,
+              type: 'attack',
+              style: { color: clanColor }
+            };
           }
         }
 
-        // 2. Програємо серію ударів (рівно стільки разів, яка сила карти)
-        for (let i = 0; i < strikesCount; i++) {
-          this.isAttackingStrikeActive = true;  // Удар
-          await this.delay(350);                // Тривалість візуального удару
-          this.isAttackingStrikeActive = false; // Повернення карти
-          await this.delay(250);                // Пауза між ударами
+        // Зближення камери з містом
+        this.zoomToProvince(provId);
+        await this.delay(800); // Час підльоту камери
+
+        // Визначаємо кількість ударів для поточного юніта
+        let strikesCount = 1;
+        if (prov && prov.placedTokens) {
+          const activeTokens = prov.placedTokens.filter(pt => pt.isFaceUp);
+          if (activeTokens.length > 0) {
+            const strengths = activeTokens.map(t => t.token?.strength || 1);
+            strikesCount = Math.max(...strengths, 1);
+          }
         }
 
-        // 3. Віддалення камери назад перед переходом до наступного міста
+        // Динамічний розрахунок часу на один удар, щоб укластися в загальний бюджет 10 секунд на всю гру
+        // Наприклад, виділяємо приблизно (10000мс / кількість провінцій) на один замок.
+        const timeBudgetPerProvince = Math.max(1500, Math.floor(10000 / totalProvincesCount) - 1400);
+        const singleStrikeCycleTime = Math.max(100, Math.floor(timeBudgetPerProvince / strikesCount));
+        
+        // Розбиваємо цей час на сам удар (60%) та паузу після нього (40%)
+        const strikeDuration = Math.max(80, Math.floor(singleStrikeCycleTime * 0.6));
+        const strikePause = Math.max(40, Math.floor(singleStrikeCycleTime * 0.4));
+
+        // Серія ударів юніта
+        for (let i = 0; i < strikesCount; i++) {
+          this.isAttackingStrikeActive = true;  
+          await this.delay(strikeDuration);                
+          this.isAttackingStrikeActive = false; 
+          await this.delay(strikePause);                
+        }
+
+        // Ховаємо банер для цього замку
+        this.currentBannerState = null;
+        await this.delay(200);
+
+        // Віддалення камери перед переходом до наступного замку
         this.resetCamera();
-        await this.delay(800); // Час на плавне віддалення
+        await this.delay(600); 
       }
+    } catch (error) {
+      console.error('Помилка під час кінематографічного циклу битв:', error);
     } finally {
+      this.currentBannerState = null;
       this.currentBattleProvinceId = null;
+      this.isAttackingStrikeActive = false;
       this.isCinematicPlaying = false;
       
       this.gameStateService.nextPhase();
@@ -285,15 +371,17 @@ export class GameMap implements OnInit {
   }
 
   private delay(ms: number): Promise<void> {
-    return new Promise(resolve => setTimeout(resolve, ms));
+    return new Promise(resolve => {
+      setTimeout(resolve, ms);
+    });
   }
 
   zoomToProvince(provinceId: string) {
   const coords = this.coordMap[provinceId];
   if (!coords) return;
-  // Вмикаємо ефект вітру в обличчя (зближення)
-    this.isZoomingIn = true;
-    this.isZoomingOut = false;
+  // Вмикаємо вітер на зближення (розмиття країв + розліт ліній назовні)
+    this.isWindZoomingIn = true;
+    this.isWindZoomingOut = false;
 
   const viewport = document.querySelector('.map-viewport') as HTMLElement;
   const mapContainer = document.querySelector('.map-image-container') as HTMLElement;
@@ -315,17 +403,20 @@ export class GameMap implements OnInit {
     const finalTranslateY = (viewportHeight / 2) - (targetY * zoomScale);
 
     this.cameraTransform = `translate(${finalTranslateX}px, ${finalTranslateY}px) scale(${zoomScale})`;
-    
+    // Вимикаємо вітер після завершення руху камери (через 800мс, скільки триває transition)
+    setTimeout(() => {
+      this.isWindZoomingIn = false;
+    }, 150);
   }
 }
 
   resetCamera() {
-   // Вмикаємо зворотний ефект вітру (віддалення)
-    this.isZoomingIn = false;
-    this.isZoomingOut = true;
+  // Вмикаємо вітер на віддалення (лінії збираються до центру)
+    this.isWindZoomingIn = false;
+    this.isWindZoomingOut = true;
     this.cameraTransform = 'translate(0px, 0px) scale(1)';
     setTimeout(() => {
-    this.isZoomingOut = false;
-    }, 800);
+    this.isWindZoomingOut = false;
+    }, 150);
   }
 }

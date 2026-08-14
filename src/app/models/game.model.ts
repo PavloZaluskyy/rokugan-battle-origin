@@ -55,8 +55,9 @@ export interface PlayerState {
   // Пули жетонів:
   combatTokenPool: BattleToken[]; // Жетони, що ще лежать у мішку (лицевою вниз)
   activeHandTokens: BattleToken[]; // Жетони за ширмою (актив на раунд, максимум 6)
-  discardedTokens: BattleToken[]; // Скинуті (використані) жетони
+  deck: BattleToken[]; // Скинуті (використані) жетони
   remainingControlTokens: number; // Скільки жетонів контролю залишилось у запасі
+  discardPile: BattleToken[]; // Скид використаних карток
 }
 
 // 7. Головний інтерфейс усього стану гри (це те, що ми будемо зберігати)

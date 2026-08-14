@@ -5,19 +5,32 @@
      (mouseleave)="stopDrag()"
      (touchstart)="onTouchStart($event)"
      (touchmove)="onTouchMove($event)"
-     (touchend)="stopDrag()"
+     (touchend)="stopDrag(); $event.stopPropagation()"
      [class.grabbing]="isDragging">
   
   <div class="zoom-controls">
     <button (click)="zoomIn()">➕</button>
     <button (click)="zoomOut()">➖</button>
   </div>
-  <!-- 💨 ОВЕРЛЕЙ ЕФЕКТУ ВІТРУ (Активується під час кінематографічного зближення/віддалення) -->
-  <div class="wind-effect-overlay" [class.wind-zooming-in]="isZoomingIn" [class.wind-zooming-out]="isZoomingOut">
-    <div class="wind-streak s1"></div>
-    <div class="wind-streak s2"></div>
-    <div class="wind-streak s3"></div>
-    <div class="wind-streak s4"></div>
+ <!-- КІНЕМАТОГРАФІЧНИЙ ЕФЕКТ ВІТРУ ТА ДИНАМІКИ КАМЕРИ -->
+  <div class="wind-effect-overlay" [class.zoom-in-wind]="isWindZoomingIn" [class.zoom-out-wind]="isWindZoomingOut">
+    <div class="wind-vignette-blur"></div>
+    <div class="wind-lines-container">
+      <div class="wind-line l1"></div>
+      <div class="wind-line l2"></div>
+      <div class="wind-line l3"></div>
+      <div class="wind-line l4"></div>
+    </div>
+  </div>
+<!-- КІНЕМАТОГРАФІЧНИЙ ІНФО-БАНЕР ПОДІЙ НА КАРТІ -->
+  <div class="battle-event-banner" *ngIf="currentBannerState" [ngClass]="currentBannerState.type">
+    <div class="banner-inner-frame">
+      <span class="banner-kanji-deco">戰</span>
+      <div class="banner-text-content" [ngStyle]="currentBannerState.style">
+        {{ currentBannerState.text }}
+      </div>
+      <span class="banner-kanji-deco">刃</span>
+    </div>
   </div>
 
   <!-- Шар трансформації карти -->

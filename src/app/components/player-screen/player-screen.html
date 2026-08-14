@@ -54,7 +54,7 @@
           (click)="selectCard(token)">
           <div class="card-illustration" [style.backgroundImage]="'url(' + getCardImage(token.type) + ')'">
             <div class="card-overlay"></div>
-            <div class="card-strength" *ngIf="token.strength > 0">{{ token.strength }}</div>
+            <div class="card-strength" *ngIf="token.strength && token.strength > 0 && token.type !== 'Raid'">{{ token.strength }}</div>
           </div>
           <div class="card-footer">
           <div class="card-type-name">{{ getTokenLabel(token) }}</div>

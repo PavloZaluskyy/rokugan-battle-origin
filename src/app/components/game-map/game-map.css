@@ -10,6 +10,7 @@
   cursor: grab;
   border-bottom: 2px solid #2e251f;
   box-sizing: border-box;
+  
 }
 
 .map-viewport.grabbing {
@@ -367,19 +368,16 @@
 
 /* Прямий селектор перекриває стандартний idle і запускає серію ударів */
 .token-png-icon.attacking-strike {
-  animation: cardStrikeAction 0.35s ease-in-out infinite !important;
+  animation: cardStrikeAction 0.15s ease-in-out !important;
 }
 
 @keyframes cardStrikeAction {
   0% { 
     transform: scale(1) translate(0, 0); 
   }
-  30% { 
-    transform: scale(1.4) translate(0, -16px) rotate(-12deg); 
-    filter: brightness(1.8) drop-shadow(0 12px 8px rgba(255, 69, 0, 0.9)); 
-  }
-  50% { 
-    transform: scale(1.1) translate(0, 6px) rotate(6deg); 
+  40% { 
+    transform: scale(1.35) translate(0, -12px) rotate(-10deg); 
+    filter: brightness(1.7) drop-shadow(0 8px 6px rgba(255, 69, 0, 0.9)); 
   }
   100% { 
     transform: scale(1) translate(0, 0); 
@@ -478,9 +476,8 @@
 .unicorn .clan-text-badge { color: #8a4199; }
 .scorpion .clan-text-badge { color: #ff6b6b; }
 .neutral .clan-text-badge { color: #8c8174; }
-
 /* ==========================================================================
-   ЕФЕКТ ВІТРУ ТА ДИНАМІЧНОГО РОЗМИТТЯ ПРИ ЗУМІ КАМЕРИ
+   КІНЕМАТОГРАФІЧНИЙ ЕФЕКТ ВІТРУ / ШВИДКОСТІ КАМЕРИ
    ========================================================================== */
 .wind-effect-overlay {
   position: absolute;
@@ -489,85 +486,207 @@
   width: 100%;
   height: 100%;
   pointer-events: none;
-  z-index: 50;
+  z-index: 150;
   opacity: 0;
+  transition: opacity 0.4s ease-in-out;
   overflow: hidden;
-  transition: opacity 0.3s ease;
 }
 
-/* Коли камера зближується (вітер в обличчя) */
-.wind-effect-overlay.wind-zooming-in {
-  opacity: 1;
-  background: radial-gradient(circle, rgba(255,255,255,0) 40%, rgba(10, 8, 6, 0.4) 100%);
-  animation: windInPulse 0.8s ease-in-out;
-}
-
-/* Коли камера віддаляється (зворотний порив) */
-.wind-effect-overlay.wind-zooming-out {
-  opacity: 1;
-  background: radial-gradient(circle, rgba(10, 8, 6, 0.4) 40%, rgba(255,255,255,0) 100%);
-  animation: windOutPulse 0.8s ease-in-out;
-}
-
-/* Смуги вітру / пилу */
-.wind-streak {
+/* Радіальний блур (центр чистий, краї розмиті) */
+.wind-vignette-blur {
   position: absolute;
-  background: linear-gradient(90deg, transparent, rgba(255, 240, 210, 0.35), transparent);
+  inset: 0;
+  backdrop-filter: blur(0px);
+  -webkit-backdrop-filter: blur(0px);
+  background: radial-gradient(circle at center, rgba(0,0,0,0) 30%, rgba(0,0,0,0.25) 85%);
+  transition: backdrop-filter 0.4s ease;
+}
+
+/* Активація вітру на зближення (zoom-in) */
+.wind-effect-overlay.zoom-in-wind {
+  opacity: 1;
+}
+.wind-effect-overlay.zoom-in-wind .wind-vignette-blur {
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+.wind-effect-overlay.zoom-in-wind .wind-line {
+  animation: windBlowOutward 0.35s linear infinite;
+}
+
+/* Активація вітру на віддалення (zoom-out) */
+.wind-effect-overlay.zoom-out-wind {
+  opacity: 1;
+}
+.wind-effect-overlay.zoom-out-wind .wind-vignette-blur {
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+.wind-effect-overlay.zoom-out-wind .wind-line {
+  animation: windBlowInward 0.35s linear infinite;
+}
+
+/* Діагональні лінії вітру навколо чистого центру */
+.wind-lines-container {
+  position: absolute;
+  inset: 0;
+}
+
+.wind-line {
+  position: absolute;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.45), transparent);
   height: 2px;
-  filter: blur(1px);
+  width: 180px;
   opacity: 0;
 }
 
-/* Анімації розходження ліній від центру при зближенні */
-.wind-zooming-in .wind-streak {
-  animation: streakZoomIn 0.6s linear infinite;
-}
+.wind-line.l1 { top: 20%; left: 15%; transform: rotate(45deg); }
+.wind-line.l2 { top: 20%; right: 15%; transform: rotate(-45deg); }
+.wind-line.l3 { bottom: 20%; left: 15%; transform: rotate(-45deg); }
+.wind-line.l4 { bottom: 20%; right: 15%; transform: rotate(45deg); }
 
-.wind-zooming-out .wind-streak {
-  animation: streakZoomOut 0.6s linear infinite;
-}
-
-.wind-streak.s1 { top: 20%; width: 30%; animation-delay: 0s; }
-.wind-streak.s2 { top: 45%; width: 50%; animation-delay: 0.2s; }
-.wind-streak.s3 { top: 70%; width: 40%; animation-delay: 0.1s; }
-.wind-streak.s4 { top: 85%; width: 25%; animation-delay: 0.3s; }
-
-@keyframes streakZoomIn {
+/* Анімація розльоту ліній з центру до країв (Вітер у лице при зближенні) */
+@keyframes windBlowOutward {
   0% {
-    transform: scaleX(0.2) translateX(-100px);
+    transform: scale(0.2) translate(0, 0);
     opacity: 0;
   }
-  50% {
-    opacity: 0.8;
+  40% {
+    opacity: 0.85;
   }
   100% {
-    transform: scaleX(1.8) translateX(600px);
+    transform: scale(1.7) translate(0, 0);
     opacity: 0;
   }
 }
 
-@keyframes streakZoomOut {
+/* Анімація зльоту ліній з країв у центр (Зворотний вітер при віддаленні) */
+@keyframes windBlowInward {
   0% {
-    transform: scaleX(1.8) translateX(600px);
+    transform: scale(1.7) translate(0, 0);
     opacity: 0;
   }
-  50% {
-    opacity: 0.8;
+  40% {
+    opacity: 0.85;
   }
   100% {
-    transform: scaleX(0.2) translateX(-100px);
+    transform: scale(0.2) translate(0, 0);
     opacity: 0;
   }
 }
 
-@keyframes windInPulse {
-  0% { backdrop-filter: blur(0px); }
-  50% { backdrop-filter: blur(1.5px); }
-  100% { backdrop-filter: blur(0px); }
+/* ==========================================================================
+   КІНЕМАТОГРАФІЧНИЙ ІНФО-БАНЕР ПОДІЙ (АДАПТИВНИЙ ЯПОНСЬКИЙ СТИЛЬ)
+   ========================================================================== */
+.battle-event-banner {
+  position: absolute;
+  top: 12%;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 200;
+  pointer-events: none;
+  animation: bannerSlideDown 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+  width: 92%;
+  max-width: 700px;
+  box-sizing: border-box;
 }
 
-@keyframes windOutPulse {
-  0% { backdrop-filter: blur(0px); }
-  50% { backdrop-filter: blur(1.5px); }
-  100% { backdrop-filter: blur(0px); }
+.banner-inner-frame {
+  position: relative;
+  background: radial-gradient(circle, rgba(20, 15, 12, 0.95) 0%, rgba(5, 4, 3, 0.98) 100%);
+  border: 2px solid #c7a783;
+  border-radius: 6px;
+  padding: 10px 15px;
+  text-align: center;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8), inset 0 0 15px rgba(199, 167, 131, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  box-sizing: border-box;
+}
+
+.banner-kanji-deco {
+  color: #8c6d53;
+  font-size: clamp(1rem, 2.5vw, 1.5rem);
+  opacity: 0.7;
+  flex-shrink: 0;
+}
+
+.banner-text-content {
+  font-family: 'Cinzel', serif;
+  font-size: clamp(0.75rem, 1.8vw, 1.2rem);
+  font-weight: bold;
+  letter-spacing: 1px;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.9);
+  flex-grow: 1;
+  text-align: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* --- СТАН 1: ЗВИЧАЙНА АТАКА --- */
+.battle-event-banner.attack {
+  animation: bannerSlideDown 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+/* --- СТАН 2: ПОГРОМ (Трясіння + Червоний градієнт) --- */
+.battle-event-banner.pogrom .banner-inner-frame {
+  border-color: #ff4500;
+  box-shadow: 0 0 25px rgba(255, 69, 0, 0.6), inset 0 0 15px rgba(255, 0, 0, 0.4);
+}
+.battle-event-banner.pogrom .banner-text-content {
+  background: linear-gradient(90deg, #ff4500, #ff8c00, #ff0000);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: textShake 0.15s infinite ease-in-out;
+  font-size: clamp(1rem, 2.5vw, 1.6rem);
+  letter-spacing: 3px;
+}
+
+/* --- СТАН 3: МИР (Плавна легка анімація + Світле сяйво) --- */
+.battle-event-banner.peace .banner-inner-frame {
+  border-color: #79b3ec;
+  box-shadow: 0 0 20px rgba(121, 179, 236, 0.4);
+  animation: bannerFadeSmooth 2s infinite alternate ease-in-out;
+}
+.battle-event-banner.peace .banner-text-content {
+  color: #e0f0ff;
+  text-shadow: 0 0 10px rgba(121, 179, 236, 0.8), 0 0 20px rgba(121, 179, 236, 0.4);
+  letter-spacing: 2px;
+}
+
+/* --- Медіа-запити для мобільних пристроїв --- */
+@media (max-width: 600px) {
+  .battle-event-banner {
+    top: 8%;
+    width: 96%;
+  }
+  .banner-inner-frame {
+    padding: 8px 10px;
+  }
+  .banner-kanji-deco {
+    display: none; /* Ховаємо ієрогліфи на дуже вузьких екранах, щоб текст заліз ідеально */
+  }
+}
+
+/* --- АНІМАЦІЇ --- */
+@keyframes bannerSlideDown {
+  0% { transform: translate(-50%, -30px); opacity: 0; }
+  100% { transform: translate(-50%, 0); opacity: 1; }
+}
+
+@keyframes textShake {
+  0% { transform: translate(0, 0) rotate(0deg); }
+  25% { transform: translate(-2px, 1px) rotate(-1deg); }
+  50% { transform: translate(2px, -2px) rotate(1deg); }
+  75% { transform: translate(-1px, -1px) rotate(0deg); }
+  100% { transform: translate(0, 0) rotate(0deg); }
+}
+
+@keyframes bannerFadeSmooth {
+  0% { transform: translateX(-50%) scale(0.98); opacity: 0.85; }
+  100% { transform: translateX(-50%) scale(1.02); opacity: 1; }
 }

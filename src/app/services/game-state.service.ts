@@ -54,12 +54,24 @@ export class GameStateService {
     const playersMap: { [key: string]: any } = {};
 
     selectedClans.forEach(clan => {
+      const initialDeck = this.generatePlayerDeck(clan);
+      const initialHand = initialDeck.splice(0, 5); // Беремо перші 5 з колоди
+
+      // Додаємо Блеф
+      initialHand.push({
+        id: `${clan.toLowerCase()}-blank-init`,
+        type: 'Blank',
+        strength: 0,
+        clan: clan
+      });
+
       playersMap[clan] = {
         clan: clan,
         honorPoints: 0,
-        // Оскільки 1 жетон автоматично витрачається на столицю, в резерві лишається на 1 менше!
         remainingControlTokens: startingControlTokens - 1, 
-        activeHandTokens: this.generateInitialHand()
+        activeHandTokens: initialHand,
+        deck: initialDeck,        // Решта колоди
+        discardPile: []           // Порожній скид на старті
       };
     });
 
@@ -100,50 +112,104 @@ export class GameStateService {
   }
 
   /**
-   * Фаза перегрупування: гравець бере 5 карт атаки + 1 пустий (блеф) = разом 6 карток у руку
+   * Генерування початкової руки жетонів для гравця (5 карт + 1 блеф)
    */
   private generateInitialHand(): BattleToken[] {
     const hand: BattleToken[] = [];
     let idCounter = 1;
 
-    // Пул усіх можливих жетонів, з яких випадково формується рука на раунд
-    const possibleTokens: Array<{ type: 'Army' | 'Navy' | 'Shinobi' | 'Blessing' | 'Diplomacy' | 'Raid', hasStrength: boolean }> = [
-      { type: 'Army', hasStrength: true },
-      { type: 'Army', hasStrength: true },
-      { type: 'Army', hasStrength: true },
-      { type: 'Navy', hasStrength: true },
-      { type: 'Shinobi', hasStrength: true },
-      { type: 'Blessing', hasStrength: false },
-      { type: 'Diplomacy', hasStrength: false },
-      { type: 'Raid', hasStrength: true }
-    ];
+    const addToken = (type: BattleTokenType, strength: number, count: number) => {
+      for (let i = 0; i < count; i++) {
+        hand.push({
+          id: `token-${type.toLowerCase()}-${idCounter++}-${Math.random().toString(36).substring(2, 5)}`,
+          type: type,
+          strength: strength,
+          clan: 'Neutral' // Буде встановлено при розподілі
+        });
+      }
+    };
 
-    // Випадково вибираємо 5 унікальних або повторюваних жетонів із пулу
-    for (let i = 0; i < 5; i++) {
-      const randomIndex = Math.floor(Math.random() * possibleTokens.length);
-      const selectedTemplate = possibleTokens[randomIndex];
+    addToken('Army', 1, 2);
+    addToken('Army', 2, 1);
+    addToken('Army', 3, 1);
+    addToken('Navy', 1, 1);
+    addToken('Shinobi', 1, 1);
 
-      // Випадкова сила від 1 до 3 (для тих, де вона передбачена)
-      const strength = selectedTemplate.hasStrength ? Math.floor(Math.random() * 3) + 1 : 0;
-
-      hand.push({
-        id: `token-${idCounter++}-${Math.random().toString(36).substring(2, 7)}`,
-        type: selectedTemplate.type,
-        strength: strength,
-        clan: 'Crab'
-      });
-    }
-
-    // + 1 канонічний Блеф (Blank), який ніколи не міняється і завжди присутній у руці
+    // Додаємо пустий жетон (Блеф)
     hand.push({
-      id: `token-${idCounter++}-blank`,
+      id: `blank-${Date.now()}-${Math.random().toString(36).substring(2, 5)}`,
       type: 'Blank',
       strength: 0,
-      clan: 'Crab'
+      clan: 'Neutral'
+    });
+
+    return this.shuffleArray(hand);
+  }
+
+  /**
+   * Фаза перегрупування: гравець бере 5 карт атаки + 1 пустий (блеф) = разом 6 карток у руку
+   */
+  private generatePlayerDeck(clan: ClanType): BattleToken[] {
+    const tokens: BattleToken[] = [];
+    let idCounter = 1;
+
+    const addToken = (type: BattleTokenType, strength: number, count: number) => {
+      for (let i = 0; i < count; i++) {
+        tokens.push({
+          id: `${clan.toLowerCase()}-${type.toLowerCase()}-${idCounter++}-${Math.random().toString(36).substring(2, 5)}`,
+          clan: clan,
+          type: type,
+          strength: strength
+        });
+      }
+    };
+
+    // Суворий розподіл згідно з твоїм словником (Сумарно 26 карт)
+    addToken('Army', 1, 6);
+    addToken('Army', 2, 4);
+    addToken('Army', 3, 3);
+    addToken('Army', 4, 2);
+    addToken('Army', 5, 1);
+
+    addToken('Navy', 1, 2);
+    addToken('Navy', 2, 1);
+
+    addToken('Shinobi', 1, 1);
+    addToken('Shinobi', 2, 1);
+
+    addToken('Diplomacy', 0, 1); // Без сили
+    addToken('Raid', 0, 1);      // Погром без сили
+    addToken('Blessing', 2, 2);  // Благословення з силою 2
+
+    return this.shuffleArray(tokens);
+  }
+
+  private drawHandForPlayer(player: PlayerState): BattleToken[] {
+    const hand: BattleToken[] = [];
+
+    // Якщо в колоді не вистачає карт для руки, перетасовуємо скид назад у колоду
+    if (player.deck.length < 5) {
+      if (player.discardPile.length > 0) {
+        player.deck = this.shuffleArray([...player.deck, ...player.discardPile]);
+        player.discardPile = [];
+      }
+    }
+
+    // Витягуємо рівно 5 карт із колоди
+    const drawnCards = player.deck.splice(0, 5);
+    hand.push(...drawnCards);
+
+    // Додаємо незмінний пустий жетон (Блеф), який щоразу генерується заново на руку
+    hand.push({
+      id: `blank-${Date.now()}-${Math.random().toString(36).substring(2, 5)}`,
+      type: 'Blank',
+      strength: 0,
+      clan: player.clan
     });
 
     return hand;
   }
+
   /**
    * Оновлення рук гравців на початку нового раунду (Фаза перегрупування)
    */
@@ -151,9 +217,54 @@ export class GameStateService {
     if (!this.state) return;
 
     Object.values(this.state.players).forEach(player => {
-      // Добираємо карти до стандарту (якщо лишилися малі залишки, відновлюємо повну руку)
-      player.activeHandTokens = this.generateInitialHand();
-      this.state!.roundLog.push(`Клан ${player.clan} отримав нові жетони на руку (5 бойових + 1 блеф).`);
+      // 1. Знаходимо карту, яку гравець залишив за ширмою (не використазив під час фази розміщення)
+      // Оскільки гравець міг виставити до 5 карт, а залишити рівно 1 (або навпаки), 
+      // шукаємо те, що лишилося в activeHandTokens, виключаючи старий Blank.
+      const savedCard = player.activeHandTokens.find(t => t.type !== 'Blank');
+
+      // 2. Усе, що було викладено на поле або вже відіграло, летить у скид. 
+      // (Якщо гравець лишив карту, то решта використаних карт вже і так на провінціях, 
+      // але якщо в руці лишилося кілька, то залишаємо лише одну, а інші йдуть у скид).
+      const cardsToDiscard = player.activeHandTokens.filter(t => t !== savedCard && t.type !== 'Blank');
+      player.discardPile.push(...cardsToDiscard);
+
+      // 3. Формуємо нову руку
+      const newHand: BattleToken[] = [];
+
+      // Якщо гравець зберіг карту за ширмою — додаємо її у першу чергу
+      if (savedCard) {
+        newHand.push(savedCard);
+      }
+
+      // 4. Вираховуємо, скільки нових карт треба дотягнути з колоди, 
+      // щоб разом із збереженою картою загалом було 5 бойових/спеціальних карт.
+      const neededCardsCount = 5 - newHand.length;
+
+      // Перевірка колоди / авто-замішування скиду, якщо карт не вистачає
+      if (player.deck.length < neededCardsCount) {
+        if (player.discardPile.length > 0) {
+          player.deck = this.shuffleArray([...player.deck, ...player.discardPile]);
+          player.discardPile = [];
+        }
+      }
+
+      // Добираємо нестаючу кількість карток із колоди
+      const drawnCards = player.deck.splice(0, neededCardsCount);
+      newHand.push(...drawnCards);
+
+      // 5. Додаємо свіжий пустий жетон (Блеф) на новий раунд
+      newHand.push({
+        id: `blank-${Date.now()}-${Math.random().toString(36).substring(2, 5)}`,
+        type: 'Blank',
+        strength: 0,
+        clan: player.clan
+      });
+
+      // Оновлюємо руку гравця у стані
+      player.activeHandTokens = newHand;
+
+      const savedCardInfo = savedCard ? `Збережено за ширмою: ${savedCard.type} (сила ${savedCard.strength})` : 'Нічого не збережено';
+      this.state!.roundLog.push(`Клан ${player.clan} оновив руку. ${savedCardInfo}. Добрано карт із колоди: ${drawnCards.length}.`);
     });
   }
   /**
@@ -213,19 +324,20 @@ export class GameStateService {
     };
 
     // Базовий набір кожного клану (можна уточнити за ширмами в правилах):
-    addToken('Army', 1, 4); // 4 армії силою 1
+    addToken('Army', 1, 6); // 6 армії силою 1
     addToken('Army', 2, 4); // 4 армії силою 2
-    addToken('Army', 3, 2); // 2 армії силою 3
-    addToken('Army', 4, 1); // 1 елітна армія силою 4
-    
+    addToken('Army', 3, 3); // 3 армії силою 3
+    addToken('Army', 4, 2); // 2 елітні армії силою 4
+    addToken('Army', 5, 1); // 1 елітна армія силою 5
+
     addToken('Navy', 1, 2); // 2 флоти силою 1
-    addToken('Navy', 2, 2); // 2 флоти силою 2
-    addToken('Navy', 3, 1); // 1 флот силою 3
+    addToken('Navy', 2, 1); // 1 флоти силою 2
+  
     
-    addToken('Shinobi', 1, 2); // 2 синоби силою 1
+    addToken('Shinobi', 1, 1); // 1 синоби силою 1
     addToken('Shinobi', 2, 1); // 1 синоби силою 2
     
-    addToken('Blessing', 1, 2);   // 2 благословення (+1 до сили)
+    addToken('Blessing', 2, 2);   // 2 благословення (+2 до сили)
     addToken('Diplomacy', 0, 1);  // 1 жетон дипломатії (мир)
     addToken('Raid', 0, 1);       // 1 жетон погрому (випалена земля)
 
@@ -272,9 +384,10 @@ export class GameStateService {
 
     // 4. Благословення: ставиться ТІЛЬКИ на свої жетони (Армію, Флот, Синобі), що вже лежать на полі
     if (token.type === 'Blessing') {
-      if (!isOwner) return false;
-      // Має бути хоча б один власний нерозкритий загін на цій провінції
-      return (province.placedTokens || []).some(pt => pt.clan === playerClan && pt.token.type !== 'Blessing');
+      const hasFriendlyCombatToken = (province.placedTokens || []).some(pt => 
+        pt.clan === playerClan && ['Army', 'Navy', 'Shinobi'].includes(pt.token.type)
+      );
+      return hasFriendlyCombatToken;
     }
 
     // 5. Дипломатія: ставиться на свою провінцію (якщо там немає маркера Слави, де заборонена дипломатія)
@@ -283,8 +396,16 @@ export class GameStateService {
     }
 
     // 6. Погром (Raid): ставиться на ворожу або нейтральну провінцію (якщо немає Слави)
-    if (token.type === 'Raid') {
+   if (token.type === 'Raid') {
       if (isOwner || province.hasGlory) return false;
+      
+      // На цій провінції обов'язково має лежати бойовий жетон цього гравця (Армія, Флот чи Шинобі)
+      const hasFriendlyCombatToken = (province.placedTokens || []).some(pt => 
+        pt.clan === playerClan && ['Army', 'Navy', 'Shinobi'].includes(pt.token.type)
+      );
+
+      if (!hasFriendlyCombatToken) return false;
+
       // Вимагає сусіднього кордону або флоту
       return this.hasValidBorderOrNavy(province, playerClan);
     }
@@ -513,17 +634,22 @@ export class GameStateService {
       }
 
       // Обробка ПОГРОМУ -> Ставимо ВИПАЛЕНУ ЗЕМЛЮ якщо спрацювало
+      // 1. Обробка ПОГРОМУ (Raid): діє ТІЛЬКИ якщо в стопці є бойовий жетон (Армія, Флот, Шинобі) на ворожій провінції
       const raidTokens = placedTokens.filter(pt => pt.token.type === 'Raid');
       raidTokens.forEach(rt => {
+        // Перевіряємо, чи є в цій же стопці бойовий жетон цього ж клану
+        const hasCombatToken = placedTokens.some(pt => 
+          pt.clan === rt.clan && ['Army', 'Navy', 'Shinobi'].includes(pt.token.type)
+        );
         const hasShinobiHere = placedTokens.some(pt => pt.clan === rt.clan && pt.token.type === 'Shinobi');
         const hasBorder = this.hasValidBorderOrNavy(province, rt.clan);
 
-        if (hasShinobiHere || hasBorder) {
+        if (hasCombatToken && (hasShinobiHere || hasBorder)) {
           province.hasScorchedEarth = true;
           province.controllingClan = 'Neutral'; // Втрачає контроль
           province.controlTokensFaceUp = 0;
           province.placedTokens = [];
-          this.state!.roundLog.push(`🔥 Погром клану ${rt.clan} перетворив провінцію ${province.name} на ВИПАЛЕНУ ЗЕМЛЮ!`);
+          this.state!.roundLog.push(`🔥 Погром із бойовою підтримкою від клану ${rt.clan} перетворив провінцію ${province.name} на ВИПАЛЕНУ ЗЕМЛЮ!`);
         }
       });
 
@@ -532,11 +658,14 @@ export class GameStateService {
       // Обробка БЛАГОСЛОВЕННЯ: шукаємо жетон благословення і застосовуємо до сусіда по стопці
       const blessingToken = placedTokens.find(pt => pt.token.type === 'Blessing');
       if (blessingToken) {
-        // Знаходимо інший жетон цього ж клану на провінції, щоб дати йому +рейтинг і захист
-        const targetToken = placedTokens.find(pt => pt.clan === blessingToken.clan && pt.token.type !== 'Blessing');
-        if (targetToken) {
-          targetToken.strength += 3; // Канонічне посилення
-          this.state!.roundLog.push(`✨ Благословення дарувало +3 сили загону на ${province.name}!`);
+        // Знаходимо перший-ліпший бойовий жетон цього ж клану на провінції
+        const targetCombatToken = placedTokens.find(pt => 
+          pt.clan === blessingToken.clan && ['Army', 'Navy', 'Shinobi'].includes(pt.token.type)
+        );
+
+        if (targetCombatToken) {
+          targetCombatToken.strength += 2; 
+          this.state!.roundLog.push(`✨ Благословення посилило загін (${targetCombatToken.token.type}) на ${province.name} на +2 (Нова сила: ${targetCombatToken.strength})!`);
         }
       }
 
