@@ -35,7 +35,7 @@ export const ORIGINAL_PROVINCES: Province[] = [
     id: 'crab-sub-2',
     name: 'Стіна Кайтоку',
     regionId: 'Територія Краба',
-    isCoastal: true,
+    isCoastal: false,
     isCapital: false,
     baseDefense: 1,
     honorFlowers: 3,
@@ -48,7 +48,7 @@ export const ORIGINAL_PROVINCES: Province[] = [
     id: 'crab-sub-3',
     name: 'Куні',
     regionId: 'Територія Краба',
-    isCoastal: true,
+    isCoastal: false,
     isCapital: false,
     baseDefense: 1,
     honorFlowers: 1,
@@ -92,7 +92,7 @@ export const ORIGINAL_PROVINCES: Province[] = [
     id: 'crane-sub-2',
     name: 'Асахіна',
     regionId: 'Територія Журавля',
-    isCoastal: false,
+    isCoastal: true,
     isCapital: false,
     baseDefense: 1,
     honorFlowers: 2,
@@ -167,7 +167,7 @@ export const ORIGINAL_PROVINCES: Province[] = [
     id: 'lion-sub-1',
     name: 'Акадо',
     regionId: 'Територія Лева',
-    isCoastal: false,
+    isCoastal: true,
     isCapital: false,
     baseDefense: 1,
     honorFlowers: 2,
@@ -447,12 +447,12 @@ export const PROVINCE_ADJACENCY: { [id: string]: string[] } = {
   'crab-sub-3': ['unicorn-sub-2', 'scorpion-sub-2', 'crab-sub-2', 'crab-sub-1', 'shadowlands-north'],
 
   // Журавлі
-  'crane-capital': ['dragon-sub-2', 'crane-sub-2', 'lion-capital'],
+  'crane-capital': ['lion-sub-1', 'crane-sub-2', 'lion-capital'],
   'crane-sub-1': ['crane-sub-2', 'scorpion-capital','crab-sub-2','merchant-three-trees', 'merchant-small-bay'],
   'crane-sub-2': ['crane-capital', 'lion-capital', 'scorpion-capital', 'crane-sub-1'],
 
   // Дракони
-  'dragon-capital': ['dragon-sub-1', 'lion-sub-2', 'dragon-sub-1', 'phoenix-capital'],
+  'dragon-capital': ['dragon-sub-1', 'lion-sub-2', 'dragon-sub-2', 'phoenix-capital'],
   'dragon-sub-1': ['dragon-capital', 'lion-sub-2', 'lion-capital', 'phoenix-capital', 'lion-sub-1'],
   'dragon-sub-2': ['dragon-capital', 'lion-sub-2', 'unicorn-capital'],
 

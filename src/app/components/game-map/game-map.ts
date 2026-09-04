@@ -300,18 +300,33 @@ onTouchStart(event: TouchEvent) {
             const activeToken = prov.placedTokens?.find(pt => pt.isFaceUp);
             const clan = activeToken ? activeToken.clan : 'Ворог';
             const unitType = activeToken ? activeToken.token.type : 'Армія';
+            const faceUpTokens = prov.placedTokens?.filter(
+              pt => pt.isFaceUp && pt.token.strength > 0
+            ) ?? [];
             
             let strength = 1;
-            if (prov.placedTokens) {
-              const faceUpTokens = prov.placedTokens.filter(pt => pt.isFaceUp && pt.token.strength > 0);
-              if (faceUpTokens.length > 0) {
-                strength = Math.max(...faceUpTokens.map(t => t.token.strength));
-              }
+            if (faceUpTokens.length > 0) {
+              strength = Math.max(...faceUpTokens.map(t => t.token.strength));
             }
+            let totalAttackStrength = 0;
+            const tokenDescriptions: string[] = [];
+
+            faceUpTokens.forEach(pt => {
+              if (['Army', 'Navy', 'Shinobi'].includes(pt.token.type)) {
+                // Використовуємо актуальну силу (з урахуванням Благословення, якщо воно вже застосоване)
+                const str = pt.strength !== undefined ? pt.strength : pt.token.strength;
+                totalAttackStrength += str;
+                tokenDescriptions.push(`${pt.token.type} (${str})`);
+              } else if (pt.token.type === 'Blessing') {
+                tokenDescriptions.push(`Благословення (+2)`);
+              } else if (pt.token.type === 'Raid') {
+                tokenDescriptions.push(`Погром`);
+              }
+            });
 
             const clanColor = this.clanColors[clan] || '#ffd699';
             this.currentBannerState = {
-              text: `ПРОВІНЦІЯ ${prov.name.toUpperCase()} БУЛО АТАКОВАНО ${unitType.toUpperCase()} (${strength})`,
+              text: `ПРОВІНЦІЯ ${prov.name.toUpperCase()} БУЛО АТАКОВАНО CИЛОЮ: (${totalAttackStrength})`,
               type: 'attack',
               style: { color: clanColor }
             };
