@@ -77,4 +77,42 @@ isSelected(token: BattleToken): boolean {
     const path = `assets/images/Clans/${clanType}.jpg`;
     return path;
   }
+  /**
+   * Повертає іконку для активного скілу залежно від клану
+   */
+  getSkillIcon(clan: string): string {
+    if (clan === 'Unicorn') return '🐎'; // Зміна місцями двох карт
+    if (clan === 'Scorpion') return '🦂'; // Шпигунство / підгляд жетона
+    return '⚡';
+  }
+
+  /**
+   * Текст підказки для скілу
+   */
+  getSkillTooltip(clan: string): string {
+    if (clan === 'Unicorn') return 'Скіл: Поміняти місцями 2 свої карти на мапі';
+    if (clan === 'Scorpion') return 'Скіл: Подивитися закритий жетон ворога';
+    return 'Здібність клану';
+  }
+
+  /**
+   * Виклик активної здібності клану
+   */
+ useClanSkill(): void {
+    if (!this.playerState) return;
+
+    if (this.playerState.isSkillUsedThisRound) {
+      alert('Ця здібність уже була використана в поточному раунді!');
+      return;
+    }
+
+    if (this.playerState.clan === 'Unicorn') {
+      this.gameStateService.activateUnicornSkill();
+      // Закриваємо ширму, щоб гравець міг бачити карту і тикнути на намети
+      this.isScreenOpen = false;
+    } else {
+      this.gameStateService.activateClanSkill(this.playerState.clan);
+    }
+    this.updateScreenData();
+  }
 }

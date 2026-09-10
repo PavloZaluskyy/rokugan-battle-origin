@@ -657,7 +657,73 @@
   text-shadow: 0 0 10px rgba(121, 179, 236, 0.8), 0 0 20px rgba(121, 179, 236, 0.4);
   letter-spacing: 2px;
 }
+.unicorn-skill-overlay {
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1000;
+  pointer-events: none; /* Щоб не перекривати кліки навколо банера */
+}
 
+.unicorn-banner {
+  pointer-events: auto;
+  background: rgba(22, 17, 14, 0.95);
+  border: 2px solid #c7a783;
+  padding: 12px 25px;
+  border-radius: 6px;
+  text-align: center;
+  box-shadow: 0 5px 20px rgba(0,0,0,0.8);
+}
+
+.unicorn-banner h3 {
+  margin: 0 0 4px 0;
+  font-size: 0.85rem;
+  color: #ffd699;
+  letter-spacing: 1.5px;
+}
+
+.unicorn-banner p {
+  margin: 0 0 8px 0;
+  font-size: 0.75rem;
+  color: #eee3d5;
+}
+
+.cancel-unicorn-btn {
+  background: #b83b23;
+  border: 1px solid #e0684f;
+  color: #fff;
+  font-size: 0.65rem;
+  padding: 2px 10px;
+  border-radius: 3px;
+  cursor: pointer;
+}
+
+/* Пунктирне коло для підсвічування доступних провінцій при виборі другої точки */
+.province-node.unicorn-target-highlight {
+  border: 2px dashed #ffd699 !important;
+  box-shadow: 0 0 15px rgba(255, 214, 153, 0.6);
+  animation: pulseUnicorn 1.5s infinite;
+}
+
+@keyframes pulseUnicorn {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+  100% { transform: scale(1); }
+}
+/* Обраний перший намет для маневру Єдинорога */
+.province-node.unicorn-source-selected {
+  border: 3px solid #ffd699 !important;
+  box-shadow: 0 0 25px #ffd699, inset 0 0 10px #ffd699 !important;
+  transform: translate(-50%, -50%) scale(1.25);
+  z-index: 50 !important;
+  animation: pulseSource 0.8s infinite alternate;
+}
+
+@keyframes pulseSource {
+  0% { filter: brightness(1); }
+  100% { filter: brightness(1.4); }
+}
 /* --- Медіа-запити для мобільних пристроїв --- */
 @media (max-width: 600px) {
   .battle-event-banner {

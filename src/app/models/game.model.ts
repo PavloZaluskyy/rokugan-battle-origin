@@ -51,7 +51,7 @@ export interface PlayerState {
   isFirstPlayer: boolean;
   isRonin: boolean;
   secretObjectiveCardId: string | null;
-  
+  isSkillUsedThisRound?: boolean;
   // Пули жетонів:
   combatTokenPool: BattleToken[]; // Жетони, що ще лежать у мішку (лицевою вниз)
   activeHandTokens: BattleToken[]; // Жетони за ширмою (актив на раунд, максимум 6)
@@ -69,6 +69,8 @@ export interface GameState {
   provinces: { [id: string]: Province }; // Словник усіх провінцій на карті
   players: { [clan in Exclude<ClanType, 'Neutral'>]?: PlayerState }; // Дані живих гравців
   roundLog: string[]; // Історія подій
+  isUnicornSkillActive?: boolean;
+  unicornSelectedProvinceId?: string | null;
 }
 export interface PlacedToken {
   strength: number;

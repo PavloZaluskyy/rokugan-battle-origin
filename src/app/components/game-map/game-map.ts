@@ -1,4 +1,4 @@
-import { Component, OnInit, HostListener } from '@angular/core';
+import { Component, OnInit, HostListener, ChangeDetectorRef } from '@angular/core';
 import { GameStateService } from '../../services/game-state.service';
 import { ClanType, Province } from '../../models/game.model';
 
@@ -81,7 +81,7 @@ export class GameMap implements OnInit {
     'merchant-sunken-ships': { x: 43, y: 75 }
   };
 
-  constructor(private gameStateService: GameStateService) {}
+  constructor(private gameStateService: GameStateService, private cdr: ChangeDetectorRef) {}
 
   ngOnInit(): void {
     this.loadGameState();
@@ -229,17 +229,33 @@ onTouchStart(event: TouchEvent) {
     return this.gameStateService.isProvinceValidTarget(province, this.activePlayerClan);
   }
   
-  onProvinceClick(province: Province): void {
+ onProvinceClick(province: Province): void {
+    const unicornState = this.getUnicornState();
+    if (unicornState.isActive) {
+      const handled = this.gameStateService.handleUnicornProvinceClick(province.id);
+      if (handled) {
+        this.loadGameState();
+        this.cdr.detectChanges(); // Примусово оновлюємо UI
+        return; 
+      }
+    }
+
     if (this.gameStateService.getInitialPlacementStatus()) {
       const success = this.gameStateService.placeInitialControlToken(province.id, this.activePlayerClan);
-      if (success) this.loadGameState();
+      if (success) {
+        this.loadGameState();
+        this.cdr.detectChanges();
+      }
       return;
     }
 
     const selectedToken = this.gameStateService.getSelectedToken();
     if (selectedToken && this.isProvinceTargetable(province)) {
       const success = this.gameStateService.placeTokenOnProvince(province.id, this.activePlayerClan);
-      if (success) this.loadGameState();
+      if (success) {
+        this.loadGameState();
+        this.cdr.detectChanges();
+      }
       return;
     }
 
@@ -433,5 +449,58 @@ onTouchStart(event: TouchEvent) {
     setTimeout(() => {
     this.isWindZoomingOut = false;
     }, 150);
+  }
+  getUnicornState() {
+    return this.gameStateService.getUnicornSkillState();
+  }
+  // onProvinceClicked(provinceId: string): void {
+  //   // 1. ПЕРЕВІРКА СКІЛУ ЄДИНОРОГА: якщо скіл активний, перехоплюємо клік
+  //   const unicornState = this.getUnicornState();
+  //   if (unicornState.isActive) {
+  //     const handled = this.gameStateService.handleUnicornProvinceClick(provinceId);
+  //     if (handled) return; // Якщо клік опрацьовано скілом — перериваємо подальшу логіку
+  //   }
+
+  //   // 2. Звичайний код кліку по провінції (знаходимо об'єкт провінції за ID і передаємо далі)
+  //   const province = this.provinces.find(p => p.id === provinceId);
+  //   if (province) {
+  //     this.executeStandardProvinceClick(province);
+  //   }
+  // }
+
+  private executeStandardProvinceClick(province: Province): void {
+    if (this.gameStateService.getInitialPlacementStatus()) {
+      const success = this.gameStateService.placeInitialControlToken(province.id, this.activePlayerClan);
+      if (success) this.loadGameState();
+      return;
+    }
+
+    const selectedToken = this.gameStateService.getSelectedToken();
+    if (selectedToken && this.isProvinceTargetable(province)) {
+      const success = this.gameStateService.placeTokenOnProvince(province.id, this.activePlayerClan);
+      if (success) this.loadGameState();
+      return;
+    }
+
+    if (this.selectedProvince && this.selectedProvince.id === province.id) {
+      this.closeTooltip();
+    } else {
+      this.selectedProvince = province;
+    }
+  }
+  isUnicornSource(province: Province): boolean {
+    const state = this.getUnicornState();
+    return state.isActive && state.selectedProvinceId === province.id;
+  }
+
+  isUnicornTarget(province: Province): boolean {
+    const state = this.getUnicornState();
+    if (!state.isActive || !state.selectedProvinceId) return false;
+    if (state.selectedProvinceId === province.id) return false;
+    return (province.placedTokens || []).some((t: any) => t.clan === 'Unicorn');
+  }
+
+  cancelUnicorn(): void {
+    this.gameStateService.cancelUnicornSkill();
   }
 }

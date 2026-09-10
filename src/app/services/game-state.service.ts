@@ -114,37 +114,37 @@ export class GameStateService {
   /**
    * Генерування початкової руки жетонів для гравця (5 карт + 1 блеф)
    */
-  private generateInitialHand(): BattleToken[] {
-    const hand: BattleToken[] = [];
-    let idCounter = 1;
+  // private generateInitialHand(): BattleToken[] {
+  //   const hand: BattleToken[] = [];
+  //   let idCounter = 1;
 
-    const addToken = (type: BattleTokenType, strength: number, count: number) => {
-      for (let i = 0; i < count; i++) {
-        hand.push({
-          id: `token-${type.toLowerCase()}-${idCounter++}-${Math.random().toString(36).substring(2, 5)}`,
-          type: type,
-          strength: strength,
-          clan: 'Neutral' // Буде встановлено при розподілі
-        });
-      }
-    };
+  //   const addToken = (type: BattleTokenType, strength: number, count: number) => {
+  //     for (let i = 0; i < count; i++) {
+  //       hand.push({
+  //         id: `token-${type.toLowerCase()}-${idCounter++}-${Math.random().toString(36).substring(2, 5)}`,
+  //         type: type,
+  //         strength: strength,
+  //         clan: 'Neutral' // Буде встановлено при розподілі
+  //       });
+  //     }
+  //   };
 
-    addToken('Army', 1, 2);
-    addToken('Army', 2, 1);
-    addToken('Army', 3, 1);
-    addToken('Navy', 1, 1);
-    addToken('Shinobi', 1, 1);
+  //   addToken('Army', 1, 2);
+  //   addToken('Army', 2, 1);
+  //   addToken('Army', 3, 1);
+  //   addToken('Navy', 1, 1);
+  //   addToken('Shinobi', 1, 1);
 
-    // Додаємо пустий жетон (Блеф)
-    hand.push({
-      id: `blank-${Date.now()}-${Math.random().toString(36).substring(2, 5)}`,
-      type: 'Blank',
-      strength: 0,
-      clan: 'Neutral'
-    });
+  //   // Додаємо пустий жетон (Блеф)
+  //   hand.push({
+  //     id: `blank-${Date.now()}-${Math.random().toString(36).substring(2, 5)}`,
+  //     type: 'Blank',
+  //     strength: 0,
+  //     clan: 'Neutral'
+  //   });
 
-    return this.shuffleArray(hand);
-  }
+  //   return this.shuffleArray(hand);
+  // }
 
   /**
    * Фаза перегрупування: гравець бере 5 карт атаки + 1 пустий (блеф) = разом 6 карток у руку
@@ -180,6 +180,31 @@ export class GameStateService {
     addToken('Diplomacy', 0, 1); // Без сили
     addToken('Raid', 0, 1);      // Погром без сили
     addToken('Blessing', 2, 2);  // Благословення з силою 2
+
+    // --- ДОДАВАННЯ УНІКАЛЬНОЇ КАРТИ КЛАНУ ---
+    switch (clan) {
+      case 'Unicorn':
+        addToken('Raid', 0, 1); // Додатковий Погром
+        break;
+      case 'Crane':
+        addToken('Diplomacy', 0, 1); // Додаткова Дипломатія
+        break;
+      case 'Lion':
+        addToken('Army', 6, 1); // Унікальна Армія сили 6
+        break;
+      case 'Dragon':
+        addToken('Blessing', 3, 1); // Благословення сили 3
+        break;
+      case 'Scorpion':
+        addToken('Shinobi', 3, 1); // Синобі сили 3
+        break;
+      case 'Phoenix':
+        addToken('Blessing', 3, 1); // Благословення сили 3
+        break;
+      case 'Crab':
+        addToken('Navy', 3, 1); // Флот сили 3
+        break;
+    }
 
     return this.shuffleArray(tokens);
   }
@@ -304,47 +329,6 @@ export class GameStateService {
     console.log('Saved game cleared.');
   }
 
-  /**
-   * Допоміжний метод для створення стартового набору жетонів битви (згідно з правилами)
-   */
-  private generateInitialTokenPool(clan: ClanType): BattleToken[] {
-    const tokens: BattleToken[] = [];
-    let idCounter = 1;
-
-    // Функція-хелпер, щоб швидко додавати однотипні жетони
-    const addToken = (type: BattleTokenType, strength: number, count: number) => {
-      for (let i = 0; i < count; i++) {
-        tokens.push({
-          id: `${clan.toLowerCase()}-${type.toLowerCase()}-${idCounter++}`,
-          clan: clan,
-          type: type,
-          strength: strength
-        });
-      }
-    };
-
-    // Базовий набір кожного клану (можна уточнити за ширмами в правилах):
-    addToken('Army', 1, 6); // 6 армії силою 1
-    addToken('Army', 2, 4); // 4 армії силою 2
-    addToken('Army', 3, 3); // 3 армії силою 3
-    addToken('Army', 4, 2); // 2 елітні армії силою 4
-    addToken('Army', 5, 1); // 1 елітна армія силою 5
-
-    addToken('Navy', 1, 2); // 2 флоти силою 1
-    addToken('Navy', 2, 1); // 1 флоти силою 2
-  
-    
-    addToken('Shinobi', 1, 1); // 1 синоби силою 1
-    addToken('Shinobi', 2, 1); // 1 синоби силою 2
-    
-    addToken('Blessing', 2, 2);   // 2 благословення (+2 до сили)
-    addToken('Diplomacy', 0, 1);  // 1 жетон дипломатії (мир)
-    addToken('Raid', 0, 1);       // 1 жетон погрому (випалена земля)
-
-    // Примітка: Пустий жетон (Blank) НЕ йде в мішок, 
-    // він завжди видається окремо на початку раунду згідно з правилами!
-    return tokens;
-  }
 
   /**
    * Алгоритм випадкового тасування масиву жетонів
@@ -407,13 +391,19 @@ export class GameStateService {
 
       if (!hasFriendlyCombatToken) return false;
 
-      // Перевіряємо наявність шинобі на цій провінції
       const hasShinobiHere = (province.placedTokens || []).some(pt => 
         pt.clan === playerClan && pt.token.type === 'Shinobi'
       );
-      const hasBorder = this.hasValidBorderOrNavy(province, playerClan);
+      
+      const hasLandBorder = this.hasLandBorder(province, playerClan);
+      
+      // Дозволяємо погром, якщо є сухопутний кордон, шинобі, АБО якщо це прибережна провінція і на ній є наш Флот
+      const hasNavyHere = (province.placedTokens || []).some(pt => 
+        pt.clan === playerClan && pt.token.type === 'Navy'
+      );
+      const isCoastalAccess = Boolean(province.isCoastal || province.hasHarbor) && hasNavyHere;
 
-      return hasShinobiHere || hasBorder;
+      return hasShinobiHere || hasLandBorder || isCoastalAccess;
     }
 
     // 7. Синобі та Блеф
@@ -604,6 +594,9 @@ export class GameStateService {
         this.state.roundLog.push(`Розпочався раунд ${this.state.currentRound}. Фаза розміщення.`);
       }
     }
+    Object.values(this.state.players).forEach(p => {
+          p.isSkillUsedThisRound = false; // Відновлюємо доступність кнопки скіла на новий раунд
+    });
 
     this.saveGame();
   }
@@ -713,22 +706,9 @@ export class GameStateService {
 
       if (province.hasScorchedEarth) return;
 
-      // // Обробка БЛАГОСЛОВЕННЯ: шукаємо жетон благословення і застосовуємо до сусіда по стопці
-      // const blessingToken = placedTokens.find(pt => pt.token.type === 'Blessing');
-      // if (blessingToken) {
-      //   // Знаходимо перший-ліпший бойовий жетон цього ж клану на провінції
-      //   const targetCombatToken = placedTokens.find(pt => 
-      //     pt.clan === blessingToken.clan && ['Army', 'Navy', 'Shinobi'].includes(pt.token.type)
-      //   );
-
-      //   if (targetCombatToken) {
-      //     targetCombatToken.strength += 2; 
-      //     this.state!.roundLog.push(`✨ Благословення посилило загін (${targetCombatToken.token.type}) на ${province.name} на +2 (Нова сила: ${targetCombatToken.strength})!`);
-      //   }
-      // }
-
       // Підрахунок захисту та атак (з урахуванням Святині)
-      let defenseTotal = province.baseDefense + province.controlTokensFaceUp;
+      // Підрахунок захисту та атак (з урахуванням Святині та пасивів кланів)
+      let defenseTotal = this.getEffectiveBaseDefense(province) + province.controlTokensFaceUp;
       const defenderClan = province.controllingClan;
 
       placedTokens
@@ -753,9 +733,17 @@ export class GameStateService {
             .filter(pt => pt.clan === attackerClan)
             .forEach(pt => {
               if (['Army', 'Navy', 'Shinobi'].includes(pt.token.type)) {
-                clanAttackSum += pt.token.strength;
+                clanAttackSum += pt.strength !== undefined ? pt.strength : pt.token.strength;
               }
             });
+
+          // --- СБІЛ КЛАНУ ФЕНІКСА ---
+          // Ігнорує 2 захисту при атаці столиці
+          let adjustedDefense = defenseTotal;
+          if (attackerClan === 'Phoenix' && province.isCapital) {
+            adjustedDefense = Math.max(0, defenseTotal - 2);
+            this.state!.roundLog.push(`🔥 Фенікс атакує столицю ${province.name}: захист знижено з ${defenseTotal} до ${adjustedDefense}.`);
+          }
 
           if (clanAttackSum > maxAttackStrength) {
             maxAttackStrength = clanAttackSum;
@@ -763,11 +751,32 @@ export class GameStateService {
           }
         });
 
-        if (strongestAttackerClan && maxAttackStrength > defenseTotal) {
-          this.state!.roundLog.push(`Клан ${strongestAttackerClan} захопив ${province.name} з міцністю атаки ${maxAttackStrength} проти захисту ${defenseTotal}!`);
+        // Визначаємо переможця бою з урахуванням скілу КЛАНУ ЖУРАВЛЯ (перемога в нічию)
+        let isAttackerWinner = maxAttackStrength > defenseTotal; // (або з урахуванням ফенікса)
+        
+        // Перевірка Фенікса для фінального порівняння конкретного переможця
+        let effectiveDefenseForWinner = defenseTotal;
+        if (strongestAttackerClan === 'Phoenix' && province.isCapital) {
+          effectiveDefenseForWinner = Math.max(0, defenseTotal - 2);
+        }
+
+        // Умова перемоги: атака > захисту, АБО (якщо атакуючий Журавель і атака == захисту)
+        const isCraneTieBreak = strongestAttackerClan === 'Crane' && maxAttackStrength === effectiveDefenseForWinner;
+        
+        if (strongestAttackerClan && (maxAttackStrength > effectiveDefenseForWinner || isCraneTieBreak)) {
+          if (isCraneTieBreak) {
+            this.state!.roundLog.push(`鹤 Клан Журавля перемагає в нічию на ${province.name}!`);
+          }
+
+          this.state!.roundLog.push(`Клан ${strongestAttackerClan} захопив ${province.name} з міцністю атаки ${maxAttackStrength} проти захисту ${effectiveDefenseForWinner}!`);
           province.controllingClan = strongestAttackerClan;
           province.controlTokensFaceUp = 1;
         } else {
+          // Атаку відбито! Перевіряємо скіл КЛАНУ КРАБА (успішний захист дає +2 до захисту провінції)
+          if (defenderClan === 'Crab') {
+            this.applyCrabClanBonus(province, defenderClan, true);
+          }
+
           province.controlTokensFaceUp += 1;
         }
       }
@@ -811,5 +820,161 @@ export class GameStateService {
 
   requestCinematicBattles() {
     this.triggerCinematicSubject.next();
+  }
+  /**
+   * КЛАН ЖУРАВЛЯ: Перемагає в нічиїх (якщо сила атаки дорівнює захисту, Журавель забирає провінцію)
+   */
+  private applyCraneClanBonus(province: Province, defenderClan: ClanType, attackerClans: ClanType[], placedTokens: any[]): void {
+    if (defenderClan === 'Crane') {
+      // Якщо Журавлі захищаються і сталася нічия
+      // (Логіка нічиєї зазвичай обробляється там, де сила атаки дорівнює захисту)
+    }
+    // Також перевіряємо, якщо Журавлі атакують і сила атаки дорівнює захисту:
+    const isCraneAttacking = attackerClans.includes('Crane');
+    if (isCraneAttacking && province.controllingClan !== 'Crane') {
+      // Логіку нічиїх ми опрацюємо в блоці порівняння сил нижче
+    }
+  }
+  /**
+   * КЛАН ФЕНІКСА: Ігнорує 2 захисту столичних провінцій
+   */
+  private applyPhoenixClanBonus(province: Province, attackerClan: ClanType): number {
+    let defenseReduction = 0;
+    if (attackerClan === 'Phoenix' && province.isCapital) {
+      defenseReduction = 2;
+      this.state!.roundLog.push(`🔥 Клан Фенікса ігнорує 2 захисту столиці ${province.name}!`);
+    }
+    return defenseReduction;
+  }
+
+  /**
+   * КЛАН КРАБА: Дефолтний захист провінції +2, а також +2 після успішного захисту
+   */
+  private applyCrabClanBonus(province: Province, defenderClan: ClanType, wasSuccessfulDefense: boolean): void {
+    if (defenderClan === 'Crab' && wasSuccessfulDefense) {
+      province.baseDefense += 2;
+      this.state!.roundLog.push(`🦀 Клан Краба відбив атаку на ${province.name}: базовий захист збільшено на +2 (Тепер: ${province.baseDefense})!`);
+    }
+  }
+  /**
+   * Базова ініціалізація захисту провінції з урахуванням пасиву Краба (дефолтний захист +2)
+   */
+  private getEffectiveBaseDefense(province: Province): number {
+    let base = province.baseDefense;
+    // Якщо провінція належить Крабу, її дефолтний захист вищий на 2
+    if (province.controllingClan === 'Crab') {
+      base += 2;
+    }
+    return base;
+  }
+  getUnicornSkillState() {
+    const player = this.state?.players['Unicorn'];
+    return {
+      isActive: this.state?.isUnicornSkillActive || false,
+      selectedProvinceId: this.state?.unicornSelectedProvinceId || null,
+      isUsed: player?.isSkillUsedThisRound || false
+    };
+  }
+  // Активація скілу по кліку на кнопку Єдинорога
+  activateUnicornSkill(): void {
+    if (!this.state) return;
+    const player = this.state.players['Unicorn'];
+    if (!player || player.isSkillUsedThisRound) return;
+
+    this.state.isUnicornSkillActive = true;
+    this.state.unicornSelectedProvinceId = null;
+    this.state.roundLog.push(`🐎 Клан Єдинорога активує здібність маневру: оберіть перший власний жетон на мапі.`);
+    this.saveGame();
+  }
+
+  // Скасування скілу (якщо гравець передумав)
+  cancelUnicornSkill(): void {
+    if (!this.state) return;
+    this.state.isUnicornSkillActive = false;
+    this.state.unicornSelectedProvinceId = null;
+    this.saveGame();
+  }
+
+  // Логіка кліку по провінції під час активного скілу Єдинорога
+  handleUnicornProvinceClick(provinceId: string): boolean {
+    if (!this.state || !this.state.isUnicornSkillActive) return false;
+
+    const province = this.state.provinces[provinceId];
+    if (!province) return false;
+
+    // Перевіряємо, чи є на цій провінції жетони клану Єдинорога
+    const hasUnicornTokens = (province.placedTokens || []).some(pt => pt.clan === 'Unicorn');
+
+    // Якщо перший жетон ще не вибраний
+    if (!this.state.unicornSelectedProvinceId) {
+      if (!hasUnicornTokens) {
+        console.log('На цій провінції немає жетонів Єдинорога!');
+        return false; 
+      }
+      this.state.unicornSelectedProvinceId = provinceId;
+      this.state.roundLog.push(`🐎 Вибрано першу позицію для маневру (${province.name}). Тепер виберіть іншу вашу провінцію з жетоном.`);
+      this.saveGame();
+      return true;
+    } 
+    // Якщо перший жетон вже вибраний — вибираємо другий і міняємо їх місцями
+    else {
+      const firstProvinceId = this.state.unicornSelectedProvinceId;
+      if (firstProvinceId === provinceId) {
+        // Клікнули туди ж — скасовуємо вибір
+        this.state.unicornSelectedProvinceId = null;
+        this.saveGame();
+        return true;
+      }
+
+      if (!hasUnicornTokens) {
+        console.log('Друга провінція теж має містити жетони Єдинорога!');
+        return false; 
+      }
+
+      // МІНЯЄМО ЖЕТОНИ МІЖ ПРОВІНЦІЯМИ МІСЦЯМИ
+      const firstProv = this.state.provinces[firstProvinceId];
+      const secondProv = province;
+
+      const firstUnicornTokens = firstProv.placedTokens.filter(pt => pt.clan === 'Unicorn');
+      const otherFirstTokens = firstProv.placedTokens.filter(pt => pt.clan !== 'Unicorn');
+
+      const secondUnicornTokens = secondProv.placedTokens.filter(pt => pt.clan === 'Unicorn');
+      const otherSecondTokens = secondProv.placedTokens.filter(pt => pt.clan !== 'Unicorn');
+
+      // Здійснюємо обмін
+      firstProv.placedTokens = [...otherFirstTokens, ...secondUnicornTokens];
+      secondProv.placedTokens = [...otherSecondTokens, ...firstUnicornTokens];
+
+      // Завершуємо роботу скілу
+      this.state.isUnicornSkillActive = false;
+      this.state.unicornSelectedProvinceId = null;
+
+      const player = this.state.players['Unicorn'];
+      if (player) {
+        player.isSkillUsedThisRound = true;
+      }
+
+      this.state.roundLog.push(`🐎 Маневр Єдинорога успішно виконано між ${firstProv.name} та ${secondProv.name}!`);
+      this.saveGame();
+      return true;
+    }
+  }
+  /**
+   * Активація унікальної здібності клану під час раунду
+   */
+  activateClanSkill(clan: ClanType): void {
+    if (!this.state) return;
+    const player = this.state.players[clan as Exclude<ClanType, 'Neutral'>];
+    if (!player || player.isSkillUsedThisRound) return;
+
+    if (clan === 'Unicorn') {
+      this.activateUnicornSkill(); // Викликаємо правильний метод активації маневру
+    } 
+    else if (clan === 'Scorpion') {
+      this.state.roundLog.push(`🦂 Клан Скорпіона активує мережу шпигунів: натисніть на закритий жетон ворога на мапі, щоб підглянути його.`);
+      player.isSkillUsedThisRound = true;
+    }
+
+    this.saveGame();
   }
 }

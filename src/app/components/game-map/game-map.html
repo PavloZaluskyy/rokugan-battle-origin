@@ -7,7 +7,14 @@
      (touchmove)="onTouchMove($event)"
      (touchend)="stopDrag(); $event.stopPropagation()"
      [class.grabbing]="isDragging">
-  
+  <!-- Оверлей інструкцій активації скілу Єдинорога -->
+<div class="unicorn-skill-overlay" *ngIf="getUnicornState().isActive">
+  <div class="unicorn-banner">
+    <h3>АКТИВАЦІЯ СКІЛА КЛАНУ ЄДИНОРОГА</h3>
+    <p>{{ getUnicornState().selectedProvinceId ? 'Тепер виберіть ваш намет який хочете поміняти' : 'Натисніть на свій намет щоб поміняти війська місцями' }}</p>
+    <button class="cancel-unicorn-btn" (click)="cancelUnicorn()">Скасувати</button>
+  </div>
+</div>
   <div class="zoom-controls">
     <button (click)="zoomIn()">➕</button>
     <button (click)="zoomOut()">➖</button>
@@ -51,7 +58,9 @@
           [style.top]="getProvinceStyle(prov.id)['top']"
           [style.left]="getProvinceStyle(prov.id)['left']"
           (click)="onProvinceClick(prov); $event.stopPropagation()"
-            >
+          [class.unicorn-source-selected]="isUnicornSource(prov)"
+          [class.unicorn-target-highlight]="isUnicornTarget(prov)"
+          >
       <!-- Іконка столиці чи замку -->
       <!-- ТВОЯ 3D-МІНІАТЮРА ЗАМКУ / МІСТА ПО ЦЕНТРУ -->
         <div class="province-miniature-wrapper">

@@ -426,6 +426,60 @@
   color: #bfa48f;
   letter-spacing: 0.5px;
 }
+/* Кнопка активного скілу клану */
+.skill-button-box {
+  width: 50px;
+  height: 50px;
+  background: radial-gradient(circle, #3d2c1d 0%, #1a120c 100%);
+  border: 2px solid #c7a783;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  position: relative;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+  transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
+}
+
+.skill-button-box:hover {
+  transform: scale(1.1);
+  border-color: #ffd699;
+  box-shadow: 0 0 15px rgba(255, 214, 153, 0.4);
+}
+
+.skill-button-box.used {
+  opacity: 0.4;
+  cursor: not-allowed;
+  filter: grayscale(80%);
+}
+
+.skill-icon {
+  font-size: 1.3rem;
+}
+
+/* Підказка при наведенні */
+.skill-tooltip {
+  visibility: hidden;
+  position: absolute;
+  bottom: 120%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #1c140e;
+  color: #ffd699;
+  text-align: center;
+  padding: 5px 10px;
+  border-radius: 3px;
+  border: 1px solid #c7a783;
+  font-size: 0.65rem;
+  white-space: nowrap;
+  z-index: 100;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.5);
+}
+
+.skill-button-box:hover .skill-tooltip {
+  visibility: visible;
+}
 
 /* ==========================================================================
    МОБІЛЬНА АДАПТИВНІСТЬ ШИРМИ (Смартфони та планшети)
