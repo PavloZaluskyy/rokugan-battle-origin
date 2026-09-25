@@ -480,6 +480,19 @@
 .skill-button-box:hover .skill-tooltip {
   visibility: visible;
 }
+.lion-blank-bonus-badge {
+  position: relative;
+  bottom: 5px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #801d0a;
+  color: #ffd699;
+  font-size: 0.6rem;
+  padding: 1px 4px;
+  border-radius: 3px;
+  border: 1px solid #ffd699;
+  white-space: nowrap;
+}
 
 /* ==========================================================================
    МОБІЛЬНА АДАПТИВНІСТЬ ШИРМИ (Смартфони та планшети)

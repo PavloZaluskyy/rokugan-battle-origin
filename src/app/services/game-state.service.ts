@@ -782,6 +782,14 @@ export class GameStateService {
           }
         });
 
+        // ПАСИВ КЛАНУ ЛЕВА: Блеф (Blank), викладений на провінцію, дає +2 до захисту
+      placedTokens
+        .filter(pt => pt.clan === 'Lion' && pt.token.type === 'Blank')
+        .forEach(pt => {
+          defenseTotal += 2;
+          this.state!.roundLog.push(`🦁 Блеф (пуста карта) клану Лев на ${province.name} укріплює позиції, даючи +2 до захисту!`);
+        });
+
       const attackerClans = Array.from(new Set(
         placedTokens.filter(pt => pt.clan !== defenderClan).map(pt => pt.clan)
       ));
@@ -1171,6 +1179,39 @@ export class GameStateService {
     });
 
     this.state.roundLog.push(`[ТЕСТ КРАБА] Ворожий загін клану Lion напав на провінцію Краба "${randomCrabProvince.name}" із силою 3!`);
+    this.saveGame();
+  }
+  setupLionDefenseTest(): void {
+    if (!this.state) return;
+
+    // Знаходимо провінцію, де Клан Лев має свій Блеф (Blank) або контролює її
+    const lionProvinces = Object.values(this.state.provinces).filter(p => {
+      const hasLionBlank = (p.placedTokens || []).some(pt => pt.clan === 'Lion' && pt.token.type === 'Blank');
+      return hasLionBlank || p.controllingClan === 'Lion';
+    });
+
+    if (lionProvinces.length === 0) {
+      console.log('Клан Лев не має провінцій або виставленого Блефу для тесту!');
+      return;
+    }
+
+    // Вибираємо випадкову провінцію Лева
+    const targetProvince = lionProvinces[Math.floor(Math.random() * lionProvinces.length)];
+
+    if (!targetProvince.placedTokens) {
+      targetProvince.placedTokens = [];
+    }
+    
+    // Додаємо ворожий загін (наприклад, Армію сили 3 від клану Crane)
+    targetProvince.placedTokens.push({
+      id: `lion-test-enemy-${Date.now()}`,
+      clan: 'Crane',
+      strength: 3,
+      token: { id: 'test-tok-crane', type: 'Army', strength: 3, clan: 'Crane' },
+      isFaceUp: true
+    });
+
+    this.state.roundLog.push(`[ТЕСТ ЛЕВА] Ворожий загін клану Crane напав на провінцію Лева "${targetProvince.name}" із силою 3!`);
     this.saveGame();
   }
 }

@@ -38,6 +38,14 @@
         <span class="skill-tooltip">{{ getSkillTooltip(playerState.clan) }}</span>
 
       </div>
+      <div class="skill-button-box" 
+           *ngIf="['Lion'].includes(playerState.clan)"
+           [class.used]="playerState.isSkillUsedThisRound"
+           (click)="testLionDefense()">
+        <span class="skill-icon">{{ getSkillIcon(playerState.clan) }}</span>
+        <span class="skill-tooltip">{{ getSkillTooltip(playerState.clan) }}</span>
+
+      </div>
      <!-- Кнопка активного скілу клану (для Єдинорога, Скорпіона тощо) -->
       <div class="skill-button-box" 
            *ngIf="['Unicorn', 'Scorpion'].includes(playerState.clan)"
@@ -74,6 +82,7 @@
             <div class="card-strength" *ngIf="token.strength && token.strength > 0 && token.type !== 'Raid'">{{ token.strength }}</div>
           </div>
           <div class="card-footer">
+              <div class="lion-blank-bonus-badge" *ngIf="token.clan === 'Lion' && token.type === 'Blank'">+2 Захист</div>
           <div class="card-type-name">{{ getTokenLabel(token) }}</div>
         </div>
       </div>

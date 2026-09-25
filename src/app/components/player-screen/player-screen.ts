@@ -123,4 +123,9 @@ isSelected(token: BattleToken): boolean {
     this.isScreenOpen = false;
     alert('Тестовий ворожий загін додано на провінцію Краба! Тепер натисніть кнопку "Виконати / Битва", щоб перевірити результат захисту.');
   }
+  testLionDefense(): void {
+    this.gameStateService.setupLionDefenseTest();
+    this.isScreenOpen = false;
+    alert('Тестовий ворожий загін додано на провінцію Лева! Тепер натисніть кнопку "Виконати / Битва", щоб перевірити результат захисту.');
+  }
 }
