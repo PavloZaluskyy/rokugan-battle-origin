@@ -15,6 +15,13 @@
     <button class="cancel-unicorn-btn" (click)="cancelUnicorn()">Скасувати</button>
   </div>
 </div>
+<div class="unicorn-skill-overlay" *ngIf="getScorpionState().isActive">
+  <div class="unicorn-banner">
+    <h3>АКТИВАЦІЯ СКІЛА КЛАНУ СКОРПІОНА</h3>
+    <p>Натисніть на ворожий намет щоб розсекретити сили Ворога»</p>
+    <button class="cancel-unicorn-btn" (click)="cancelUnicorn()">Скасувати</button>
+  </div>
+</div>
   <div class="zoom-controls">
     <button (click)="zoomIn()">➕</button>
     <button (click)="zoomOut()">➖</button>
@@ -60,6 +67,7 @@
           (click)="onProvinceClick(prov); $event.stopPropagation()"
           [class.unicorn-source-selected]="isUnicornSource(prov)"
           [class.unicorn-target-highlight]="isUnicornTarget(prov)"
+          [class.scorpion-target-highlight]="isScorpionTarget(prov)"
           >
       <!-- Іконка столиці чи замку -->
       <!-- ТВОЯ 3D-МІНІАТЮРА ЗАМКУ / МІСТА ПО ЦЕНТРУ -->

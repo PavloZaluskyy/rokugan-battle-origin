@@ -71,6 +71,7 @@ export interface GameState {
   roundLog: string[]; // Історія подій
   isUnicornSkillActive?: boolean;
   unicornSelectedProvinceId?: string | null;
+  isScorpionSkillActive?: boolean;
 }
 export interface PlacedToken {
   strength: number;

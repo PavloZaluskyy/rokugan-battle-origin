@@ -85,10 +85,26 @@ export class GameMap implements OnInit {
 
   ngOnInit(): void {
     this.loadGameState();
-
+    this.cdr.detectChanges();
     // Слухаємо сигнал від кнопки в HUD на запуск битв
     this.gameStateService.triggerCinematic$.subscribe(() => {
       this.executeBattleCinematicSequence();
+    });
+
+
+    // Слухаємо ходи ботів для виведення банера
+    this.gameStateService.botTurnBanner$.subscribe(bannerData => {
+      if (bannerData) {
+        const clanColor = this.clanColors[bannerData.clan] || '#ffd699';
+        this.currentBannerState = {
+          text: bannerData.text,
+          type: 'attack',
+          style: { color: clanColor }
+        };
+      } else {
+        this.currentBannerState = null;
+      }
+      this.loadGameState();
     });
   }
 
@@ -237,6 +253,16 @@ onTouchStart(event: TouchEvent) {
         this.loadGameState();
         this.cdr.detectChanges(); // Примусово оновлюємо UI
         return; 
+      }
+    }
+    // 2. ПЕРЕВІРКА СКІЛУ СКОРПІОНА: якщо шпигунство активне, розкриваємо ворожий жетон
+    const scorpionState = this.getScorpionState();
+    if (scorpionState.isActive) {
+      const handled = this.gameStateService.handleScorpionProvinceClick(province.id);
+      if (handled) {
+        this.loadGameState();
+        this.cdr.detectChanges();
+        return;
       }
     }
 
@@ -503,4 +529,19 @@ onTouchStart(event: TouchEvent) {
   cancelUnicorn(): void {
     this.gameStateService.cancelUnicornSkill();
   }
+  getScorpionState() {
+    return this.gameStateService.getScorpionSkillState();
+  }
+
+  isScorpionTarget(province: Province): boolean {
+    const state = this.getScorpionState();
+    if (!state.isActive) return false;
+    // Перевіряємо, чи є на провінції закриті ворожі жетони (не Скорпіона)
+    return (province.placedTokens || []).some(t => t.clan !== 'Scorpion' && !t.isFaceUp);
+  }
+
+  cancelScorpion(): void {
+    this.gameStateService.cancelScorpionSkill();
+  }
+  
 }

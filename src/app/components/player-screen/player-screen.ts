@@ -110,9 +110,17 @@ isSelected(token: BattleToken): boolean {
       this.gameStateService.activateUnicornSkill();
       // Закриваємо ширму, щоб гравець міг бачити карту і тикнути на намети
       this.isScreenOpen = false;
+    } else if (this.playerState.clan === 'Scorpion') {
+      this.gameStateService.activateScorpionSkill();
+      this.isScreenOpen = false; // Закриваємо ширму, щоб гравець бачив карту ворогів
     } else {
       this.gameStateService.activateClanSkill(this.playerState.clan);
     }
     this.updateScreenData();
+  }
+  testCrabDefense(): void {
+    this.gameStateService.setupCrabDefenseTest();
+    this.isScreenOpen = false;
+    alert('Тестовий ворожий загін додано на провінцію Краба! Тепер натисніть кнопку "Виконати / Битва", щоб перевірити результат захисту.');
   }
 }

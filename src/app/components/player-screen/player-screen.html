@@ -30,6 +30,14 @@
     </div>
     
     <div class="inventory-stats">
+      <div class="skill-button-box" 
+           *ngIf="['Crab'].includes(playerState.clan)"
+           [class.used]="playerState.isSkillUsedThisRound"
+           (click)="testCrabDefense()">
+        <span class="skill-icon">{{ getSkillIcon(playerState.clan) }}</span>
+        <span class="skill-tooltip">{{ getSkillTooltip(playerState.clan) }}</span>
+
+      </div>
      <!-- Кнопка активного скілу клану (для Єдинорога, Скорпіона тощо) -->
       <div class="skill-button-box" 
            *ngIf="['Unicorn', 'Scorpion'].includes(playerState.clan)"
@@ -37,6 +45,7 @@
            (click)="useClanSkill()">
         <span class="skill-icon">{{ getSkillIcon(playerState.clan) }}</span>
         <span class="skill-tooltip">{{ getSkillTooltip(playerState.clan) }}</span>
+
       </div>
       <div class="stat-box">
         <span class="stat-label">🏅 ЧЕСТЬ КЛАНУ</span>

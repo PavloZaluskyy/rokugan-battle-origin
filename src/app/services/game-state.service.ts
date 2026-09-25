@@ -7,7 +7,10 @@ import { Subject } from 'rxjs';
   providedIn: 'root' // Завдяки цьому Angular AppModule автоматично бачить цей сервіс як Singleton
 })
 export class GameStateService {
- 
+  // Сигнал для банера ботів на мапі
+  private botTurnBannerSubject = new Subject<{ clan: string; text: string } | null>();
+  botTurnBanner$ = this.botTurnBannerSubject.asObservable();
+  
   private readonly STORAGE_KEY = 'rokugan_battle_save';
   // Стан кінематографічної битви
   private isCinematicBattleActive: boolean = false;
@@ -77,9 +80,21 @@ export class GameStateService {
 
     const provincesMap: { [key: string]: Province } = {};
     ORIGINAL_PROVINCES.forEach(prov => {
-      // Повністю клонуємо оригінальну провінцію з усіма її полями (name, regionId, baseDefense, isCoastal тощо)
+      let initialBaseDefense = prov.baseDefense;
+      const isCrabCapital = prov.isCapital && prov.capitalOf === 'Crab' && selectedClans.includes('Crab');
+      
+      // Якщо це власна столиця Краба на старті — одразу даємо +2 до базового захисту за пасивом
+      if (isCrabCapital) {
+        // Якщо базовий захист за замовчуванням 2, а жетон дає 1, то для отримання 4 
+        // базовий захист має бути 3 (тобто 2 + 1 пасивний бонус замість повних +2 на старті, 
+        // оскільки жетон контролю додасть ще 1).
+        // Або якщо пасив має давати рівно +2 до загального захисту:
+        initialBaseDefense = prov.baseDefense + 1; // 2 (база) + 1 (пасив частина) + 1 (жетон контролю на старті) = 4
+      }
+
       provincesMap[prov.id] = { 
         ...prov, 
+        baseDefense: initialBaseDefense, // Записуємо чистий базовий захист з урахуванням пасиву
         placedTokens: [],
         controlTokensFaceUp: 0,
         controllingClan: prov.isCapital && selectedClans.includes(prov.capitalOf as ClanType) ? prov.capitalOf! : 'Neutral',
@@ -472,35 +487,83 @@ export class GameStateService {
     if (!this.selectedToken || !this.state) return false;
 
     const province = this.state.provinces[provinceId];
-    const player = this.state.players[playerClan as Exclude<ClanType, 'Neutral'>];
+    const player = this.state.players[playerClan as keyof GameState['players']];
 
     if (!province || !player) return false;
-
-    // Перевірка правил
     if (!this.isProvinceValidTarget(province, playerClan)) return false;
 
-    // 1. Створюємо об'єкт викладеного загону (сорочкою догори)
+    // 1. Виставляємо жетон гравця
     const newPlacedToken = {
       id: `placed-${Date.now()}`,
       clan: playerClan,
       strength: this.selectedToken.strength,
       token: { ...this.selectedToken },
-      isFaceUp: false // Сховано від ворогів під час розміщення
+      isFaceUp: false
     };
 
-    // 2. Додаємо загін на провінцію
     if (!province.placedTokens) province.placedTokens = [];
     province.placedTokens.push(newPlacedToken);
 
-    // 3. Видаляємо карту з активних рук гравця
     player.activeHandTokens = player.activeHandTokens.filter(t => t.id !== this.selectedToken?.id);
-
-    // 4. Скидаємо вибір
     this.selectedToken = null;
-
-    // 5. Зберігаємо стан
     this.saveGame();
+
+    // 2. ЯКЩО ХОДИВ СКОРПІОН — ЗАПУСКАЄМО ВІДПОВІДЬ БОТА (Хід ворога)
+    if (playerClan === 'Scorpion') {
+      this.triggerBotTurnSimulation();
+    }
+
     return true;
+  }
+
+  /**
+   * Імітація ходу бота з затримкою та виведенням банера
+   */
+  private triggerBotTurnSimulation(): void {
+    if (!this.state) return;
+
+    // Вибираємо випадковий ворожий клан (не Скорпіон) серед активних гравців
+    const activeClans = Object.keys(this.state.players) as ClanType[];
+    const enemyClans = activeClans.filter(c => c !== 'Scorpion');
+    if (enemyClans.length === 0) return;
+
+    const randomEnemyClan = enemyClans[Math.floor(Math.random() * enemyClans.length)];
+
+    // Повідомляємо карту, що бот почав думати
+    this.botTurnBannerSubject.next({
+      clan: randomEnemyClan,
+      text: `ХІД КЛАНУ ${randomEnemyClan.toUpperCase()} (ДУМАЄ...)`
+    });
+
+    // Затримка 1.5 секунди (імітація роздумів бота)
+    setTimeout(() => {
+      if (!this.state) return;
+
+      // Знаходимо вільну провінцію для ворожого намету
+      const emptyProvinces = Object.values(this.state.provinces).filter(
+        p => !p.hasScorchedEarth && !p.hasPeaceToken && (!p.placedTokens || p.placedTokens.length === 0)
+      );
+
+      if (emptyProvinces.length > 0) {
+        const targetProv = emptyProvinces[Math.floor(Math.random() * emptyProvinces.length)];
+        if (!targetProv.placedTokens) targetProv.placedTokens = [];
+
+        // Ставимо закритий ворожий намет бота
+        targetProv.placedTokens.push({
+          id: `bot-token-${Date.now()}`,
+          clan: randomEnemyClan,
+          strength: 2,
+          token: { id: `tok-${Date.now()}`, type: 'Army', strength: 2, clan: randomEnemyClan },
+          isFaceUp: false
+        });
+
+        this.state.roundLog.push(`🤖 Клан \({randomEnemyClan} зробив хід і виставив загін на\){targetProv.name}.`);
+        this.saveGame();
+      }
+
+      // Ховаємо банер бота
+      this.botTurnBannerSubject.next(null);
+    }, 1500);
   }
   // Стан: чи триває зараз пре-гральна фаза розстановки жетонів контролю
   private isInitialPlacementPhase: boolean = true;
@@ -545,7 +608,9 @@ export class GameStateService {
 
     // 1. Захоплюємо провінцію (всі інші властивості провінції: name, regionId, isCoastal — залишаються недоторканими!)
     province.controllingClan = playerClan;
-    province.controlTokensFaceUp += 1;
+    // Якщо це клан Краба, ставимо +2 до захисту жетоном контролю при розстановці, інакше стандартно +1
+    const defenseBonus = playerClan === 'Crab' ? 2 : 1;
+    province.controlTokensFaceUp += defenseBonus;
     player.remainingControlTokens -= 1;
 
     this.state.roundLog.push(`Клан ${playerClan} встановив жетон контролю на ${province.name}. Залишок: ${player.remainingControlTokens}`);
@@ -595,7 +660,8 @@ export class GameStateService {
       }
     }
     Object.values(this.state.players).forEach(p => {
-          p.isSkillUsedThisRound = false; // Відновлюємо доступність кнопки скіла на новий раунд
+          p.isSkillUsedThisRound = false;
+          delete (p as any)._crabBonusApplied; // Відновлюємо доступність кнопки скіла на новий раунд
     });
 
     this.saveGame();
@@ -649,9 +715,6 @@ export class GameStateService {
       }
 
       if (placedTokens.length === 0) {
-        if (province.controllingClan !== 'Neutral' && !province.hasShrine) {
-          province.controlTokensFaceUp += 1;
-        }
         return;
       }
 
@@ -760,24 +823,29 @@ export class GameStateService {
           effectiveDefenseForWinner = Math.max(0, defenseTotal - 2);
         }
 
-        // Умова перемоги: атака > захисту, АБО (якщо атакуючий Журавель і атака == захисту)
+       // Умова перемоги: атака > захисту, АБО (якщо атакуючий Журавель і атака == захисту)
         const isCraneTieBreak = strongestAttackerClan === 'Crane' && maxAttackStrength === effectiveDefenseForWinner;
         
         if (strongestAttackerClan && (maxAttackStrength > effectiveDefenseForWinner || isCraneTieBreak)) {
+          // --- БІЙ ПРОГРАНО КРАБОМ (ворог захопив провінцію) ---
           if (isCraneTieBreak) {
-            this.state!.roundLog.push(`鹤 Клан Журавля перемагає в нічию на ${province.name}!`);
+            this.state!.roundLog.push(`鶴 Клан Журавля перемагає в нічию на ${province.name}!`);
           }
 
-          this.state!.roundLog.push(`Клан ${strongestAttackerClan} захопив ${province.name} з міцністю атаки ${maxAttackStrength} проти захисту ${effectiveDefenseForWinner}!`);
+          this.state!.roundLog.push(`Клан \({strongestAttackerClan} захопив\){province.name} з міцністю атаки \({maxAttackStrength} проти захисту\){effectiveDefenseForWinner}!`);
           province.controllingClan = strongestAttackerClan;
           province.controlTokensFaceUp = 1;
         } else {
-          // Атаку відбито! Перевіряємо скіл КЛАНУ КРАБА (успішний захист дає +2 до захисту провінції)
+          // --- АТАКУ ВІДБИТО (Успішний захист Краба!) ---
+          // ПЕРЕВІРЯЄМО ЧИ ЗАХИЩАВСЯ КРАБ
           if (defenderClan === 'Crab') {
-            this.applyCrabClanBonus(province, defenderClan, true);
+            // Клан Краба отримує +2 до захисту провінції
+            province.baseDefense += 2;
+            this.state!.roundLog.push(`🦀 Клан Краба відбив атаку на \({province.name}: базовий захист збільшено на +2 (Тепер:\){province.baseDefense})!`);
+          } else {
+            // Для всіх інших кланів стандартно додається +1 за вистояний раунд
+            province.controlTokensFaceUp += 1;
           }
-
-          province.controlTokensFaceUp += 1;
         }
       }
     });
@@ -852,7 +920,7 @@ export class GameStateService {
    */
   private applyCrabClanBonus(province: Province, defenderClan: ClanType, wasSuccessfulDefense: boolean): void {
     if (defenderClan === 'Crab' && wasSuccessfulDefense) {
-      province.baseDefense += 2;
+      province.baseDefense += 2; // Збільшуємо саме фізичний базовий захист на +2 після успішного відбиття
       this.state!.roundLog.push(`🦀 Клан Краба відбив атаку на ${province.name}: базовий захист збільшено на +2 (Тепер: ${province.baseDefense})!`);
     }
   }
@@ -860,12 +928,7 @@ export class GameStateService {
    * Базова ініціалізація захисту провінції з урахуванням пасиву Краба (дефолтний захист +2)
    */
   private getEffectiveBaseDefense(province: Province): number {
-    let base = province.baseDefense;
-    // Якщо провінція належить Крабу, її дефолтний захист вищий на 2
-    if (province.controllingClan === 'Crab') {
-      base += 2;
-    }
-    return base;
+    return province.baseDefense;
   }
   getUnicornSkillState() {
     const player = this.state?.players['Unicorn'];
@@ -975,6 +1038,139 @@ export class GameStateService {
       player.isSkillUsedThisRound = true;
     }
 
+    this.saveGame();
+  }
+  // Повертає поточний статус активації скілу Скорпіона
+  getScorpionSkillState() {
+    const player = this.state?.players['Scorpion'];
+    return {
+      isActive: this.state?.isScorpionSkillActive || false,
+      isUsed: player?.isSkillUsedThisRound || false
+    };
+  }
+
+  // Активація скілу Скорпіона по кліку на кнопку
+  activateScorpionSkill(): void {
+    if (!this.state) return;
+    const player = this.state.players['Scorpion'];
+    if (!player || player.isSkillUsedThisRound) return;
+
+    this.state.isScorpionSkillActive = true;
+
+    // СТВОРЮЄМО СТАРТОВИЙ ХАРДКОД-НАМЕТ ВОРОГА НА ПОЧАТКУ ХОДУ СКОРПІОНА
+    const targetProv = Object.values(this.state.provinces).find(p => !p.placedTokens || p.placedTokens.length === 0);
+    if (targetProv) {
+      if (!targetProv.placedTokens) targetProv.placedTokens = [];
+      targetProv.placedTokens.push({
+        id: `start-mock-enemy-${Date.now()}`,
+        clan: 'Crane', // Наприклад, клан Журавель як ворог
+        strength: 3,
+        token: { id: 'mock-token-crane', type: 'Army', strength: 3, clan: 'Crane' },
+        isFaceUp: false
+      });
+      this.state.roundLog.push(`🦂 На початку ходу Скорпіона розвідка виявила ворожий намет на провінції ${targetProv.name}!`);
+    }
+
+    this.state.roundLog.push(`🦂 Клан Скорпіона активує мережу шпигунів: виберіть закритий жетон ворога на мапі.`);
+    this.saveGame();
+  }
+
+  // Скасування скілу шпигунства
+  cancelScorpionSkill(): void {
+    if (!this.state) return;
+    this.state.isScorpionSkillActive = false;
+    this.saveGame();
+  }
+
+  // Обробка кліку по провінції під час активного шпигунства Скорпіона
+  handleScorpionProvinceClick(provinceId: string): boolean {
+    if (!this.state || !this.state.isScorpionSkillActive) return false;
+
+    const province = this.state.provinces[provinceId];
+    if (!province) return false;
+
+    // Шукаємо закриті жетони супротивника (не нашого клану — 'Scorpion')
+    const enemyTokens = (province.placedTokens || []).filter(pt => pt.clan !== 'Scorpion' && !pt.isFaceUp);
+    
+    if (enemyTokens.length === 0) {
+      console.log('На цій провінції немає закритих ворожих жетонів!');
+      return false;
+    }
+
+    // РЕЖИСУРА ШПИГУНСТВА: робимо ворожі жетони на цій провінції видимими (isFaceUp = true)
+    province.placedTokens.forEach(pt => {
+      if (pt.clan !== 'Scorpion') {
+        pt.isFaceUp = true; // Розкриваємо шпигунську карту для всіх
+      }
+    });
+
+    // Завершуємо роботу скілу
+    this.state.isScorpionSkillActive = false;
+    const player = this.state.players['Scorpion'];
+    if (player) {
+      player.isSkillUsedThisRound = true;
+    }
+    // --- ТЕСТОВИЙ АВТО-ХАРКОД ---
+    // Перевіряємо, чи є на карті хоча б один закритий жетон ворога
+    let hasAnyEnemyToken = false;
+    Object.values(this.state.provinces).forEach(prov => {
+      if ((prov.placedTokens || []).some(pt => pt.clan !== 'Scorpion' && !pt.isFaceUp)) {
+        hasAnyEnemyToken = true;
+      }
+    });
+
+    // Якщо ворогів немає — автоматично ставимо тестовий закритий намет (наприклад, клану Crab) на вільну провінцію
+    if (!hasAnyEnemyToken) {
+      const targetProv = Object.values(this.state.provinces).find(p => !p.placedTokens || p.placedTokens.length === 0);
+      if (targetProv) {
+        if (!targetProv.placedTokens) targetProv.placedTokens = [];
+        targetProv.placedTokens.push({
+          id: `mock-enemy-${Date.now()}`,
+          clan: 'Crab',
+          strength: 3,
+          token: { id: 'mock-token-1', type: 'Army', strength: 3, clan: 'Crab' },
+          isFaceUp: false // Закритий намет
+        });
+        this.state.roundLog.push(`[ТЕСТ] Автоматично створено тестовий ворожий намет на провінції ${targetProv.name}!`);
+        console.log(`[ТЕСТ] Автоматично створено тестовий ворожий намет на провінції ${targetProv.name}!`);
+      }
+    }
+    // ----------------------------
+    this.state.roundLog.push(`🦂 Шпигуни Скорпіона успішно розкрили ворожі сили на провінції ${province.name}!`);
+    this.saveGame();
+    return true;
+  }
+
+  setupCrabDefenseTest(): void {
+    if (!this.state) return;
+
+    // Збираємо ВСІ провінції, які зараз контролює Клан Краба
+    const crabProvinces = Object.values(this.state.provinces).filter(
+      p => p.controllingClan === 'Crab'
+    );
+
+    if (crabProvinces.length === 0) {
+      console.log('Клан Краба більше не контролює жодної провінції!');
+      return;
+    }
+
+    // Вибираємо РАНДОМНУ провінцію Краба зі списку
+    const randomCrabProvince = crabProvinces[Math.floor(Math.random() * crabProvinces.length)];
+
+    if (!randomCrabProvince.placedTokens) {
+      randomCrabProvince.placedTokens = [];
+    }
+    
+    // Додаємо ворожий загін (наприклад, Армію сили 3 від клану Lion) на цю провінцію
+    randomCrabProvince.placedTokens.push({
+      id: `crab-test-enemy-${Date.now()}`,
+      clan: 'Lion',
+      strength: 3,
+      token: { id: 'test-tok-lion', type: 'Army', strength: 3, clan: 'Lion' },
+      isFaceUp: true // Відкритий для наочності в тестах
+    });
+
+    this.state.roundLog.push(`[ТЕСТ КРАБА] Ворожий загін клану Lion напав на провінцію Краба "${randomCrabProvince.name}" із силою 3!`);
     this.saveGame();
   }
 }
