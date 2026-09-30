@@ -282,17 +282,6 @@
   border: 2px solid #ffd699;
   animation: crestPulse 1.5s infinite;
   pointer-events: none;
-  /* position: absolute;
-   width: 65px;
-  height: 65px;
-  top: -2px;
-  left: 40px;
-  right: 0px;
-  bottom: -6px;
-  border-radius: 50%;
-  border: 2px solid #ffd699;
-  animation: crestPulse 1.5s infinite;
-  pointer-events: none; */
 }
 .skill-pulse-ring.active-screen {
   top: 30px;
