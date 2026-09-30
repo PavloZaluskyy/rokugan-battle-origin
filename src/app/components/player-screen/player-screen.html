@@ -22,11 +22,25 @@
   <!-- Верхня панель у стилі інтерфейсу Bannerlord -->
   <div class="inventory-header">
     <div class="clan-badge-wrapper">
-      <div class="clan-mon" [ngClass]="playerState.clan.toLowerCase()" [style.backgroundImage]="'url(\'' + getClanImage(playerState.clan.toLowerCase()) + '\')'"></div>
-      <div class="clan-info">
-        <span class="clan-title">ДАЙМЬО ВЕЛИКОГО КЛАНУ</span>
-        <h2 class="clan-name">{{ playerState.clan }}</h2>
-      </div>
+      <div class="clan-mon " 
+          [class.skill-button-box]="['Scorpion', 'Unicorn'].includes(playerState.clan)"
+           [class.skill-available]="isSkillAvailable()"
+           [class.used]="playerState.isSkillUsedThisRound"
+           (click)="useClanSkill()" 
+           [ngClass]="playerState.clan.toLowerCase()"
+          [style.backgroundImage]="'url(\'' + getClanImage(playerState.clan.toLowerCase()) + '\')'"\
+          [attr.title]="['Scorpion', 'Unicorn'].includes(playerState.clan) ? 'Активувати здібність клану' : null"></div>
+          <div class="skill-pulse-ring" *ngIf="isSkillAvailable()" [class.active-screen]="isScreenOpen"></div>
+          <div class="clan-info-group">
+            <div class="clan-info">
+              <span class="clan-title">ДАЙМЬО ВЕЛИКОГО КЛАНУ</span>
+              <h2 class="clan-name">{{ playerState.clan }}</h2>
+            </div>
+          </div>
+          <div class="clan-lore-details">
+            <span class="lore-skill-desc">⚡ Здібність: {{ getClanSkillDescription(playerState.clan) }}</span>
+            <span class="lore-unique-card">🃏 Унікальна карта: {{ getUniqueCardDescription(playerState.clan) }}</span>
+        </div>
     </div>
     
     <div class="inventory-stats">
@@ -46,7 +60,7 @@
         <span class="skill-tooltip">{{ getSkillTooltip(playerState.clan) }}</span>
 
       </div>
-     <!-- Кнопка активного скілу клану (для Єдинорога, Скорпіона тощо) -->
+     <!-- Кнопка активного скілу клану (для Єдинорога, Скорпіона тощо)
       <div class="skill-button-box" 
            *ngIf="['Unicorn', 'Scorpion'].includes(playerState.clan)"
            [class.used]="playerState.isSkillUsedThisRound"
@@ -54,7 +68,12 @@
         <span class="skill-icon">{{ getSkillIcon(playerState.clan) }}</span>
         <span class="skill-tooltip">{{ getSkillTooltip(playerState.clan) }}</span>
 
-      </div>
+      </div> -->
+      <!-- Детальна інформація про скіл та додаткова карта (зелені лінії на скріншоті) -->
+      
+    </div>
+    
+      <div class="inventory-stats">
       <div class="stat-box">
         <span class="stat-label">🏅 ЧЕСТЬ КЛАНУ</span>
         <span class="stat-value">{{ playerState.honorPoints }}</span>
@@ -63,20 +82,25 @@
         <span class="stat-label">🛡️ ЗАПАС КОНТРОЛЮ</span>
         <span class="stat-value">{{ playerState.remainingControlTokens }}</span>
       </div>
-    </div>
+      </div>
+      
   </div>
 
   <!-- Ігровий стіл (Бамбуковий килимок / Дерев'яна дошка) -->
   <div class="bamboo-mat">
     <div class="mat-title">ВІЙСЬКОВИЙ АКТИВ НА ПОТОЧНИЙ РАУНД (ЗА ШИРМОЮ)</div>
-    
+    <div class="dragon-screen-prompt" *ngIf="isDragonSelectionActive">
+      <h3>Виберіть одну карту яка вирушить в колоду</h3>
+      <p class="dragon-banner-timer">Часу залишилось: {{ localDragonTimer }}с</p>
+    </div>
     <div class="cards-grid">
       <!-- Стилізована Карта-Жетон -->
         <div class="clan-card" 
           *ngFor="let token of playerState.activeHandTokens" 
           [ngClass]="token.type.toLowerCase()"
           [class.active-card]="isSelected(token)"
-          (click)="selectCard(token)">
+          [ngClass]="[token.type.toLowerCase(), isDragonSelectionActive && token.type !== 'Blank' ? 'dragon-bouncing-card' : '']"
+          (click)="isDragonSelectionActive ? onDragonCardClick(token) : selectCard(token)">
           <div class="card-illustration" [style.backgroundImage]="'url(' + getCardImage(token.type) + ')'">
             <div class="card-overlay"></div>
             <div class="card-strength" *ngIf="token.strength && token.strength > 0 && token.type !== 'Raid'">{{ token.strength }}</div>

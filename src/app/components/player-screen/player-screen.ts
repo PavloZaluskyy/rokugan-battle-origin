@@ -1,4 +1,4 @@
-import { Component, Input, OnInit } from '@angular/core';
+import { Component, Input, OnInit, DoCheck, ChangeDetectorRef } from '@angular/core';
 import { GameStateService } from '../../services/game-state.service';
 import { PlayerState, BattleToken } from '../../models/game.model';
 
@@ -8,16 +8,25 @@ import { PlayerState, BattleToken } from '../../models/game.model';
   templateUrl: './player-screen.html',
   styleUrls: ['./player-screen.css'],
 })
-export class PlayerScreen implements OnInit {
+export class PlayerScreen implements OnInit, DoCheck {
   // Передаємо тип клану з батьківського компонента (наприклад, 'Crab')
   @Input() clanType!: string;
   isScreenOpen: boolean = false;
   playerState: PlayerState | null = null;
+ 
+  localDragonTimer: number = 10;
+  private dragonTimerInterval: any = null;
 
-  constructor(private gameStateService: GameStateService) {}
+  constructor(private gameStateService: GameStateService,  private cdr: ChangeDetectorRef) {}
 
   ngOnInit(): void {
     this.updateScreenData();
+  }
+  // Відстежуємо зміни, щоб автоматично відкрити ширму Дракону
+  ngDoCheck() {
+    if (this.isDragonSelectionActive && !this.isScreenOpen) {
+      this.isScreenOpen = true; // Автоматично розгортаємо ширму
+    }
   }
   toggleScreen(): void {
     this.isScreenOpen = !this.isScreenOpen;
@@ -85,6 +94,47 @@ isSelected(token: BattleToken): boolean {
     if (clan === 'Scorpion') return '🦂'; // Шпигунство / підгляд жетона
     return '⚡';
   }
+  // Перевірка, чи доступний скіл зараз
+  isSkillAvailable(): boolean {
+    if (!this.playerState) return false;
+    // Наприклад, якщо скіл ще не використовувався в цьому раунді і це клан зі скілом (Скорпіон, Єдинорог тощо)
+    return !this.playerState.isSkillUsedThisRound && ['Scorpion', 'Unicorn'].includes(this.playerState.clan);
+  }
+
+  // Клік по іконці клану з інтегрованим скілом
+  onClanCrestClick(): void {
+    const playerState = this.playerState;
+    if (!playerState || !this.isSkillAvailable()) return;
+    this.gameStateService.activateClanSkill(playerState.clan);
+  }
+
+  // Опис здібності для зеленої зони
+  getClanSkillDescription(clan: string): string {
+    switch (clan) {
+      case 'Scorpion': return '[Активна] Шпигунство: Один раз на раунд ви можете таємно подивитися на один намет атаки суперника на карті.';
+      case 'Unicorn': return '[Активна] Маневр: Перед фазою бою перемістіть/поміняйте місцями дві власні картки атаки на мапі.';
+      case 'Dragon': return '[Пасивна] Медитація: Отримуйте на 1 картку атаки більше під час роздачі, після чого поверніть одну картку з пулу назад у колоду.';
+      case 'Crab': return '[Пасивна] Фортеця: Базовий захист усіх ваших провінцій становить +2. Успішний захист також додає +2.';
+      case 'Lion': return '[Пасивна] Честь: Пуста карта атаки (Блеф) дає +2 до захисту і не скидається після бою.';
+      case 'Crane': return '[Пасивна] Дипломатія: У разі нічиєї в битві завжди перемагає Журавля.';
+      case 'Phoenix': return '[Пасивна] Прозріння: Атакуючи столичну провінцію, ігноруйте її базові 2 одиниці захисту.';
+      default: return 'Спеціальна пасивна або активна дія';
+    }
+  }
+
+  // Опис унікальної карти клану
+  getUniqueCardDescription(clan: string): string {
+    switch (clan) {
+      case 'Unicorn': return 'Додатковий Погром (Raid)';
+      case 'Crane': return 'Додаткова Дипломатія';
+      case 'Lion': return 'Армія сили 6';
+      case 'Dragon': return 'Благословення сили 3';
+      case 'Scorpion': return 'Синобі сили 3';
+      case 'Phoenix': return 'Благословення сили 3';
+      case 'Crab': return 'Флот сили 3';
+      default: return 'Стандартний арсенал';
+    }
+  }
 
   /**
    * Текст підказки для скілу
@@ -118,6 +168,46 @@ isSelected(token: BattleToken): boolean {
     }
     this.updateScreenData();
   }
+  get isDragonSelectionActive(): boolean {
+    const state = this.gameStateService.getGameState();
+    const active = (state?.isDragonSkillSelectionActive && this.playerState?.clan === 'Dragon') || false;
+    
+    // Якщо скіл став активним, а таймер ще не крутиться — запускаємо його локально
+    if (active && !this.dragonTimerInterval) {
+      this.startLocalDragonTimer();
+    }
+    return active;
+  }
+  startLocalDragonTimer() {
+    this.localDragonTimer = 10;
+    clearInterval(this.dragonTimerInterval);
+
+    this.dragonTimerInterval = setInterval(() => {
+      if (this.localDragonTimer > 0) {
+        this.localDragonTimer--;
+        this.cdr.detectChanges(); // Примусово оновлюємо UI ширми щосекунди
+      } else {
+        clearInterval(this.dragonTimerInterval);
+        this.dragonTimerInterval = null;
+      }
+    }, 1000);
+  }
+
+  // Клік по карті для Дракона (повернення в колоду)
+  onDragonCardClick(token: any): void {
+    if (!this.isDragonSelectionActive) return;
+    if (token.type === 'Blank') return; // Блеф чіпати не можна
+
+    clearInterval(this.dragonTimerInterval);
+    this.dragonTimerInterval = null;
+    this.gameStateService.returnCardToDeck(token.id);
+    this.updateScreenData();
+  }
+
+  get dragonDisplayTimer(): number {
+   return this.gameStateService.globalTimer;
+  }
+
   testCrabDefense(): void {
     this.gameStateService.setupCrabDefenseTest();
     this.isScreenOpen = false;
@@ -128,4 +218,5 @@ isSelected(token: BattleToken): boolean {
     this.isScreenOpen = false;
     alert('Тестовий ворожий загін додано на провінцію Лева! Тепер натисніть кнопку "Виконати / Битва", щоб перевірити результат захисту.');
   }
+ 
 }

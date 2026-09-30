@@ -21,6 +21,13 @@ export class GameStateService {
 
   // ID провінції, яка зараз у фокусі кінематографічної камери
   isAttackingStrikeActive: boolean = false;
+
+  // Змінні універсального таймера
+  public globalTimer: number = 0;
+  private timerInterval: any = null;
+  // Сигнал для запуску таймера скілу Дракона на мапі з кількістю секунд
+  private dragonSkillTimerSubject = new Subject();
+  dragonSkillTimer$ = this.dragonSkillTimerSubject.asObservable();
   constructor() {
     // При старті сервісу намагаємося автоматично завантажити збережену гру
     this.loadGame();
@@ -58,7 +65,9 @@ export class GameStateService {
 
     selectedClans.forEach(clan => {
       const initialDeck = this.generatePlayerDeck(clan);
-      const initialHand = initialDeck.splice(0, 5); // Беремо перші 5 з колоди
+      // ДРАКОН СТАРТУЄ З 6 БОЙОВИМИ КАРТАМИ, ІНШІ — З 5
+      const handSize = clan === 'Dragon' ? 6 : 5;
+      const initialHand = initialDeck.splice(0, handSize);
 
       // Додаємо Блеф
       initialHand.push({
@@ -127,41 +136,6 @@ export class GameStateService {
   }
 
   /**
-   * Генерування початкової руки жетонів для гравця (5 карт + 1 блеф)
-   */
-  // private generateInitialHand(): BattleToken[] {
-  //   const hand: BattleToken[] = [];
-  //   let idCounter = 1;
-
-  //   const addToken = (type: BattleTokenType, strength: number, count: number) => {
-  //     for (let i = 0; i < count; i++) {
-  //       hand.push({
-  //         id: `token-${type.toLowerCase()}-${idCounter++}-${Math.random().toString(36).substring(2, 5)}`,
-  //         type: type,
-  //         strength: strength,
-  //         clan: 'Neutral' // Буде встановлено при розподілі
-  //       });
-  //     }
-  //   };
-
-  //   addToken('Army', 1, 2);
-  //   addToken('Army', 2, 1);
-  //   addToken('Army', 3, 1);
-  //   addToken('Navy', 1, 1);
-  //   addToken('Shinobi', 1, 1);
-
-  //   // Додаємо пустий жетон (Блеф)
-  //   hand.push({
-  //     id: `blank-${Date.now()}-${Math.random().toString(36).substring(2, 5)}`,
-  //     type: 'Blank',
-  //     strength: 0,
-  //     clan: 'Neutral'
-  //   });
-
-  //   return this.shuffleArray(hand);
-  // }
-
-  /**
    * Фаза перегрупування: гравець бере 5 карт атаки + 1 пустий (блеф) = разом 6 карток у руку
    */
   private generatePlayerDeck(clan: ClanType): BattleToken[] {
@@ -224,39 +198,15 @@ export class GameStateService {
     return this.shuffleArray(tokens);
   }
 
-  private drawHandForPlayer(player: PlayerState): BattleToken[] {
-    const hand: BattleToken[] = [];
-
-    // Якщо в колоді не вистачає карт для руки, перетасовуємо скид назад у колоду
-    if (player.deck.length < 5) {
-      if (player.discardPile.length > 0) {
-        player.deck = this.shuffleArray([...player.deck, ...player.discardPile]);
-        player.discardPile = [];
-      }
-    }
-
-    // Витягуємо рівно 5 карт із колоди
-    const drawnCards = player.deck.splice(0, 5);
-    hand.push(...drawnCards);
-
-    // Додаємо незмінний пустий жетон (Блеф), який щоразу генерується заново на руку
-    hand.push({
-      id: `blank-${Date.now()}-${Math.random().toString(36).substring(2, 5)}`,
-      type: 'Blank',
-      strength: 0,
-      clan: player.clan
-    });
-
-    return hand;
-  }
-
   /**
    * Оновлення рук гравців на початку нового раунду (Фаза перегрупування)
    */
   private replenishPlayerHands(): void {
     if (!this.state) return;
-
+    let hasDragonPlayer = false;
     Object.values(this.state.players).forEach(player => {
+      const isDragon = player.clan === 'Dragon';
+      if (isDragon) hasDragonPlayer = true;
       // 1. Знаходимо карту, яку гравець залишив за ширмою (не використазив під час фази розміщення)
       // Оскільки гравець міг виставити до 5 карт, а залишити рівно 1 (або навпаки), 
       // шукаємо те, що лишилося в activeHandTokens, виключаючи старий Blank.
@@ -278,7 +228,10 @@ export class GameStateService {
 
       // 4. Вираховуємо, скільки нових карт треба дотягнути з колоди, 
       // щоб разом із збереженою картою загалом було 5 бойових/спеціальних карт.
-      const neededCardsCount = 5 - newHand.length;
+      // Дракон добирає на 1 карту більше (ціль: 6 бойових + 1 блеф = 7 карток)
+      const targetHandSize = isDragon ? 6 : 5;
+      const neededCardsCount = targetHandSize - newHand.length;
+      
 
       // Перевірка колоди / авто-замішування скиду, якщо карт не вистачає
       if (player.deck.length < neededCardsCount) {
@@ -306,6 +259,11 @@ export class GameStateService {
       const savedCardInfo = savedCard ? `Збережено за ширмою: ${savedCard.type} (сила ${savedCard.strength})` : 'Нічого не збережено';
       this.state!.roundLog.push(`Клан ${player.clan} оновив руку. ${savedCardInfo}. Добрано карт із колоди: ${drawnCards.length}.`);
     });
+    // Якщо серед гравців є Дракон — активуємо спеціальну підфазу вибору карти для повернення
+    if (hasDragonPlayer && this.state.players['Dragon']) {
+      this.state.isDragonSkillSelectionActive = true;
+      this.state.roundLog.push(`🐉 Клан Дракона отримав 7 карт: необхідно вибрати одну карту для повернення в колоду.`);
+    }
   }
   /**
    * Збереження поточного стану в localStorage
@@ -632,6 +590,7 @@ export class GameStateService {
     if (this.isInitialPlacementPhase) {
       this.isInitialPlacementPhase = false;
       this.state.roundLog.push(`Пре-фазу розстановки завершено. Починається Раунд 1.`);
+      this.checkDragonSkillBeforePlacement();
       this.saveGame();
       return;
     }
@@ -646,6 +605,7 @@ export class GameStateService {
       if (this.state.currentRound >= 5) {
         alert('Гра завершена! Час підраховувати очки честі.');
       } else {
+        this.checkDragonSkillBeforePlacement();
         this.state.currentRound++;
         this.state.currentPhase = 'Placement';
         
@@ -1147,6 +1107,128 @@ export class GameStateService {
     this.state.roundLog.push(`🦂 Шпигуни Скорпіона успішно розкрили ворожі сили на провінції ${province.name}!`);
     this.saveGame();
     return true;
+  }
+
+
+  // Метод запуску універсального таймера
+  startGlobalTimer(seconds: number, onComplete: () => void): void {
+    this.clearGlobalTimer();
+    this.globalTimer = seconds; // Одразу встановлюємо 10, а не чекаємо 1 секунду!
+    
+    this.timerInterval = setInterval(() => {
+      this.globalTimer--;
+      if (this.globalTimer <= 0) {
+        this.clearGlobalTimer();
+        onComplete();
+      }
+    }, 1000);
+  }
+
+  // Зупинка та очищення таймера
+  clearGlobalTimer(): void {
+    if (this.timerInterval) {
+      clearInterval(this.timerInterval);
+      this.timerInterval = null;
+    }
+    this.globalTimer = 0;
+  }
+
+// /**
+//    * Перевірка наявності клану Дракона перед фазою розміщення та запуск таймера
+//    */
+checkDragonSkillBeforePlacement(): void {
+   if (!this.state) return;
+
+    // Перевіряємо, чи є гравець за клан Дракона
+    const hasDragon = Object.values(this.state.players).some(p => p.clan === 'Dragon');
+    if (!hasDragon) return;
+
+    // Активуємо стан вибору карти для Дракона
+    this.state.isDragonSkillSelectionActive = true;
+    // 1. Виводимо банер із текстом скілу через існуючийsubject
+    this.botTurnBannerSubject.next({
+      clan: 'Dragon',
+      text: 'ВИКОРИСТАННЯ СКІЛА КЛАНУ ДРАКОНА'
+    });
+    // Запускаємо глобальний таймер у сервісі на 10 секунд із колбеком завершення
+    this.startGlobalTimer(10, () => {
+      this.state!.isDragonSkillSelectionActive = false;
+      this.botTurnBannerSubject.next(null);
+      this.saveGame();
+    });
+    
+
+    // 2. Пушимо в лог запис
+    this.state.roundLog.push('🐉 Клан Дракона активує вибір карти на початку раунду.');
+    this.saveGame();
+    
+
+    // 3. Відправляємо сигнал на компонент мапи запустити таймер на 10 секунд
+    this.dragonSkillTimerSubject.next(10);
+    // ГОЛОВНЕ: Запускаємо глобальний таймер сервісу на 10 секунд, 
+    // який керує змінною globalTimer, що виводиться в ширмі!
+    this.startGlobalTimer(10, () => {
+      // Що відбувається, коли час вийшов (наприклад, автоматично закриваємо фазу скілу або повертаємо першу ліпшу карту)
+      if (this.state && this.state.isDragonSkillSelectionActive) {
+        const currentDragonPlayer = this.state.players['Dragon'];
+        if (currentDragonPlayer) {
+          // Використовуємо наш новий метод для вибору рандомної карти
+          const randomCard = this.getRandomCardFromHand(currentDragonPlayer);
+          
+          if (randomCard) {
+            this.returnCardToDeck(randomCard.id);
+            this.state.roundLog.push(`⏱️ Час вийшов: гра не дочекалася вибору, випадкова карта (${randomCard.type}) повернута в колоду Дракона.`);
+          }
+        }
+        this.state.isDragonSkillSelectionActive = false;
+        this.botTurnBannerSubject.next(null);
+        this.saveGame();
+      }
+    });
+  }
+
+  getRandomCardFromHand(playerState: PlayerState): BattleToken | null {
+    if (!playerState || !playerState.activeHandTokens) return null;
+
+    // Фільтруємо карти: залишаємо лише ті, які НЕ є Блефом (Blank)
+    const validCards = playerState.activeHandTokens.filter(t => t.type !== 'Blank');
+    if (validCards.length === 0) return null;
+
+    // Вибираємо випадкову карту з доступних
+    const randomIndex = Math.floor(Math.random() * validCards.length);
+    return validCards[randomIndex];
+  }
+
+  cancelDragonSkillSelection(): void {
+    if (!this.state) return;
+    this.state.isDragonSkillSelectionActive = false;
+    this.saveGame();
+  }
+
+  // Повернення вибраної картки Дракона назад у колоду
+  returnCardToDeck(cardId: string): void {
+    if (!this.state || !this.state.isDragonSkillSelectionActive) return;
+
+    const dragonPlayer = this.state.players['Dragon'];
+    if (!dragonPlayer) return;
+
+    // Не дозволяємо повертати Блеф (Blank)
+    const cardToReturn = dragonPlayer.activeHandTokens.find((t: BattleToken) => t.id === cardId);
+    if (!cardToReturn || cardToReturn.type === 'Blank') return;
+
+   // Видаляємо картку з активної руки гравця
+    dragonPlayer.activeHandTokens = dragonPlayer.activeHandTokens.filter((t: BattleToken) => t.id !== cardId);
+
+    // Додаємо картку назад у колоду та перетасовуємо її
+    dragonPlayer.deck.push(cardToReturn);
+    dragonPlayer.deck = this.shuffleArray(dragonPlayer.deck);
+
+    // Завершуємо підфазу скілу Дракона
+    this.state.isDragonSkillSelectionActive = false;
+    // ПРИМУСОВО ХОВАЄМО БАНЕР НА МАПІ ДЛЯ ВСІХ
+    this.botTurnBannerSubject.next(null);
+    this.state.roundLog.push(`🐉 Клан Дракона повернув карту ${cardToReturn.type} назад у колоду.`);
+    this.saveGame();
   }
 
   setupCrabDefenseTest(): void {

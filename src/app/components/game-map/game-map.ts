@@ -28,13 +28,16 @@ export class GameMap implements OnInit {
   // Стани для ефекту вітру
   isWindZoomingIn: boolean = false;
   isWindZoomingOut: boolean = false;
-  private windTimeout: any = null;
   // Стан для перетягування мишкою (Panning)
   isDragging: boolean = false;
   startX: number = 0;
   startY: number = 0;
   isZoomingIn: boolean = false;
   isZoomingOut: boolean = false;
+
+  // Локальний таймер візуального відображення в компоненті мапи
+  displayTimer: number = 0;
+  private localTimerInterval: any = null;
 
   currentBannerState: { text: string; type: 'attack' | 'pogrom' | 'peace'; style?: any } | null = null;
   private clanColors: { [key: string]: string } = {
@@ -86,6 +89,31 @@ export class GameMap implements OnInit {
   ngOnInit(): void {
     this.loadGameState();
     this.cdr.detectChanges();
+    // Слухаємо сигнал запуску таймера для Дракона
+    this.gameStateService.dragonSkillTimer$.subscribe((seconds: unknown) => {
+      if (typeof seconds !== 'number') {
+        return;
+      }
+      this.startDragonVisualTimer(seconds, () => {
+        // Що відбувається після закінчення 10 секунд (наприклад, ховаємо банер)
+        this.currentBannerState = null;
+        this.cdr.detectChanges();
+      });
+      // Слухаємо ходи ботів для виведення банера
+    this.gameStateService.botTurnBanner$.subscribe(bannerData => {
+      if (bannerData) {
+        const clanColor = this.clanColors[bannerData.clan] || '#ffd699';
+        this.currentBannerState = {
+          text: bannerData.text,
+          type: 'attack',
+          style: { color: clanColor }
+        };
+      } else {
+        this.currentBannerState = null;
+      }
+      this.loadGameState();
+    });
+    });
     // Слухаємо сигнал від кнопки в HUD на запуск битв
     this.gameStateService.triggerCinematic$.subscribe(() => {
       this.executeBattleCinematicSequence();
@@ -543,5 +571,21 @@ onTouchStart(event: TouchEvent) {
   cancelScorpion(): void {
     this.gameStateService.cancelScorpionSkill();
   }
-  
+ // Метод, який запускає візуальний відлік на мапі
+  startDragonVisualTimer(seconds: number, onTimeUp: () => void) {
+    this.displayTimer = seconds;
+    clearInterval(this.localTimerInterval);
+
+    this.localTimerInterval = setInterval(() => {
+      if (this.displayTimer > 0) {
+        this.displayTimer--;
+        this.cdr.detectChanges(); // Примусово оновлюємо UI щосекунди рівно
+      }
+
+      if (this.displayTimer <= 0) {
+        clearInterval(this.localTimerInterval);
+        onTimeUp(); // Викликаємо подію завершення часу в сервісі
+      }
+    }, 1000);
+  }
 }

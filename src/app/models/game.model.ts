@@ -72,6 +72,7 @@ export interface GameState {
   isUnicornSkillActive?: boolean;
   unicornSelectedProvinceId?: string | null;
   isScorpionSkillActive?: boolean;
+  isDragonSkillSelectionActive?: boolean;
 }
 export interface PlacedToken {
   strength: number;

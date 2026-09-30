@@ -37,11 +37,15 @@
     </div>
   </div>
 <!-- КІНЕМАТОГРАФІЧНИЙ ІНФО-БАНЕР ПОДІЙ НА КАРТІ -->
-  <div class="battle-event-banner" *ngIf="currentBannerState" [ngClass]="currentBannerState.type">
+    <div class="battle-event-banner" *ngIf="currentBannerState" [ngClass]="currentBannerState.type">
     <div class="banner-inner-frame">
       <span class="banner-kanji-deco">戰</span>
       <div class="banner-text-content" [ngStyle]="currentBannerState.style">
         {{ currentBannerState.text }}
+        <!-- Динамічний вивід універсального таймера, якщо він активний -->
+      <div *ngIf="displayTimer > 0" style="margin-top: 5px; font-size: 0.85em; color: #ffd699;">
+        ⏱️ Залишилось: {{ displayTimer }}с
+      </div>
       </div>
       <span class="banner-kanji-deco">刃</span>
     </div>

@@ -222,8 +222,108 @@
 
 .clan-badge-wrapper {
   display: flex;
+  justify-content: center;
   align-items: center;
-  gap: 15px;
+  gap: 20px;
+  flex-grow: 1;
+  position: relative;
+}
+/* Новий контейнер для назви та деталей, щоб вони йшли компактно */
+.clan-info-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.clan-info {
+  display: flex;
+  flex-direction: column;
+}
+.clan-mon.skill-button-box {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  border: 2px solid #8c6d53;
+  background: #261f1a;
+  box-shadow: 0 0 15px rgba(140, 109, 83, 0.3);
+  background-size: cover;
+  background-position: center;
+  cursor: pointer;
+  position: relative;
+  transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
+}
+
+.clan-mon.skill-button-box:hover {
+  transform: scale(1.08);
+  border-color: #ffd699;
+}
+
+/* Підсвічування, коли скіл активний і доступний */
+.clan-mon.skill-button-box.skill-available {
+  border-color: #ff6b6b;
+  box-shadow: 0 0 15px rgba(255, 107, 107, 0.7);
+}
+
+.clan-mon.skill-button-box.used {
+  opacity: 0.4;
+  cursor: not-allowed;
+  filter: grayscale(80%);
+}
+
+/* Ефект пульсації навколо іконки клану */
+.skill-pulse-ring {
+  position: absolute;
+  top: 32px;
+  left: 72px;
+  transform: translate(-50%, -50%);
+  width: 68px;
+  height: 68px;
+  border-radius: 50%;
+  border: 2px solid #ffd699;
+  animation: crestPulse 1.5s infinite;
+  pointer-events: none;
+  /* position: absolute;
+   width: 65px;
+  height: 65px;
+  top: -2px;
+  left: 40px;
+  right: 0px;
+  bottom: -6px;
+  border-radius: 50%;
+  border: 2px solid #ffd699;
+  animation: crestPulse 1.5s infinite;
+  pointer-events: none; */
+}
+.skill-pulse-ring.active-screen {
+  top: 30px;
+  left: 53px;
+  transform: translate(-50%, -50%);
+}
+
+@keyframes crestPulse {
+  0% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+  100% { transform: translate(-50%, -50%) scale(1.25); opacity: 0; }
+  /* 0% { transform: scale(1); opacity: 1; }
+  100% { transform: scale(1.25); opacity: 0; } */
+}
+
+/* Блок з детальною інформацією на місці зелених ліній */
+.clan-lore-details {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  
+}
+
+.lore-skill-desc, .lore-unique-card {
+  font-size: 0.72rem;
+  color: #ffd699;
+  letter-spacing: 0.4px;
+  white-space: nowrap;
+}
+
+.lore-unique-card {
+  color: #63e295;
 }
 
 /* Імпровізований монітор/логотип клану */
@@ -237,6 +337,7 @@
   background-size: cover;
   background-position: center;
 }
+
 /* .clan-mon.crab {  } */
 
 .clan-title {
@@ -257,6 +358,7 @@
 .inventory-stats {
   display: flex;
   gap: 20px;
+  flex-grow: 1;
 }
 
 .stat-box {
@@ -493,6 +595,40 @@
   border: 1px solid #ffd699;
   white-space: nowrap;
 }
+.dragon-screen-prompt {
+  text-align: center;
+  background: rgba(57, 44, 35, 0.9);
+  border: 1px solid #132b1c;
+  padding: 8px;
+  margin-bottom: 10px;
+  border-radius: 4px;
+}
+
+.dragon-screen-prompt h3 {
+  margin: 0;
+  color: #ffd699;
+  font-size: 0.85rem;
+  letter-spacing: 1px;
+}
+.dragon-banner-timer {
+  font-size: 0.85rem;
+  margin-top: .4rem;
+  font-weight: bold;
+  color: #ffd699;
+  margin-bottom: 4px;
+}
+
+/* Анімація підстрибування карток Дракона */
+.clan-card.dragon-bouncing-card {
+  border: 2px dashed #63e295 !important;
+  animation: dragonCardBounce 0.8s infinite alternate ease-in-out;
+  cursor: pointer;
+}
+
+@keyframes dragonCardBounce {
+  0% { transform: translateY(0); filter: brightness(1); }
+  100% { transform: translateY(-8px); filter: brightness(1.2); box-shadow: 0 5px 15px rgba(99, 226, 149, 0.4); }
+}
 
 /* ==========================================================================
    МОБІЛЬНА АДАПТИВНІСТЬ ШИРМИ (Смартфони та планшети)
@@ -528,9 +664,23 @@
     gap: 10px;
   }
 
+  .clan-mon.skill-button-box {
+    width: 80px;
+    height: 40px;
+  }
   .clan-mon {
+    width: 80px;
+    height: 40px;
+  }
+  .skill-pulse-ring {
     width: 40px;
     height: 40px;
+    top: 34px;
+    left: 17px;
+  }
+  .skill-pulse-ring.active-screen {
+    top: 33px;
+    left: 17px;
   }
 
   .clan-name {
@@ -538,6 +688,11 @@
   }
 
   .clan-title {
+    font-size: 0.65rem;
+  }
+  .lore-skill-desc{width: 100%;}
+  .lore-skill-desc, .lore-unique-card{
+    white-space: wrap;
     font-size: 0.65rem;
   }
 
