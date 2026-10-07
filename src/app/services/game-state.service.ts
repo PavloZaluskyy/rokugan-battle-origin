@@ -28,6 +28,9 @@ export class GameStateService {
   // Сигнал для запуску таймера скілу Дракона на мапі з кількістю секунд
   private dragonSkillTimerSubject = new Subject();
   dragonSkillTimer$ = this.dragonSkillTimerSubject.asObservable();
+  // Стан для активних режимів бонусів
+  public isReconActive: boolean = false;
+  public isShugenjaActive: boolean = false;
   constructor() {
     // При старті сервісу намагаємося автоматично завантажити збережену гру
     this.loadGame();
@@ -83,7 +86,12 @@ export class GameStateService {
         remainingControlTokens: startingControlTokens - 1, 
         activeHandTokens: initialHand,
         deck: initialDeck,        // Решта колоди
-        discardPile: []           // Порожній скид на старті
+        discardPile: [],           // Порожній скид на старті
+        // --- ДОДАЄМО БОНУСНІ КАРТИ НА ВСЮ ГРУ ---
+        bonusCards: {
+          shugenja: 1, // 1 карта сюгендзя (знищення намету)
+          recon: 2     // 2 карти розвідки (підгляд за намету)
+        }
       };
     });
 
@@ -1295,5 +1303,92 @@ checkDragonSkillBeforePlacement(): void {
 
     this.state.roundLog.push(`[ТЕСТ ЛЕВА] Ворожий загін клану Crane напав на провінцію Лева "${targetProvince.name}" із силою 3!`);
     this.saveGame();
+  }
+
+  // Активація режиму Розвідки (підгляд за наметом)
+  activateReconBonus(playerClan: ClanType): void {
+    if (!this.state) return;
+    if (playerClan === 'Neutral') return;
+    const player = this.state.players[playerClan];
+    const bonusCards = player as (PlayerState & { bonusCards?: { recon: number; shugenja: number } }) | undefined;
+    if (!bonusCards?.bonusCards || bonusCards.bonusCards.recon <= 0) return;
+
+    this.isReconActive = true;
+    this.isShugenjaActive = false; // Вимикаємо інший режим, якщо був активний
+    this.state.roundLog.push(`🔍 Клан ${playerClan} готує карту Розвідки: виберіть закритий ворожий загін на мапі.`);
+    this.saveGame();
+  }
+
+  // Активація режиму Сюгендзя (знищення намету)
+  activateShugenjaBonus(playerClan: ClanType): void {
+    if (!this.state) return;
+    if (playerClan === 'Neutral') return;
+    const player = this.state.players[playerClan];
+    const bonusCards = player as (PlayerState & { bonusCards?: { recon: number; shugenja: number } }) | undefined;
+    if (!bonusCards?.bonusCards || bonusCards.bonusCards.shugenja <= 0) return;
+
+    this.isShugenjaActive = true;
+    this.isReconActive = false;
+    this.state.roundLog.push(`📜 Клан ${playerClan} кличе Сюгендзя: виберіть ворожий загін на мапі для знищення.`);
+    this.saveGame();
+  }
+
+  // Обробка кліку по провінції під час активної Розвідки
+  handleReconProvinceClick(provinceId: string, playerClan: ClanType): boolean {
+    if (!this.state || !this.isReconActive) return false;
+
+    const province = this.state.provinces[provinceId];
+    if (!province) return false;
+
+    // Шукаємо закриті ворожі жетони
+    const enemyTokens = (province.placedTokens || []).filter(pt => pt.clan !== playerClan && !pt.isFaceUp);
+    if (enemyTokens.length === 0) return false;
+
+    // Відкриваємо ворожі жетони (як скіл Скорпіона)
+    province.placedTokens.forEach(pt => {
+      if (pt.clan !== playerClan) {
+        pt.isFaceUp = true;
+      }
+    });
+
+    // Спитуємо одну карту Розвідки у гравця
+    const player = this.state.players[playerClan as Exclude<ClanType, 'Neutral'>];
+    const bonusCards = player as (PlayerState & { bonusCards?: { recon: number; shugenja: number } }) | undefined;
+    if (bonusCards?.bonusCards) {
+      bonusCards.bonusCards.recon -= 1;
+    }
+
+    this.isReconActive = false;
+    this.state.roundLog.push(`🔍 Карта Розвідки успішно використана кланом \({playerClan} на провінції\){province.name}!`);
+    this.saveGame();
+    return true;
+  }
+
+  // Обробка кліку по провінції під час активного Сюгендзя
+  handleShugenjaProvinceClick(provinceId: string, playerClan: ClanType): boolean {
+    if (!this.state || !this.isShugenjaActive) return false;
+
+    const province = this.state.provinces[provinceId];
+    if (!province || !province.placedTokens) return false;
+
+    // Шукаємо ворожі жетони на провінції
+    const enemyTokenIndex = province.placedTokens.findIndex(pt => pt.clan !== playerClan);
+    if (enemyTokenIndex === -1) return false;
+
+    // Видаляємо ворожий жетон з провінції (знищуємо намет)
+    const destroyedToken = province.placedTokens.splice(enemyTokenIndex, 1)[0];
+
+    // Спитуємо одну карту Сюгендзя у гравця
+    const player = this.state.players[playerClan as Exclude<ClanType, 'Neutral'>];
+    const bonusCards = player as (PlayerState & { bonusCards?: { recon: number; shugenja: number } }) | undefined;
+    if (bonusCards?.bonusCards) {
+      bonusCards.bonusCards.shugenja -= 1;
+      // Можемо також кинути в скид, якщо треба: player.discardPile.push(destroyedToken.token);
+    }
+
+    this.isShugenjaActive = false;
+    this.state.roundLog.push(`⚡ Карта Сюгендзя знищила ворожий загін (\({destroyedToken.clan}) на провінції\){province.name}!`);
+    this.saveGame();
+    return true;
   }
 }

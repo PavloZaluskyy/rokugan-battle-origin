@@ -1,6 +1,6 @@
 import { Component, OnInit, HostListener, ChangeDetectorRef } from '@angular/core';
 import { GameStateService } from '../../services/game-state.service';
-import { ClanType, Province } from '../../models/game.model';
+import { ClanType, PlayerState, Province } from '../../models/game.model';
 
 @Component({
   selector: 'app-game-map',
@@ -287,6 +287,24 @@ onTouchStart(event: TouchEvent) {
     const scorpionState = this.getScorpionState();
     if (scorpionState.isActive) {
       const handled = this.gameStateService.handleScorpionProvinceClick(province.id);
+      if (handled) {
+        this.loadGameState();
+        this.cdr.detectChanges();
+        return;
+      }
+    }
+    // Перевірка бонусів Розвідки та Сюгендзя
+    if (this.isReconActive) {
+      const handled = this.gameStateService.handleReconProvinceClick(province.id, this.activePlayerClan);
+      if (handled) {
+        this.loadGameState();
+        this.cdr.detectChanges();
+        return;
+      }
+    }
+
+    if (this.isShugenjaActive) {
+      const handled = this.gameStateService.handleShugenjaProvinceClick(province.id, this.activePlayerClan);
       if (handled) {
         this.loadGameState();
         this.cdr.detectChanges();
@@ -587,5 +605,49 @@ onTouchStart(event: TouchEvent) {
         onTimeUp(); // Викликаємо подію завершення часу в сервісі
       }
     }, 1000);
+  }
+  // Отримання даних бонусних карт поточного активного гравця
+  get playerBonusCards() {
+    const state = this.gameStateService.getGameState();
+    if (!state || this.activePlayerClan === 'Neutral') return { shugenja: 0, recon: 0 };
+    const player = state.players[this.activePlayerClan] as
+      | (PlayerState & { bonusCards?: { shugenja: number; recon: number } })
+      | undefined;
+    return player?.bonusCards || { shugenja: 0, recon: 0 };
+  }
+
+  // Перевірка, чи активний режим Розвідки
+  get isReconActive(): boolean {
+    return this.gameStateService.isReconActive;
+  }
+
+  // Перевірка, чи активний режим Сюгендзя
+  get isShugenjaActive(): boolean {
+    return this.gameStateService.isShugenjaActive;
+  }
+
+  // Клік по іконці Розвідки
+  onReconIconClick(): void {
+    const cards = this.playerBonusCards;
+    if (cards.recon <= 0) return;
+    this.gameStateService.activateReconBonus(this.activePlayerClan);
+  }
+
+  // Клік по іконці Сюгендзя
+  onShugenjaIconClick(): void {
+    const cards = this.playerBonusCards;
+    if (cards.shugenja <= 0) return;
+    this.gameStateService.activateShugenjaBonus(this.activePlayerClan);
+  }
+
+  // Перевірка для підсвічування цілей на мапі під час використання бонусів
+  isReconTarget(province: Province): boolean {
+    if (!this.isReconActive) return false;
+    return (province.placedTokens || []).some(t => t.clan !== this.activePlayerClan && !t.isFaceUp);
+  }
+
+  isShugenjaTarget(province: Province): boolean {
+    if (!this.isShugenjaActive) return false;
+    return (province.placedTokens || []).some(t => t.clan !== this.activePlayerClan);
   }
 }

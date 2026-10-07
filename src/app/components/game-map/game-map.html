@@ -7,6 +7,32 @@
      (touchmove)="onTouchMove($event)"
      (touchend)="stopDrag(); $event.stopPropagation()"
      [class.grabbing]="isDragging">
+<!-- ФІКСОВАНА ПАНЕЛЬ БОНУСНИХ КАРТ ЗЛІВА ПО ЦЕНТРУ -->
+<div class="bonus-cards-sidebar">
+  
+  <!-- Карта Розвідки -->
+  <div class="bonus-card-icon-wrapper" 
+       [class.active]="isReconActive" 
+       [class.available]="playerBonusCards.recon > 0"
+       [class.depleted]="playerBonusCards.recon <= 0"
+       (click)="onReconIconClick()"
+       title="Розвідка: підглянути закритий ворожий намет">
+    <span class="bonus-card-symbol"><img src="assets/images/icons/recon.png" alt="Розвідка"></span>
+    <div class="bonus-count-badge">{{ playerBonusCards.recon }}</div>
+  </div>
+
+  <!-- Карта Сюгендзя -->
+  <div class="bonus-card-icon-wrapper" 
+       [class.active]="isShugenjaActive" 
+       [class.available]="playerBonusCards.shugenja > 0"
+       [class.depleted]="playerBonusCards.shugenja <= 0"
+       (click)="onShugenjaIconClick()"
+       title="Сюгендзя: знищити ворожий намет">
+    <span class="bonus-card-symbol"><img src="assets/images/icons/shugenja.png" alt="Сюгендзя"></span>
+    <div class="bonus-count-badge">{{ playerBonusCards.shugenja }}</div>
+  </div>
+
+</div>
   <!-- Оверлей інструкцій активації скілу Єдинорога -->
 <div class="unicorn-skill-overlay" *ngIf="getUnicornState().isActive">
   <div class="unicorn-banner">
@@ -72,6 +98,8 @@
           [class.unicorn-source-selected]="isUnicornSource(prov)"
           [class.unicorn-target-highlight]="isUnicornTarget(prov)"
           [class.scorpion-target-highlight]="isScorpionTarget(prov)"
+          [class.recon-target-highlight]="isReconTarget(prov)"
+          [class.shugenja-target-highlight]="isShugenjaTarget(prov)"
           >
       <!-- Іконка столиці чи замку -->
       <!-- ТВОЯ 3D-МІНІАТЮРА ЗАМКУ / МІСТА ПО ЦЕНТРУ -->
