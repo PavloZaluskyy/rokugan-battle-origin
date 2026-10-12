@@ -8,6 +8,7 @@ import { GameMap } from './components/game-map/game-map';
 import { ClanSelection } from './pages/clan-selection/clan-selection';
 import { GamePage } from './pages/game-page/game-page';
 import { GameHud } from './components/game-hud/game-hud';
+import { SecretObjectiveSelection } from './pages/secret-objective-selection/secret-objective-selection';
 
 @NgModule({
   declarations: [
@@ -16,7 +17,8 @@ import { GameHud } from './components/game-hud/game-hud';
     GameMap,
     ClanSelection,
     GamePage,
-    GameHud
+    GameHud,
+    SecretObjectiveSelection
   ],
   imports: [
     BrowserModule,

@@ -1,6 +1,7 @@
 import { Component, OnInit, HostListener, ChangeDetectorRef } from '@angular/core';
 import { GameStateService } from '../../services/game-state.service';
 import { ClanType, PlayerState, Province } from '../../models/game.model';
+import { SecretObjective, SecretObjectiveModel } from '../../services/secret-objective';
 
 @Component({
   selector: 'app-game-map',
@@ -9,11 +10,18 @@ import { ClanType, PlayerState, Province } from '../../models/game.model';
   styleUrl: './game-map.css',
 })
 export class GameMap implements OnInit {
+[x: string]: any;
   provinces: Province[] = [];
   selectedProvince: Province | null = null;
   private touchStartX: number = 0;
   private touchStartY: number = 0;
   private isMoved: boolean = false;
+  // Зберігаємо статус виконання у змінній, щоб не навантажувати сторінку кожну секунду
+  isObjectiveCompleted: boolean = false;
+
+  // activePlayerClan: string = 'Crab'; // Приклад поточного клану
+  playerSecretObjective: SecretObjectiveModel | null = null;
+  isObjectiveDrawerOpen: boolean = false;
 
   // Параметри трансформації карти (рух та звичайний зум)
   scale: number = 1;
@@ -84,11 +92,16 @@ export class GameMap implements OnInit {
     'merchant-sunken-ships': { x: 43, y: 75 }
   };
 
-  constructor(private gameStateService: GameStateService, private cdr: ChangeDetectorRef) {}
+  constructor(private gameStateService: GameStateService, 
+              private cdr: ChangeDetectorRef,
+              private objectiveService: SecretObjective) {}
 
   ngOnInit(): void {
     this.loadGameState();
     this.cdr.detectChanges();
+    // Завантажуємо таємну ціль поточного гравця з сервісу
+    this.playerSecretObjective = this.objectiveService.getPlayerObjective(this.activePlayerClan);
+    this.updateObjectiveStatus();
     // Слухаємо сигнал запуску таймера для Дракона
     this.gameStateService.dragonSkillTimer$.subscribe((seconds: unknown) => {
       if (typeof seconds !== 'number') {
@@ -135,11 +148,25 @@ export class GameMap implements OnInit {
       this.loadGameState();
     });
   }
+  // Метод для точкового перерахунку статусу (викликатимемо після битв та ходів)
+  updateObjectiveStatus(): void {
+    if (!this.playerSecretObjective) {
+      this.isObjectiveCompleted = false;
+      return;
+    }
+    const gameState = this.gameStateService.getGameState();
+    this.isObjectiveCompleted = this.objectiveService.isObjectiveCompleted(
+      this.playerSecretObjective.id, 
+      gameState, 
+      this.activePlayerClan
+    );
+  }
 
   loadGameState(): void {
     const gameState = this.gameStateService.getGameState();
     if (gameState) {
       this.provinces = Object.values(gameState.provinces);
+      this.updateObjectiveStatus();
     }
   }
 
@@ -274,6 +301,7 @@ onTouchStart(event: TouchEvent) {
   }
   
  onProvinceClick(province: Province): void {
+  // this.updateObjectiveStatus();
     const unicornState = this.getUnicornState();
     if (unicornState.isActive) {
       const handled = this.gameStateService.handleUnicornProvinceClick(province.id);
@@ -336,6 +364,7 @@ onTouchStart(event: TouchEvent) {
     } else {
       this.selectedProvince = province;
     }
+    
   }
 
   
@@ -540,26 +569,26 @@ onTouchStart(event: TouchEvent) {
   //   }
   // }
 
-  private executeStandardProvinceClick(province: Province): void {
-    if (this.gameStateService.getInitialPlacementStatus()) {
-      const success = this.gameStateService.placeInitialControlToken(province.id, this.activePlayerClan);
-      if (success) this.loadGameState();
-      return;
-    }
+  // private executeStandardProvinceClick(province: Province): void {
+  //   if (this.gameStateService.getInitialPlacementStatus()) {
+  //     const success = this.gameStateService.placeInitialControlToken(province.id, this.activePlayerClan);
+  //     if (success) this.loadGameState();
+  //     return;
+  //   }
 
-    const selectedToken = this.gameStateService.getSelectedToken();
-    if (selectedToken && this.isProvinceTargetable(province)) {
-      const success = this.gameStateService.placeTokenOnProvince(province.id, this.activePlayerClan);
-      if (success) this.loadGameState();
-      return;
-    }
+  //   const selectedToken = this.gameStateService.getSelectedToken();
+  //   if (selectedToken && this.isProvinceTargetable(province)) {
+  //     const success = this.gameStateService.placeTokenOnProvince(province.id, this.activePlayerClan);
+  //     if (success) this.loadGameState();
+  //     return;
+  //   }
 
-    if (this.selectedProvince && this.selectedProvince.id === province.id) {
-      this.closeTooltip();
-    } else {
-      this.selectedProvince = province;
-    }
-  }
+  //   if (this.selectedProvince && this.selectedProvince.id === province.id) {
+  //     this.closeTooltip();
+  //   } else {
+  //     this.selectedProvince = province;
+  //   }
+  // }
   isUnicornSource(province: Province): boolean {
     const state = this.getUnicornState();
     return state.isActive && state.selectedProvinceId === province.id;
@@ -649,5 +678,10 @@ onTouchStart(event: TouchEvent) {
   isShugenjaTarget(province: Province): boolean {
     if (!this.isShugenjaActive) return false;
     return (province.placedTokens || []).some(t => t.clan !== this.activePlayerClan);
+  }
+
+  // Відкрити модальне вікно для перегляду деталей своєї цілі при кліку на прямокутник справа
+  toggleObjectiveDrawer(): void {
+    this.isObjectiveDrawerOpen = !this.isObjectiveDrawerOpen;
   }
 }

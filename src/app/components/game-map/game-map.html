@@ -33,6 +33,34 @@
   </div>
 
 </div>
+<!-- Фіксована іконка праворуч по центру -->
+<div class="secret-objective-sidebar" *ngIf="playerSecretObjective" (click)="toggleObjectiveDrawer()" title="Ваша таємна ціль">
+  <div class="objective-icon-box">
+    <span class="objective-symbol">📜</span>
+    <div class="objective-badge">Ціль</div>
+    <!-- Мітка виконання -->
+    <div class="objective-status-exclamation" *ngIf="isObjectiveCompleted">!</div>
+  </div>
+</div>
+
+<!-- Виїзна бамбукова панель справа -->
+<div class="objective-bamboo-drawer" [class.open]="isObjectiveDrawerOpen">
+  <div class="drawer-close-btn" (click)="toggleObjectiveDrawer()">✕ ЗАЧИНИТИ</div>
+  
+  <div class="bamboo-mat drawer-content-mat">
+    <div class="mat-title">ТАЄМНА ЦІЛЬ ДАЙМЬО</div>
+    <div class="drawer-objective-body" *ngIf="playerSecretObjective">
+      <div class="obj-reward-badge">🏅 Нагорода: +{{ playerSecretObjective.rewardHonor }} Очок честі</div>
+      <h3 class="drawer-obj-title">{{ playerSecretObjective.title }}</h3>
+      <p class="drawer-obj-desc">{{ playerSecretObjective.description }}</p>
+      <!-- Динамічний статус виконання цілі -->
+      <div class="objective-status-banner" [class.success]="isObjectiveCompleted" [class.pending]="!isObjectiveCompleted">
+        {{ isObjectiveCompleted ? '✨ ЦІЛЬ ВИКОНАНО!' : '⏳ В ПРОЦЕСІ ВИКОНАННЯ' }}
+      </div>
+    </div>
+  </div>
+</div>
+
   <!-- Оверлей інструкцій активації скілу Єдинорога -->
 <div class="unicorn-skill-overlay" *ngIf="getUnicornState().isActive">
   <div class="unicorn-banner">

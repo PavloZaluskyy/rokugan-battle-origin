@@ -110,6 +110,6 @@ export class ClanSelection implements OnInit, AfterViewInit {
     const otherClans = allClans.filter(c => c !== selectedClan).slice(0, 2);
     
     this.gameStateService.createNewGame([selectedClan, ...otherClans]);
-    this.router.navigate(['/game']);
+    this.router.navigate(['/select-objective', selectedClan]);
   }
 }

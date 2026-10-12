@@ -1,3 +1,5 @@
+import { SecretObjectiveModel } from "../services/secret-objective";
+
 // 1. Перелік усіх 7 Великих Кланів Рокугану + Нейтральні сили
 export type ClanType = 'Crab' | 'Crane' | 'Dragon' | 'Lion' | 'Phoenix' | 'Scorpion' | 'Unicorn' | 'Neutral';
 
@@ -73,6 +75,7 @@ export interface GameState {
   unicornSelectedProvinceId?: string | null;
   isScorpionSkillActive?: boolean;
   isDragonSkillSelectionActive?: boolean;
+  secretObjectives?: { [clan: string]: SecretObjectiveModel }; //ДОДАЄМО ТАЄМНІ ЦІЛІ ГРАВЦІВ У STATE
 }
 export interface PlacedToken {
   strength: number;

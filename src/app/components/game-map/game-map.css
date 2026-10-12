@@ -867,6 +867,202 @@
   0% { box-shadow: 0 0 5px #63e295; }
   100% { box-shadow: 0 0 15px #63e295, 0 0 25px #63e295; }
 }
+/* Кнопка-іконка справа */
+.secret-objective-sidebar {
+  position: fixed;
+  right: 20px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 990;
+  cursor: pointer;
+}
+
+.objective-icon-box {
+  width: 50px;
+  height: 65px;
+  background: radial-gradient(circle, #2c1f16 0%, #16110e 100%);
+  border: 2px solid #c7a783;
+  border-radius: 4px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.6);
+  transition: all 0.25s ease;
+}
+
+.objective-icon-box:hover {
+  transform: scale(1.08);
+  border-color: #ffd699;
+  box-shadow: 0 0 15px rgba(255, 214, 153, 0.5);
+}
+
+.objective-symbol {
+  font-size: 1.3rem;
+  margin-bottom: 2px;
+}
+
+.objective-badge {
+  font-size: 0.55rem;
+  color: #ffd699;
+  letter-spacing: 0.5px;
+  font-weight: bold;
+}
+/* Мітка "!" на іконці */
+.objective-status-exclamation {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  background: #63e295;
+  color: #000;
+  font-weight: bold;
+  font-size: 0.75rem;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #fff;
+  box-shadow: 0 0 8px rgba(99, 226, 149, 0.8);
+  animation: pulseExclamation 1.5s infinite;
+}
+
+@keyframes pulseExclamation {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.15); }
+  100% { transform: scale(1); }
+}
+
+/* Підсвічування рамки іконки при виконанні */
+.objective-icon-box.completed-objective {
+  border-color: #63e295;
+  box-shadow: 0 0 15px rgba(99, 226, 149, 0.6);
+}
+
+/* Виїзна панель праворуч */
+.objective-bamboo-drawer {
+  position: fixed;
+  top: 0;
+  right: -380px; /* Повністю схована за екраном */
+  width: 350px;
+  height: 100vh;
+  z-index: 2000;
+  background: rgba(10, 8, 7, 0.95);
+  box-shadow: -10px 0 30px rgba(0,0,0,0.9);
+  transition: right 0.4s cubic-bezier(0.19, 1, 0.22, 1);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+.objective-bamboo-drawer.open {
+  right: 0; /* Виїжджає на екран */
+}
+
+.drawer-close-btn {
+  position: absolute;
+  top: 25px;
+  right: 25px;
+  color: #ffd699;
+  font-family: 'Cinzel', serif;
+  font-size: 0.75rem;
+  letter-spacing: 1px;
+  cursor: pointer;
+  background: #1c140e;
+  border: 1px solid #c7a783;
+  padding: 5px 10px;
+  border-radius: 3px;
+}
+
+.drawer-close-btn:hover {
+  background: #c7a783;
+  color: #000;
+}
+.mat-title{
+  color: #ffd699;
+  font-size: 1.2rem;
+}
+
+/* Стилізований бамбуковий килимок для виїзної панелі */
+.drawer-content-mat {
+  background: linear-gradient(90deg, 
+    #2c1f16 0%, #251a12 4%, #2c1f16 8%, 
+    #251a12 12%, #2c1f16 16%, #251a12 20%,
+    #2c1f16 24%, #251a12 28%, #2c1f16 32%,
+    #251a12 36%, #2c1f16 40%, #251a12 44%,
+    #2c1f16 48%, #251a12 52%, #2c1f16 56%,
+    #251a12 60%, #2c1f16 64%, #251a12 68%,
+    #2c1f16 72%, #251a12 76%, #2c1f16 80%,
+    #251a12 84%, #2c1f16 88%, #251a12 92%,
+    #2c1f16 96%, #251a12 100%
+  ) !important;
+  border: 4px solid #1c140e !important;
+  border-top: 10px solid #150f0a !important;
+  border-bottom: 10px solid #150f0a !important;
+  border-radius: 4px;
+  padding: 25px;
+  box-shadow: 0 15px 35px rgba(0,0,0,0.7), inset 0 0 30px rgba(0,0,0,0.5);
+  text-align: center;
+}
+
+.drawer-objective-body {
+  margin-top: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.obj-reward-badge {
+  background: #801d0a;
+  color: #ffd699;
+  font-size: 0.75rem;
+  font-weight: bold;
+  padding: 6px 12px;
+  border-radius: 3px;
+  border: 1px solid #ffd699;
+  display: inline-block;
+  margin: 0 auto;
+}
+
+.drawer-obj-title {
+  font-family: 'Cinzel', serif;
+  font-size: 1.3rem;
+  color: #eee3d5;
+  margin: 0;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+}
+
+.drawer-obj-desc {
+  font-size: 0.85rem;
+  color: #bfa48f;
+  line-height: 1.6;
+  margin: 0;
+}
+/* Банер статусу всередині панелі */
+.objective-status-banner {
+  margin-top: 15px;
+  padding: 8px;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  font-weight: bold;
+  letter-spacing: 1px;
+}
+
+.objective-status-banner.pending {
+  background: rgba(128, 29, 10, 0.4);
+  border: 1px solid #801d0a;
+  color: #ffd699;
+}
+
+.objective-status-banner.success {
+  background: rgba(99, 226, 149, 0.2);
+  border: 1px solid #63e295;
+  color: #63e295;
+  box-shadow: 0 0 10px rgba(99, 226, 149, 0.3);
+}
 /* --- Медіа-запити для мобільних пристроїв --- */
 @media (max-width: 600px) {
   .battle-event-banner {
