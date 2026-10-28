@@ -19,6 +19,7 @@
        title="Розвідка: підглянути закритий ворожий намет">
     <span class="bonus-card-symbol"><img src="assets/images/icons/recon.png" alt="Розвідка"></span>
     <div class="bonus-count-badge">{{ playerBonusCards.recon }}</div>
+    <div class="objective-badge">Розвідка</div>
   </div>
 
   <!-- Карта Сюгендзя -->
@@ -30,16 +31,29 @@
        title="Сюгендзя: знищити ворожий намет">
     <span class="bonus-card-symbol"><img src="assets/images/icons/shugenja.png" alt="Сюгендзя"></span>
     <div class="bonus-count-badge">{{ playerBonusCards.shugenja }}</div>
+    <div class="objective-badge">Сюгендзя</div>
   </div>
 
 </div>
 <!-- Фіксована іконка праворуч по центру -->
 <div class="secret-objective-sidebar" *ngIf="playerSecretObjective" (click)="toggleObjectiveDrawer()" title="Ваша таємна ціль">
   <div class="objective-icon-box">
-    <span class="objective-symbol">📜</span>
+    <span class="objective-symbol"><img src="assets/images/icons/secret-objective.png" alt="Таємна ціль"></span>
     <div class="objective-badge">Ціль</div>
     <!-- Мітка виконання -->
     <div class="objective-status-exclamation" *ngIf="isObjectiveCompleted">!</div>
+  </div>
+</div>
+<!-- НОВА ІКОНКА БУСТІВ РЕГІОНІВ -->
+<div class="region-boosts-sidebar" (click)="toggleRegionDrawer()" title="Картки регіонів партії">
+  <div class="objective-icon-box">
+    <!-- Тут згодом підставиш свою згенеровану іконку або емодзі -->
+    <span class="objective-symbol"><img src="assets/images/icons/region-boosts.png" alt="Бусты регіонів"></span>
+    <div class="objective-badge">Регіони</div>
+    <!-- Лічильник карт у володінні гравця (відображається тільки якщо є хоча б 1 карта) -->
+    <div class="region-cards-count-badge" *ngIf="ownedRegionCardsCount > 0">
+      {{ ownedRegionCardsCount }}
+    </div>
   </div>
 </div>
 
@@ -56,6 +70,38 @@
       <!-- Динамічний статус виконання цілі -->
       <div class="objective-status-banner" [class.success]="isObjectiveCompleted" [class.pending]="!isObjectiveCompleted">
         {{ isObjectiveCompleted ? '✨ ЦІЛЬ ВИКОНАНО!' : '⏳ В ПРОЦЕСІ ВИКОНАННЯ' }}
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ВИЇЗНА ШУХЛЯДКА ДЛЯ КАРТ РЕГІОНІВ СПРАВА -->
+<div class="objective-bamboo-drawer" [class.open]="isRegionDrawerOpen" (wheel)="onDrawerWheel($event)">
+  <div class="drawer-close-btn" (click)="toggleRegionDrawer()">✕ ЗАЧИНИТИ</div>
+  
+  <div class="bamboo-mat drawer-content-mat regions-drawer-mat">
+    <div class="mat-title">КАРТКИ РЕГІОНІВ У ВАШОМУ ВОЛОДІННІ</div>
+    
+    <div class="regions-tiles-container">
+      <!-- Показуємо тільки карти, які належать поточному гравцю (activePlayerClan) -->
+      <div class="region-tile" *ngFor="let card of ownedRegionCardsForActivePlayer">
+        <div class="region-tile-info">
+          <div class="region-tile-header">
+            <span class="region-name-tag">{{ card.regionId }}</span>
+            <span class="region-card-status owned">👑 Володар: {{ card.ownerClan }}</span>
+          </div>
+          <h4 class="region-card-title">{{ card.title }}</h4>
+          <p class="region-card-desc">{{ card.description }}</p>
+        </div>
+        <!-- Кружечок з іконкою регіону справа -->
+        <div class="region-icon-circle" [style.backgroundImage]="'url(\'assets/images/regions/' + card.regionId + '.png\')'">
+          <span class="region-circle-fallback">🏯</span>
+        </div>
+      </div>
+
+      <!-- Повідомлення, якщо у гравця ще немає захоплених регіонів -->
+      <div class="no-regions-msg" *ngIf="ownedRegionCardsForActivePlayer.length === 0">
+        У вас поки немає карток регіонів. Повністю захопіть хоча б один регіон на мапі, щоб отримати його карту!
       </div>
     </div>
   </div>

@@ -789,12 +789,13 @@
 }
 
 .bonus-card-icon-wrapper {
-  width: 50px;
-  height: 50px;
-  border-radius: 50%;
+ width: 50px;
+  height: 65px;
   background: radial-gradient(circle, #2c1f16 0%, #16110e 100%);
-  border: 2px solid #4a3c31;
+  border-radius: 4px;
+  border: 2px solid #c7a783;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
   position: relative;
@@ -836,7 +837,7 @@
 /* Лічильник кількості карт по центру обводки */
 .bonus-count-badge {
   position: absolute;
-  bottom: -4px;
+  bottom: 45px;
   right: -4px;
   background: #801d0a;
   color: #ffd699;
@@ -896,10 +897,15 @@
   border-color: #ffd699;
   box-shadow: 0 0 15px rgba(255, 214, 153, 0.5);
 }
-
-.objective-symbol {
-  font-size: 1.3rem;
-  margin-bottom: 2px;
+.objective-symbol{
+  font-size: 1.4rem;
+}
+.objective-symbol img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  /* font-size: 1.3rem;
+  margin-bottom: 2px; */
 }
 
 .objective-badge {
@@ -1063,6 +1069,167 @@
   color: #63e295;
   box-shadow: 0 0 10px rgba(99, 226, 149, 0.3);
 }
+
+/* Позиціонування іконки бустів регіонів під іконкою цілі */
+.region-boosts-sidebar {
+  position: fixed;
+  right: 20px;
+  top: calc(50% + 45px); /* Зміщена вниз відносно центру іконки цілі */
+  z-index: 990;
+  cursor: pointer;
+}
+/* Бейдж лічильника карт регіонів */
+.region-cards-count-badge {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  background: #801d0a;
+  color: #ffd699;
+  font-size: 0.65rem;
+  font-weight: bold;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 1px solid #ffd699;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.6);
+  z-index: 2;
+}
+.objective-bamboo-drawer {
+  touch-action: pan-y; /* Дозволяє вертикальний скрол пальцем і блокує жести карти на мобільних */
+}
+
+/* Налаштування для шухлядки з регіонами */
+.regions-drawer-mat {
+  max-height: 85vh; /* Обмежуємо висоту екрана */
+  overflow-y: auto;  /* Вмикаємо вертикальну прокрутку, якщо карток багато */
+  -webkit-overflow-scrolling: touch; /* Плавний скрол на iOS */
+  box-sizing: border-box;
+}
+/* Кастомний акуратний скролбар для шухлядки */
+.regions-drawer-mat::-webkit-scrollbar {
+  width: 6px;
+}
+
+.regions-drawer-mat::-webkit-scrollbar-track {
+  background: rgba(20, 15, 12, 0.6);
+  border-radius: 3px;
+}
+
+.regions-drawer-mat::-webkit-scrollbar-thumb {
+  background: #c7a783;
+  border-radius: 3px;
+}
+
+.regions-drawer-mat::-webkit-scrollbar-thumb:hover {
+  background: #ffd699;
+}
+
+.no-regions-msg {
+  color: #bfa48f;
+  font-size: 0.85rem;
+  text-align: center;
+  padding: 30px 10px;
+  line-height: 1.5;
+  font-style: italic;
+}
+
+.regions-tiles-container {
+  margin-top: 15px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  overflow-y: auto;
+}
+
+/* Дизайн плитки регіону */
+.region-tile {
+  background: #1e1814;
+  border: 1px solid #4a3c31;
+  border-radius: 6px;
+  padding: 12px 15px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  text-align: left;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+  transition: border-color 0.2s;
+}
+
+.region-tile.owned {
+  border-color: #ffd699;
+  background: rgba(255, 214, 153, 0.05);
+}
+
+.region-tile.discarded {
+  opacity: 0.5;
+  filter: grayscale(60%);
+}
+
+.region-tile-info {
+  flex: 1;
+}
+
+.region-tile-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+}
+
+.region-name-tag {
+  font-size: 0.65rem;
+  color: #c7a783;
+  letter-spacing: 1px;
+  font-weight: bold;
+}
+
+.region-card-status {
+  font-size: 0.6rem;
+  color: #63e295;
+}
+
+.region-card-status.discarded {
+  color: #bfa48f;
+}
+
+.region-card-title {
+  font-family: 'Cinzel', serif;
+  font-size: 0.95rem;
+  color: #eee3d5;
+  margin: 0 0 4px 0;
+}
+
+.region-card-desc {
+  font-size: 0.75rem;
+  color: #bfa48f;
+  margin: 0;
+  line-height: 1.4;
+}
+
+/* Кружечок з іконкою регіону справа */
+.region-icon-circle {
+  width: 45px;
+  height: 45px;
+  border-radius: 50%;
+  border: 2px solid #c7a783;
+  background: radial-gradient(circle, #3d2c1d 0%, #1a120c 100%);
+  background-size: cover;
+  background-position: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.6);
+}
+
+.region-circle-fallback {
+  font-size: 1.1rem;
+}
+
 /* --- Медіа-запити для мобільних пристроїв --- */
 @media (max-width: 600px) {
   .battle-event-banner {

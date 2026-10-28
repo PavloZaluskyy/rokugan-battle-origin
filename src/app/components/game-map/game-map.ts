@@ -2,6 +2,7 @@ import { Component, OnInit, HostListener, ChangeDetectorRef } from '@angular/cor
 import { GameStateService } from '../../services/game-state.service';
 import { ClanType, PlayerState, Province } from '../../models/game.model';
 import { SecretObjective, SecretObjectiveModel } from '../../services/secret-objective';
+import { RegionCardService, RegionCard } from '../../services/region-card.service';
 
 @Component({
   selector: 'app-game-map',
@@ -46,6 +47,8 @@ export class GameMap implements OnInit {
   // Локальний таймер візуального відображення в компоненті мапи
   displayTimer: number = 0;
   private localTimerInterval: any = null;
+
+  isRegionDrawerOpen: boolean = false;
 
   currentBannerState: { text: string; type: 'attack' | 'pogrom' | 'peace'; style?: any } | null = null;
   private clanColors: { [key: string]: string } = {
@@ -94,7 +97,8 @@ export class GameMap implements OnInit {
 
   constructor(private gameStateService: GameStateService, 
               private cdr: ChangeDetectorRef,
-              private objectiveService: SecretObjective) {}
+              private objectiveService: SecretObjective,
+              private regionCardService: RegionCardService) {}
 
   ngOnInit(): void {
     this.loadGameState();
@@ -170,6 +174,22 @@ export class GameMap implements OnInit {
     }
   }
 
+  // Отримати всі активні картки регіонів поточної гри
+  get activeRegionCards(): RegionCard[] {
+    return this.regionCardService.getActiveRegionCards();
+  }
+
+  // Кількість доступних карт регіонів у володінні активного гравця
+  get ownedRegionCardsCount(): number {
+    return this.regionCardService.getOwnedCardsCountForClan(this.activePlayerClan);
+  }
+  // Тільки карти регіонів, якими володіє поточний активний гравець
+  get ownedRegionCardsForActivePlayer(): RegionCard[] {
+    return this.regionCardService.getActiveRegionCards().filter(
+      card => card.status === 'owned' && card.ownerClan === this.activePlayerClan
+    );
+  }
+
   get activePlayerClan(): ClanType {
     const state = this.gameStateService.getGameState();
     return state ? state.firstPlayerClan : 'Crab';
@@ -201,6 +221,10 @@ export class GameMap implements OnInit {
       this.translateX = 0;
       this.translateY = 0;
     }
+  }
+  // Зупиняє передачу події коліщатка миші на карту, щоб працював скрол у шухлядці
+  onDrawerWheel(event: WheelEvent): void {
+    event.stopPropagation();
   }
 
   zoomIn() {
@@ -683,5 +707,13 @@ onTouchStart(event: TouchEvent) {
   // Відкрити модальне вікно для перегляду деталей своєї цілі при кліку на прямокутник справа
   toggleObjectiveDrawer(): void {
     this.isObjectiveDrawerOpen = !this.isObjectiveDrawerOpen;
+  }
+  // Відкрити/закрити шухлядку регіонів
+  toggleRegionDrawer(): void {
+    this.isRegionDrawerOpen = !this.isRegionDrawerOpen;
+    // Закриваємо іншу шухлядку для зручності
+    if (this.isRegionDrawerOpen) {
+      this.isObjectiveDrawerOpen = false;
+    }
   }
 }

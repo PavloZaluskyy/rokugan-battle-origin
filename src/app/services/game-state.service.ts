@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { GameState, ClanType, BattleToken, BattleTokenType, PlayerState, Province } from '../models/game.model';
 import { ORIGINAL_PROVINCES, PROVINCE_ADJACENCY } from '../models/provinces-data';
 import { Subject } from 'rxjs';
+import { RegionCardService } from './region-card.service';
 
 @Injectable({
   providedIn: 'root' // Завдяки цьому Angular AppModule автоматично бачить цей сервіс як Singleton
@@ -31,7 +32,7 @@ export class GameStateService {
   // Стан для активних режимів бонусів
   public isReconActive: boolean = false;
   public isShugenjaActive: boolean = false;
-  constructor() {
+  constructor(private regionCardService: RegionCardService) {
     // При старті сервісу намагаємося автоматично завантажити збережену гру
     this.loadGame();
   }
@@ -139,7 +140,8 @@ export class GameStateService {
       provinces: provincesMap,
       roundLog: [`Розпочалася пре-фаза розстановки жетонів контролю. Доступно жетонів у резерві: ${startingControlTokens - 1}.`]
     };
-
+    // Ініціалізуємо випадкові картки регіонів для нової партії
+    this.regionCardService.initializeNewGameRegionCards();
     this.saveGame();
   }
 
@@ -580,7 +582,8 @@ export class GameStateService {
     player.remainingControlTokens -= 1;
 
     this.state.roundLog.push(`Клан ${playerClan} встановив жетон контролю на ${province.name}. Залишок: ${player.remainingControlTokens}`);
-
+    // 🌟 ТУТ: Оновлюємо контроль регіонів після встановлення жетона контролю
+    this.regionCardService.updateRegionControl(this.state.provinces, this.state.players);
     // 2. Перевірка завершення пре-фази
     if (player.remainingControlTokens <= 0) {
       this.isInitialPlacementPhase = false;
@@ -825,6 +828,13 @@ export class GameStateService {
         }
       }
     });
+    // 🌟 ТУТ: Після завершення всіх боїв у фазі виконання проходимо по всіх кланах і перевіряємо монополію на регіони
+    if (this.state && this.state.players) {
+      const activeClans = Object.keys(this.state.players) as ClanType[];
+      activeClans.forEach(clan => {
+        this.regionCardService.updateRegionControl(this.state!.provinces, this.state!.players);
+      });
+    }
 
     this.saveGame();
   }

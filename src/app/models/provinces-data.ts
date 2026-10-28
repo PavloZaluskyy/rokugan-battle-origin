@@ -328,7 +328,7 @@ export const ORIGINAL_PROVINCES: Province[] = [
   {
     id: 'shadowlands-north',
     name: 'Тіньові землі',
-    regionId: 'Територія Тіньових Земель',
+    regionId: 'Територія північних Тіньових Земель',
     isCoastal: false,
     isCapital: false,
     baseDefense: 1,
@@ -341,7 +341,7 @@ export const ORIGINAL_PROVINCES: Province[] = [
   {
     id: 'shadowlands-south',
     name: 'Прокляті болота',
-    regionId: 'Територія Тіньових Земель',
+    regionId: 'Територія південних Тіньових Земель',
     isCoastal: true,
     isCapital: false,
     baseDefense: 1,
