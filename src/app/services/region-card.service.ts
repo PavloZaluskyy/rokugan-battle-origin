@@ -87,6 +87,16 @@ export class RegionCardService {
     timerInterval?: any;
   } | null = null;
 
+  // Стан виконання карти регіону "Кодекс честі"
+  public honorCodeEffect: {
+    cardId: string;
+    clan: string;
+    step: 'select_first_province' | 'select_second_province';
+    firstProvinceId?: string;
+    timer: number;
+    timerInterval?: any;
+  } | null = null;
+
   // Активні картки регіонів, задіяні в поточній партії (по 1 на кожен регіон)
   private activeGameRegionCards: RegionCard[] = [];
 
@@ -394,6 +404,45 @@ export class RegionCardService {
       clearInterval(this.diplomacyEffect.timerInterval);
     }
     this.diplomacyEffect = null;
+    this.closeRokirovkaModalSubject.next();
+  }
+
+  /* КОДЕКС ЧЕСТІ */
+  startHonorCodeEffect(cardId: string, clan: string, onTimeout: () => void): boolean {
+    this.honorCodeEffect = {
+      cardId: cardId,
+      clan: clan,
+      step: 'select_first_province',
+      timer: 10
+    };
+
+    if (this.honorCodeEffect.timerInterval) {
+      clearInterval(this.honorCodeEffect.timerInterval);
+    }
+
+    this.honorCodeEffect.timerInterval = setInterval(() => {
+      this.ngZone.run(() => {
+        if (this.honorCodeEffect && this.honorCodeEffect.timer > 0) {
+          this.honorCodeEffect.timer--;
+        } else {
+          if (this.honorCodeEffect) {
+            this.useRegionCard(this.honorCodeEffect.cardId, this.honorCodeEffect.clan);
+          }
+          this.cancelHonorCodeEffect();
+          onTimeout();
+        }
+        this.closeRokirovkaModalSubject.next();
+      });
+    }, 1000);
+
+    return true;
+  }
+
+  cancelHonorCodeEffect(): void {
+    if (this.honorCodeEffect && this.honorCodeEffect.timerInterval) {
+      clearInterval(this.honorCodeEffect.timerInterval);
+    }
+    this.honorCodeEffect = null;
     this.closeRokirovkaModalSubject.next();
   }
 }

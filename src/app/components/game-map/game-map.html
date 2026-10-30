@@ -178,8 +178,13 @@
           [class.scorpion-target-highlight]="isScorpionTarget(prov)"
           [class.recon-target-highlight]="isReconTarget(prov)"
           [class.shugenja-target-highlight]="isShugenjaTarget(prov)"
-          [class.harbor-target-highlight]="isHarborTarget(prov) || isDiplomacyTarget(prov)"
+          [class.harbor-target-highlight]="isHarborTarget(prov) || isDiplomacyTarget(prov) || isHonorCodeTarget(prov)"
           >
+          <!-- МІНІАТЮРНИЙ ІНДИКАТОР ЧЕСТІ ЗЛІВА (ДЛЯ МОБІЛЬНИХ / КОМПАКТНИЙ ВИГЛЯД) -->
+      <div class="mobile-honor-badge" *ngIf="prov.honorFlowers && prov.honorFlowers > 0" title="Очки честі: {{ prov.honorFlowers }}">
+        <span class="honor-badge-icon">🌸</span>
+        <span class="honor-badge-count">{{ prov.honorFlowers }}</span>
+      </div>
       <!-- Іконка столиці чи замку -->
       <!-- ТВОЯ 3D-МІНІАТЮРА ЗАМКУ / МІСТА ПО ЦЕНТРУ -->
         <div class="province-miniature-wrapper">
@@ -193,6 +198,10 @@
           <!-- Кольорова облямівка / підставка власника навколо мініатюри -->
           <div class="owner-ring" [ngClass]="prov.controllingClan.toLowerCase()"></div>
         </div>
+        <!-- ЗІ СХОДУ / ОЧКИ ЧЕСТІ ЗНИЗУ ПІД ЗАМКОМ -->
+      <div class="honor-flowers-container" *ngIf="prov.honorFlowers && prov.honorFlowers > 0">
+        <span class="honor-flower-icon" *ngFor="let i of [].constructor(prov.honorFlowers)">🌸</span>
+      </div>
       <span class="defense-value">{{ prov.baseDefense + prov.controlTokensFaceUp }}</span>
       <!-- МІНІАТЮРНИЙ ЖЕТОН КОНТРОЛЮ (Печатка власника на вузлі) -->
       <!-- <div class="control-token-badge" *ngIf="prov.controlTokensFaceUp > 0" [title]="'Жетонів контролю: ' + prov.controlTokensFaceUp">
@@ -351,6 +360,28 @@
     </div>
     <p class="rokirovka-instruction">
       {{ regionCardService.diplomacyEffect.step === 'select_target_province' ? 'Оберіть провінцію: для своєї — поставиться мир; для чужої — зразу оберете дві свої провінції для жетонів контролю.' : 'Оберіть власну провінцію, щоб збільшити її контроль.' }}
+    </p>
+  </div>
+</div>
+<!-- БАНЕР ТАЙМЕРА ДЛЯ ЕФЕКТУ "КОДЕКС ЧЕСТІ" -->
+<div class="rokirovka-fullscreen-overlay" *ngIf="regionCardService.honorCodeEffect">
+  <div class="rokirovka-modal bamboo-mat harbor-modal-box">
+    <div class="rokirovka-header">
+      <div class="rokirovka-title-box">
+        <span class="rokirovka-icon">📜</span>
+        <h3 class="mat-title-text">
+          {{ regionCardService.honorCodeEffect.step === 'select_first_province' ? 'КОДЕКС ЧЕСТІ: ВИБЕРІТЬ 1-У ПРОВІНЦІЮ' : 'КОДЕКС ЧЕСТІ: ВИБЕРІТЬ 2-У ПРОВІНЦІЮ' }}
+        </h3>
+      </div>
+      <div class="rokirovka-header-right">
+        <div class="rokirovka-timer" [class.danger]="regionCardService.honorCodeEffect.timer <= 3">
+          ⏱️ 0:{{ regionCardService.honorCodeEffect.timer < 10 ? '0' + regionCardService.honorCodeEffect.timer : regionCardService.honorCodeEffect.timer }}
+        </div>
+        <button class="rokirovka-cancel-btn" (click)="cancelHonorCodeEffect()">Відмінити</button>
+      </div>
+    </div>
+    <p class="rokirovka-instruction">
+      {{ regionCardService.honorCodeEffect.step === 'select_first_province' ? 'Виберіть першу провінцію (крім тіньових земель), щоб додати бонус честі (🌸).' : 'Виберіть другу провінцію для другого бонусу честі (🌸).' }}
     </p>
   </div>
 </div>

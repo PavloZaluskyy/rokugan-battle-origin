@@ -297,6 +297,30 @@
 .owner-ring.unicorn { border-color: #8a4199; background: rgba(138, 65, 153, 0.4); }
 .owner-ring.neutral { border-color: #555555; background: rgba(85, 85, 85, 0.4); }
 
+.mobile-honor-badge{
+  display: none;
+}
+/* Контейнер для іконок квіток честі під містом */
+.honor-flowers-container {
+  position: absolute;
+  bottom: -20px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 2px;
+  z-index: 5;
+  background: rgba(0, 0, 0, 0.6);
+  padding: 1px 6px;
+  border-radius: 10px;
+  border: 1px solid rgba(199, 167, 131, 0.4);
+  pointer-events: none;
+}
+
+.honor-flower-icon {
+  font-size: 0.75rem;
+  line-height: 1;
+  filter: drop-shadow(0 1px 2px rgba(0,0,0,0.8));
+}
 .province-markers-container {
   position: absolute;
   top: -16px;
@@ -1346,6 +1370,39 @@
   .banner-kanji-deco {
     display: none; /* Ховаємо ієрогліфи на дуже вузьких екранах, щоб текст заліз ідеально */
   }
+  /* Мобільний / компактний індикатор честі з лівого боку провінції */
+  .honor-flowers-container{
+    display: none; /* Ховаємо стандартні квіти честі на мобільних, щоб не перекривалися з банером */
+  }
+.mobile-honor-badge {
+  position: absolute;
+  top: 120%;
+  left: -12px;
+  transform: translateY(-50%);
+  background: rgba(26, 18, 11, 0.9);
+  border: 1px solid #c7a783;
+  border-radius: 12px;
+  padding: 2px 6px;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  z-index: 6;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.7);
+  pointer-events: none;
+}
+
+.honor-badge-icon {
+  font-size: 0.65rem;
+  line-height: 1;
+}
+
+.honor-badge-count {
+  font-family: 'Cinzel', serif;
+  font-size: 0.75rem;
+  color: #ffd699;
+  font-weight: bold;
+  line-height: 1;
+}
 }
 
 /* --- АНІМАЦІЇ --- */
