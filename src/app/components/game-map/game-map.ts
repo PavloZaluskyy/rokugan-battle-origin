@@ -402,6 +402,11 @@ onTouchStart(event: TouchEvent) {
     } else {
       this.selectedProvince = province;
     }
+    // 1. ПЕРЕВІРКА ЕФЕКТУ "ВИХІД ДО МОРЯ"
+    if (this.regionCardService.harborEffect) {
+      this.onHarborProvinceClick(province);
+      return;
+    }
     
   }
 
@@ -742,7 +747,10 @@ onTouchStart(event: TouchEvent) {
       const success = this.regionCardService.startRokirovkaEffect(card.id, this.activePlayerClan, () => {
         console.log('⏰ Час виконання картки регіону Рокіровка вийшов!');
       });
-
+    } else if (card.title === 'Вихід до моря') {
+      const success = this.regionCardService.startHarborEffect(card.id, this.activePlayerClan, () => {
+        console.log('⏰ Час виконання картки "Вихід до моря" вийшов!');
+      });
       if (success) {
         this.isRegionDrawerOpen = false; // Закриваємо шухлядку регіонів
       }
@@ -820,5 +828,27 @@ onTouchStart(event: TouchEvent) {
   onCancelRokirovka(): void {
     this.regionCardService.cancelRokirovkaEffect();
   }
-  
+  /*КАРТА РЕГІОНУ "ВИХІД ДО МОРЯ" */
+  // Перевірка, чи підсвічувати провінцію для розміщення порту
+  isHarborTarget(province: Province): boolean {
+    if (!this.regionCardService.harborEffect) return false;
+    // Умова: провінція материкова (не прибережна) і не має порту
+    return !province.isCoastal && !province.hasHarbor;
+  }
+
+  // Клік по провінції під час активного ефекту Порту
+  onHarborProvinceClick(province: Province): void {
+    if (!this.isHarborTarget(province)) return;
+    const gameState = this.gameStateService.getGameState();
+    if (!gameState) return;
+
+    this.regionCardService.completeHarborEffect(province.id, gameState);
+    this.gameStateService.saveGame();
+    this.loadGameState();
+  }
+
+  // Кнопка відміни ефекту
+  cancelHarborEffect(): void {
+    this.regionCardService.cancelHarborEffect();
+  }
 }

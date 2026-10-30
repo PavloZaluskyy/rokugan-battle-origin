@@ -178,6 +178,7 @@
           [class.scorpion-target-highlight]="isScorpionTarget(prov)"
           [class.recon-target-highlight]="isReconTarget(prov)"
           [class.shugenja-target-highlight]="isShugenjaTarget(prov)"
+          [class.harbor-target-highlight]="isHarborTarget(prov)"
           >
       <!-- Іконка столиці чи замку -->
       <!-- ТВОЯ 3D-МІНІАТЮРА ЗАМКУ / МІСТА ПО ЦЕНТРУ -->
@@ -214,6 +215,7 @@
     <div class="map-badge" *ngIf="prov.hasHarbor" title="Гавань">
       <img src="assets/images/units/harbor.png" alt="Harbor" class="badge-png" />
     </div>
+    
   </div>
   <!-- ВИНЕСЕНІ НА КАРТУ АНІМОВАНІ ЗАГОНИ / ТАБОРИ -->
   <!-- ЗАГОНИ / ТАБОРИ НА КАРТІ -->
@@ -304,4 +306,29 @@
     (selectHandToken)="onSelectHandTokenToDiscard($event)"
     (cancelRokirovka)="onCancelRokirovka()">
   </app-discard-selection-modal>
+</div>
+<!-- БАНЕР ТАЙМЕРА ДЛЯ ЕФЕКТУ "ВИХІД ДО МОРЯ" -->
+<div class="rokirovka-fullscreen-overlay" *ngIf="regionCardService.harborEffect">
+  <div class="rokirovka-modal bamboo-mat harbor-modal-box">
+    
+    <!-- Верхня панель: Заголовок, таймер та кнопка Відмінити -->
+    <div class="rokirovka-header">
+      <div class="rokirovka-title-box">
+        <span class="rokirovka-icon">⚓</span>
+        <h3 class="mat-title-text">ВИХІД ДО МОРЯ: ВИБЕРІТЬ МАТЕРИКОВУ ПРОВІНЦІЮ</h3>
+      </div>
+      <div class="rokirovka-header-right">
+        <div class="rokirovka-timer" [class.danger]="regionCardService.harborEffect.timer <= 3">
+          ⏱️ 0:{{ regionCardService.harborEffect.timer < 10 ? '0' + regionCardService.harborEffect.timer : regionCardService.harborEffect.timer }}
+        </div>
+        <button class="rokirovka-cancel-btn" (click)="cancelHarborEffect()">Відмінити</button>
+      </div>
+    </div>
+
+    <!-- Текст інструкції -->
+    <p class="rokirovka-instruction">
+      Натисніть на будь-яку підсвічену <strong>материкову провінцію</strong> на мапі, щоб побудувати там порт.
+    </p>
+
+  </div>
 </div>

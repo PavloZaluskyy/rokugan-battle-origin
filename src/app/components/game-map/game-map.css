@@ -1229,6 +1229,110 @@
 .region-circle-fallback {
   font-size: 1.1rem;
 }
+/* Підсвічування материкових провінцій для побудови порту */
+.province-node.harbor-target-highlight {
+  cursor: pointer;
+  animation: harborPulse 1.2s infinite alternate ease-in-out;
+}
+
+.province-node.harbor-target-highlight .owner-ring {
+  border-color: #63e295 !important;
+  box-shadow: 0 0 20px rgba(99, 226, 149, 0.9);
+}
+
+@keyframes harborPulse {
+  0% { transform: scale(1); filter: brightness(1); }
+  100% { transform: scale(1.15); filter: brightness(1.3); }
+}
+/* Стиль для модального банера «Вихід до моря» */
+.harbor-modal-box {
+  position: fixed;
+  top: 30px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 3000;
+  width: 90%;
+  max-width: 650px;
+  padding: 25px 30px;
+  box-sizing: border-box;
+  text-align: center;
+  
+  /* Бамбуковий фон і рамки в стилі гри */
+  background: radial-gradient(circle, #2c1f16 0%, #16110e 100%);
+  border: 2px solid #c7a783;
+  border-radius: 6px;
+  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.9);
+  backdrop-filter: blur(5px);
+}
+
+.harbor-modal-box .rokirovka-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid rgba(199, 167, 131, 0.3);
+  padding-bottom: 12px;
+  margin-bottom: 18px;
+}
+
+.harbor-modal-box .rokirovka-title-box {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-align: left;
+}
+
+.harbor-modal-box .mat-title-text {
+  font-family: 'Cinzel', serif;
+  color: #ffd699;
+  font-size: 0.95rem;
+  letter-spacing: 1px;
+  margin: 0;
+}
+
+.harbor-modal-box .rokirovka-header-right {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  flex-shrink: 0;
+}
+
+.harbor-modal-box .rokirovka-timer {
+  font-family: 'Cinzel', serif;
+  font-size: 1rem;
+  color: #63e295;
+  font-weight: bold;
+}
+
+.harbor-modal-box .rokirovka-timer.danger {
+  color: #ff6b6b;
+  animation: pulseTimer 0.8s infinite alternate;
+}
+
+.harbor-modal-box .rokirovka-cancel-btn {
+  background: rgba(184, 59, 35, 0.3);
+  border: 1px solid #b83b23;
+  color: #ffd699;
+  font-family: 'Cinzel', serif;
+  font-size: 0.75rem;
+  padding: 6px 14px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.harbor-modal-box .rokirovka-cancel-btn:hover {
+  background: #b83b23;
+  color: #fff;
+  box-shadow: 0 0 12px rgba(184, 59, 35, 0.7);
+}
+
+.harbor-modal-box .rokirovka-instruction {
+  font-size: 0.85rem;
+  color: #bfa48f;
+  margin: 0;
+  line-height: 1.5;
+  font-family: 'Cinzel', serif;
+}
 
 /* --- Медіа-запити для мобільних пристроїв --- */
 @media (max-width: 600px) {

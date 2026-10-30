@@ -69,6 +69,14 @@ export class RegionCardService {
     timerInterval?: any;
   } | null = null;
 
+  // Стан виконання карти регіону "Вихід до моря"
+  public harborEffect: {
+    cardId: string;
+    clan: string;
+    timer: number;
+    timerInterval?: any;
+  } | null = null;
+
   // Активні картки регіонів, задіяні в поточній партії (по 1 на кожен регіон)
   private activeGameRegionCards: RegionCard[] = [];
 
@@ -278,5 +286,64 @@ export class RegionCardService {
     }
     this.rokirovkaEffect = null;
     this.closeRokirovkaModalSubject.next(); // Закриваємо модалку при відмініі
+  }
+
+  /*ВИХІД ДО МОРЯ */
+  startHarborEffect(cardId: string, clan: string, onTimeout: () => void): boolean {
+    this.harborEffect = {
+      cardId: cardId,
+      clan: clan,
+      timer: 10
+    };
+
+    if (this.harborEffect.timerInterval) {
+      clearInterval(this.harborEffect.timerInterval);
+    }
+
+    this.harborEffect.timerInterval = setInterval(() => {
+      this.ngZone.run(() => {
+        if (this.harborEffect && this.harborEffect.timer > 0) {
+          this.harborEffect.timer--;
+        } else {
+          // Час вийшов: списуємо картку регіону
+          if (this.harborEffect) {
+            this.useRegionCard(this.harborEffect.cardId, this.harborEffect.clan);
+          }
+          this.cancelHarborEffect();
+          onTimeout();
+        }
+        this.closeRokirovkaModalSubject.next(); // Використовуємо наш потік для оновлення UI
+      });
+    }, 1000);
+
+    return true;
+  }
+
+  cancelHarborEffect(): void {
+    if (this.harborEffect && this.harborEffect.timerInterval) {
+      clearInterval(this.harborEffect.timerInterval);
+    }
+    this.harborEffect = null;
+    this.closeRokirovkaModalSubject.next();
+  }
+
+  completeHarborEffect(provinceId: string, gameState: any): void {
+    if (!this.harborEffect) return;
+
+    const { cardId, clan } = this.harborEffect;
+    const province = gameState.provinces[provinceId];
+
+    if (province) {
+      // Робимо провінцію прибережною та додаємо іконку порту
+      province.isCoastal = true;
+      province.hasHarbor = true;
+      
+      gameState.roundLog.print?.(`⚓ Клан ${clan} побудував порт у провінції ${province.name}! Тепер вона прибережна.`);
+
+      // Списуємо картку регіону
+      this.useRegionCard(cardId, clan);
+    }
+
+    this.cancelHarborEffect();
   }
 }
