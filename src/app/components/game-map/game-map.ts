@@ -95,13 +95,14 @@ export class GameMap implements OnInit {
     'merchant-sunken-ships': { x: 43, y: 75 }
   };
 
-  constructor(private gameStateService: GameStateService, 
+  constructor(public gameStateService: GameStateService, 
               private cdr: ChangeDetectorRef,
               private objectiveService: SecretObjective,
-              private regionCardService: RegionCardService) {}
+              public regionCardService: RegionCardService) {}
 
   ngOnInit(): void {
     this.loadGameState();
+    this.loadRegionCardsFromLocalStorage();
     this.cdr.detectChanges();
     // Завантажуємо таємну ціль поточного гравця з сервісу
     this.playerSecretObjective = this.objectiveService.getPlayerObjective(this.activePlayerClan);
@@ -151,6 +152,11 @@ export class GameMap implements OnInit {
       }
       this.loadGameState();
     });
+    // ПІДПИСУЄМОСЯ НА ЗАКРИТТЯ МОДАЛКИ РОКІРОВКИ
+    this.regionCardService.closeRokirovkaModal$.subscribe(() => {
+      this.loadGameState();
+      this.cdr.detectChanges(); // Гарантовано оновлює екран і закриває модалку без руху миші!
+    });
   }
   // Метод для точкового перерахунку статусу (викликатимемо після битв та ходів)
   updateObjectiveStatus(): void {
@@ -174,6 +180,14 @@ export class GameMap implements OnInit {
     }
   }
 
+  // Перевірка, чи зараз хід поточного активного гравця (наприклад, порівняння з активним ходом у гейм-стейті)
+  get isCurrentPlayerTurn(): boolean {
+    const gameState = this.gameStateService.getGameState();
+    if (!gameState) return false;
+    // Припустимо, що в гейм-стейті є поле currentClan або активний гравець для ходу
+    // Замініть 'gameState.currentClan' на актуальну властивість вашого стану гри, якщо вона називається інакше
+    return gameState.firstPlayerClan === this.activePlayerClan; 
+  }
   // Отримати всі активні картки регіонів поточної гри
   get activeRegionCards(): RegionCard[] {
     return this.regionCardService.getActiveRegionCards();
@@ -716,4 +730,95 @@ onTouchStart(event: TouchEvent) {
       this.isObjectiveDrawerOpen = false;
     }
   }
+
+
+  /*КАРТИ РЕГІОНІВ */
+  // Клік на картку регіону в шухлядці (активація) з перевіркою ходу та збереженням в localStorage
+  onRegionCardClick(card: RegionCard): void {
+   if (card.status !== 'owned') return;
+
+    // Якщо це карта регіону "Рокіровка"
+    if (card.title === 'Рокіровка') {
+      const success = this.regionCardService.startRokirovkaEffect(card.id, this.activePlayerClan, () => {
+        console.log('⏰ Час виконання картки регіону Рокіровка вийшов!');
+      });
+
+      if (success) {
+        this.isRegionDrawerOpen = false; // Закриваємо шухлядку регіонів
+      }
+    } else {
+      // alert(`Ефект картки "${card.title}" буде реалізовано на наступному етапі!`);
+    }
+  }
+
+  // Синхронізація карток регіонів із localStorage
+  syncRegionCardsToLocalStorage(): void {
+    const activeCards = this.regionCardService.getActiveRegionCards();
+    localStorage.setItem('rokugan_region_cards', JSON.stringify(activeCards));
+  }
+
+  // Виклик синхронізації при завантаженні (можна додати в ngOnInit)
+  loadRegionCardsFromLocalStorage(): void {
+    const saved = localStorage.getItem('rokugan_region_cards');
+    if (saved) {
+      try {
+        const parsedCards = JSON.parse(saved);
+        // Якщо у вашому сервісі є метод встановлення/завантаження карт, викличте його тут.
+        // наприклад: this.regionCardService.setActiveRegionCards(parsedCards);
+      } catch (e) {
+        console.error('Помилка читання карт регіонів з localStorage', e);
+      }
+    }
+  }
+
+  /*КАРТА РЕГІОНУ "РОКІРОВКА" */
+  // Фільтруємо скид гравця (тільки Армія, Флот, Шинобі)
+  get filteredDiscardPileForRokirovka() {
+    const effect = this.regionCardService.rokirovkaEffect;
+    if (!effect) return [];
+    const gameState = this.gameStateService.getGameState();
+    const player = gameState?.players[effect.clan as keyof NonNullable<typeof gameState>['players']];
+    if (!player || !player.discardPile) return [];
+    return player.discardPile.filter((t: any) => ['Army', 'Navy', 'Shinobi'].includes(t.type));
+  }
+
+  // Отримуємо поточну руку (ширму) клану, що виконує Рокіровку
+  get currentRokirovkaHandTokens() {
+    const effect = this.regionCardService.rokirovkaEffect;
+    if (!effect) return [];
+    const gameState = this.gameStateService.getGameState();
+    const player = gameState?.players[effect.clan as keyof NonNullable<typeof gameState>['players']];
+    if (!player || !player.activeHandTokens) return [];
+    return player.activeHandTokens.filter((t: any) => t.type !== 'Blank');
+  }
+
+ onSelectDiscardTokenForRokirovka(token: any): void {
+    const gameState = this.gameStateService.getGameState();
+    if (!gameState) return;
+    
+    // Переносимо карту зі скиду в руку з зеленою обводкою і закриваємо модалку скиду
+    this.regionCardService.selectCardFromDiscard(token, gameState);
+    this.gameStateService.saveGame();
+
+    // АВТОМАТИЧНО ВІДКРИВАЄМО ІГРОВУ ШИРМУ ГРАВЦЯ (Крок 6)
+    // Зберігаємо подію/сигнал або викликаємо відкриття ширми:
+    // Наприклад, якщо у тебе є доступ до компонента ширми або через @ViewChild, 
+    // або просто встановивши прапорець у gameStateService:
+    if (this.activePlayerClan !== 'Neutral' && gameState.players[this.activePlayerClan]) {
+      // Можемо тримати подію відкриття ширми в сервісі
+      (this.gameStateService as any).openPlayerScreenTrigger = true;
+    }
+  }
+
+  onSelectHandTokenToDiscard(token: any): void {
+    const gameState = this.gameStateService.getGameState();
+    if (!gameState) return;
+    this.regionCardService.completeRokirovkaEffect(token, gameState);
+    this.gameStateService.saveGame();
+  }
+
+  onCancelRokirovka(): void {
+    this.regionCardService.cancelRokirovkaEffect();
+  }
+  
 }

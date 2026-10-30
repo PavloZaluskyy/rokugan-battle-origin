@@ -9,6 +9,7 @@ import { ClanSelection } from './pages/clan-selection/clan-selection';
 import { GamePage } from './pages/game-page/game-page';
 import { GameHud } from './components/game-hud/game-hud';
 import { SecretObjectiveSelection } from './pages/secret-objective-selection/secret-objective-selection';
+import { DiscardSelectionModal } from './components/discard-selection-modal/discard-selection-modal';
 
 @NgModule({
   declarations: [
@@ -18,7 +19,8 @@ import { SecretObjectiveSelection } from './pages/secret-objective-selection/sec
     ClanSelection,
     GamePage,
     GameHud,
-    SecretObjectiveSelection
+    SecretObjectiveSelection,
+    DiscardSelectionModal
   ],
   imports: [
     BrowserModule,

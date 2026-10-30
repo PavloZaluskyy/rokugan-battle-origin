@@ -1,0 +1,69 @@
+<div class="rokirovka-overlay" *ngIf="rokirovkaEffect">
+  <div class="rokirovka-modal bamboo-mat">
+    
+    <!-- Верхня панель: Заголовок та таймер -->
+    <div class="rokirovka-header">
+      <div class="rokirovka-title-box">
+        <span class="rokirovka-icon">⛩️</span>
+        <h3 class="mat-title-text">ВИКОНАННЯ КАРТИ РЕГІОНУ: РОКІРОВКА</h3>
+      </div>
+      <div class="rokirovka-timer" [class.danger]="rokirovkaEffect.timer <= 3">
+        ⏱️ 0:{{ rokirovkaEffect.timer < 10 ? '0' + rokirovkaEffect.timer : rokirovkaEffect.timer }}
+      </div>
+      <button class="rokirovka-cancel-btn" (click)="onCancelClick($event)">Відмінити</button>
+    </div>
+
+    <!-- КРОК 4: Вибір карти зі скиду -->
+    <div *ngIf="rokirovkaEffect.step === 'select_from_discard'">
+      <p class="rokirovka-instruction">
+        Виберіть одну картку <strong>Армії, Флоту чи Шинобі</strong> у вашому скиді, щоб повернути її у вашу ширму:
+      </p>
+
+      <div class="cards-grid">
+        <div class="clan-card discard-selectable" 
+             *ngFor="let token of filteredDiscardPile"
+             (click)="onDiscardTokenClick(token, $event)">
+          <div class="card-illustration" [style.backgroundImage]="'url(assets/images/tokens/' + token.type.toLowerCase() + '_cart.jpg)'">
+            <div class="card-overlay"></div>
+            <div class="card-strength" *ngIf="token.strength && token.strength > 0 && token.type !== 'Raid'">
+              {{ token.strength }}
+            </div>
+          </div>
+          <div class="card-footer">
+            <div class="card-type-name">
+              {{ token.type === 'Army' ? 'Армія' : token.type === 'Navy' ? 'Флот' : 'Шинобі' }}
+              <span *ngIf="token.strength > 0">({{ token.strength }})</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- КРОК 8: Вибір карти з ширми для відправки у скид -->
+    <!-- <div *ngIf="rokirovkaEffect.step === 'select_from_hand'">
+      <p class="rokirovka-instruction">
+        Картку успішно повернуто в ширму! Тепер виберіть <strong>іншу картку</strong> з вашої ширми, щоб відправити її у скид:
+      </p>
+
+      <div class="cards-grid">
+        <div class="clan-card discard-selectable" 
+             *ngFor="let token of currentHandTokens"
+             (click)="onHandTokenClick(token, $event)">
+          <div class="card-illustration" [style.backgroundImage]="'url(assets/images/tokens/' + token.type.toLowerCase() + '_cart.jpg)'">
+            <div class="card-overlay"></div>
+            <div class="card-strength" *ngIf="token.strength && token.strength > 0 && token.type !== 'Raid'">
+              {{ token.strength }}
+            </div>
+          </div>
+          <div class="card-footer">
+            <div class="card-type-name">
+              {{ getTokenLabel(token) }}
+              <span *ngIf="token.strength > 0">({{ token.strength }})</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div> -->

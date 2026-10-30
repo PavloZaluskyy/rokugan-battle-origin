@@ -1,4 +1,5 @@
-import { Injectable } from '@angular/core';
+import { Injectable, NgZone } from '@angular/core';
+import { Subject } from 'rxjs'; // Імпортуємо Subject
 
 export interface RegionCard {
   id: string;
@@ -13,6 +14,8 @@ export interface RegionCard {
   providedIn: 'root',
 })
 export class RegionCardService {
+  private closeRokirovkaModalSubject = new Subject<void>();
+  closeRokirovkaModal$ = this.closeRokirovkaModalSubject.asObservable();
   // Повний список усіх 22 карт регіонів (по 2 на регіон)
  private allRegionCards: RegionCard[] = [
     // КРАБ (Територія Краба)
@@ -56,10 +59,20 @@ export class RegionCardService {
     { id: 'merchant-2', regionId: 'Узбережжя Торговців', title: 'Багатий Врожай', description: 'Виберіть провінцію під вашим контролем і помістіть туди 2 жетони контролю.', status: 'pool' }
   ];
 
+  // Стан виконання карти регіону Рокіровка
+  public rokirovkaEffect: {
+    cardId: string;
+    clan: string;
+    step: 'select_from_discard' | 'select_from_hand';
+    selectedDiscardToken?: any;
+    timer: number;
+    timerInterval?: any;
+  } | null = null;
+
   // Активні картки регіонів, задіяні в поточній партії (по 1 на кожен регіон)
   private activeGameRegionCards: RegionCard[] = [];
 
-  constructor() {}
+  constructor(private ngZone: NgZone) {}
 
   // Ініціалізація партії: вибирає випадково по 1 карті на кожен унікальний регіон
   initializeNewGameRegionCards(): void {
@@ -86,6 +99,14 @@ export class RegionCardService {
   // Отримати активні картки регіонів поточної гри
   getActiveRegionCards(): RegionCard[] {
     return this.activeGameRegionCards;
+  }
+  /**
+   * Відновлює стан активних карток регіонів із завантаженого сейву
+   */
+  setActiveRegionCards(cards: RegionCard[]): void {
+    if (Array.isArray(cards)) {
+      this.activeGameRegionCards = cards;
+    }
   }
 
   // Перевірка володіння регіоном (викликається при зміні контролю провінцій)
@@ -158,5 +179,104 @@ export class RegionCardService {
     return this.activeGameRegionCards.filter(
       card => card.status === 'owned' && card.ownerClan === clan
     ).length;
+  }
+  /**
+   * Запуск ефекту Рокіровки
+   */
+  startRokirovkaEffect(cardId: string, clan: string, onTimeout: () => void): boolean {
+    this.rokirovkaEffect = {
+      cardId: cardId,
+      clan: clan,
+      step: 'select_from_discard',
+      timer: 10
+    };
+    // Запускаємо 10-секундний таймер через NgZone, щоб він оновлював UI незалежно від руху мишки
+    if (this.rokirovkaEffect.timerInterval) clearInterval(this.rokirovkaEffect.timerInterval);
+    // Запускаємо 10-секундний таймер
+    this.rokirovkaEffect.timerInterval = setInterval(() => {
+      this.ngZone.run(() => {
+        if (this.rokirovkaEffect && this.rokirovkaEffect.timer > 0) {
+          this.rokirovkaEffect.timer--;
+        } else {
+          // Таймер добіг до 0 у модалці скиду: закриваємо ширму і списуємо карту регіону
+          if (this.rokirovkaEffect) {
+            const cardId = this.rokirovkaEffect.cardId;
+            const clan = this.rokirovkaEffect.clan;
+            this.useRegionCard(cardId, clan); // карта регіону зникає / використовується
+          }
+          this.cancelRokirovkaEffect();
+          this.closeRokirovkaModalSubject.next(); // повідомляємо підписників, що модалка закрилася
+          onTimeout();
+        }
+
+      });
+    }, 1000);
+
+    return true;
+  }
+
+  /**
+   * Крок 1: Гравець вибрав картку зі скиду (Армія, Флот, Шинобі)
+   */
+  selectCardFromDiscard(token: any, gameState: any): void {
+    if (!this.rokirovkaEffect) return;
+    
+    const clan = this.rokirovkaEffect.clan;
+    const player = gameState.players[clan];
+    if (!player) return;
+
+    // 1. Видаляємо картку зі скиду
+    player.discardPile = player.discardPile.filter((t: any) => t.id !== token.id);
+
+    // 2. Додаємо в активну руку (ширму) з прапорцем для зеленої обводки
+    const highlightedToken = { ...token, isNewlyAdded: true } as any;
+    player.activeHandTokens.push(highlightedToken);
+    // 3. ПОЗНАЧАЄМО КАРТУ РЕГІОНУ ЯК ВИКОРИСТАНУ (ВХОДИТЬ У DISCARDED)
+    this.useRegionCard(this.rokirovkaEffect.cardId, clan);
+
+    // 3. Повністю закриваємо ефект Рокіровки (модалка скиду закриється, відкриється ширма player-screen)
+    this.cancelRokirovkaEffect();
+  }
+
+  /**
+   * Крок 2: Завершення Рокіровки (вибір карти з ширми для скиду або запасу)
+   */
+  completeRokirovkaEffect(handTokenToDiscard: any, gameState: any): void {
+    if (!this.rokirovkaEffect) return;
+
+    const clan = this.rokirovkaEffect.clan;
+    const player = gameState.players[clan];
+
+    if (player && handTokenToDiscard) {
+      // 1. Видаляємо обрану карту з ширми (ту, яку гравець клікнув на кроці 8)
+      player.activeHandTokens = player.activeHandTokens.filter((t: any) => t.id !== handTokenToDiscard.id);
+
+      // 2. Відправляємо її у скид
+      player.discardPile.push(handTokenToDiscard);
+
+      // 3. Знімаємо мітку newlyAdded з поверненої карти, щоб підсвічування зникло або залишалось за бажанням
+      player.activeHandTokens.forEach((t: any) => {
+        delete t.isNewlyAdded;
+      });
+
+      gameState.roundLog.push(`⛩️ Клан ${clan} успішно завершив рокіровку.`);
+    }
+
+    this.cancelRokirovkaEffect();
+  }
+
+  /**
+   * Скасування / згорання ефекту (якщо час вийшов)
+   */
+  cancelRokirovkaEffect(): void {
+    // if (this.rokirovkaEffect) {
+    //   // Якщо час вийшов і гравець нічого не вибрав — карта регіону все одно вважається використаною (зникає)
+    //   this.useRegionCard(this.rokirovkaEffect.cardId, this.rokirovkaEffect.clan);
+    // }
+    if (this.rokirovkaEffect && this.rokirovkaEffect.timerInterval) {
+      clearInterval(this.rokirovkaEffect.timerInterval);
+    }
+    this.rokirovkaEffect = null;
+    this.closeRokirovkaModalSubject.next(); // Закриваємо модалку при відмініі
   }
 }

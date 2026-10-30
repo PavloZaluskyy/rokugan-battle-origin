@@ -89,6 +89,11 @@
   <!-- Ігровий стіл (Бамбуковий килимок / Дерев'яна дошка) -->
   <div class="bamboo-mat">
     <div class="mat-title">ВІЙСЬКОВИЙ АКТИВ НА ПОТОЧНИЙ РАУНД (ЗА ШИРМОЮ)</div>
+    <!-- Банер таймера Рокіровки -->
+    <div class="dragon-screen-prompt" *ngIf="isRokirovkaSelectionActive">
+      <h3>ОБЕРІТЬ КАРТУ ДЛЯ СКИНУ У СКИНУ</h3>
+      <p class="dragon-banner-timer">Часу залишилось: {{ localRokirovkaTimer }}с | Натисніть на іншу карту, щоб завершити рокіровку.</p>
+    </div>
     <div class="dragon-screen-prompt" *ngIf="isDragonSelectionActive">
       <h3>Виберіть одну карту яка вирушить в колоду</h3>
       <p class="dragon-banner-timer">Часу залишилось: {{ localDragonTimer }}с</p>
@@ -97,9 +102,13 @@
       <!-- Стилізована Карта-Жетон -->
         <div class="clan-card" 
           *ngFor="let token of playerState.activeHandTokens" 
-          [ngClass]="token.type.toLowerCase()"
+          [ngClass]="[
+            token.type.toLowerCase(), 
+            token.isNewlyAdded ? 'newly-added-card' : '',
+            isRokirovkaSelectionActive && !token.isNewlyAdded && token.type !== 'Blank' ? 'rokirovka-bouncing-card' : '',
+            isDragonSelectionActive && token.type !== 'Blank' ? 'dragon-bouncing-card' : ''
+          ]"
           [class.active-card]="isSelected(token)"
-          [ngClass]="[token.type.toLowerCase(), isDragonSelectionActive && token.type !== 'Blank' ? 'dragon-bouncing-card' : '']"
           (click)="isDragonSelectionActive ? onDragonCardClick(token) : selectCard(token)">
           <div class="card-illustration" [style.backgroundImage]="'url(' + getCardImage(token.type) + ')'">
             <div class="card-overlay"></div>

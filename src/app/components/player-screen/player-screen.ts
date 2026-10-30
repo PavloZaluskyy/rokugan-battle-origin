@@ -1,5 +1,6 @@
 import { Component, Input, OnInit, DoCheck, ChangeDetectorRef } from '@angular/core';
 import { GameStateService } from '../../services/game-state.service';
+import { RegionCardService } from '../../services/region-card.service';
 import { PlayerState, BattleToken } from '../../models/game.model';
 
 @Component({
@@ -17,7 +18,11 @@ export class PlayerScreen implements OnInit, DoCheck {
   localDragonTimer: number = 10;
   private dragonTimerInterval: any = null;
 
-  constructor(private gameStateService: GameStateService,  private cdr: ChangeDetectorRef) {}
+  constructor(
+    private gameStateService: GameStateService,
+    private regionCardService: RegionCardService,
+    private cdr: ChangeDetectorRef
+  ) {}
 
   ngOnInit(): void {
     this.updateScreenData();
@@ -26,6 +31,14 @@ export class PlayerScreen implements OnInit, DoCheck {
   ngDoCheck() {
     if (this.isDragonSelectionActive && !this.isScreenOpen) {
       this.isScreenOpen = true; // Автоматично розгортаємо ширму
+    }
+    const gameState = this.gameStateService as GameStateService & {
+      openPlayerScreenTrigger?: boolean;
+    };
+    if (gameState.openPlayerScreenTrigger) {
+      this.isScreenOpen = true;
+      gameState.openPlayerScreenTrigger = false; // скидаємо тригер
+      this.updateScreenData();
     }
   }
   toggleScreen(): void {
@@ -66,14 +79,14 @@ export class PlayerScreen implements OnInit, DoCheck {
     return token.type;
   }
   // --- ВИБІР КАРТИ ---
-  selectCard(token: BattleToken): void {
-    this.gameStateService.setSelectedToken(token);
+  // selectCard(token: BattleToken): void {
+  //   this.gameStateService.setSelectedToken(token);
     
-    // Якщо карту вибрано — плавно згортаємо ширму, щоб гравець бачив карту Рокугану
-    if (this.isSelected(token)) {
-      this.isScreenOpen = false;
-    }
-  }
+  //   // Якщо карту вибрано — плавно згортаємо ширму, щоб гравець бачив карту Рокугану
+  //   if (this.isSelected(token)) {
+  //     this.isScreenOpen = false;
+  //   }
+  // }
 isSelected(token: BattleToken): boolean {
     const selected = this.gameStateService.getSelectedToken();
     return selected ? selected.id === token.id : false;
@@ -152,7 +165,7 @@ isSelected(token: BattleToken): boolean {
     if (!this.playerState) return;
 
     if (this.playerState.isSkillUsedThisRound) {
-      alert('Ця здібність уже була використана в поточному раунді!');
+      // alert('Ця здібність уже була використана в поточному раунді!');
       return;
     }
 
@@ -211,12 +224,121 @@ isSelected(token: BattleToken): boolean {
   testCrabDefense(): void {
     this.gameStateService.setupCrabDefenseTest();
     this.isScreenOpen = false;
-    alert('Тестовий ворожий загін додано на провінцію Краба! Тепер натисніть кнопку "Виконати / Битва", щоб перевірити результат захисту.');
+    // alert('Тестовий ворожий загін додано на провінцію Краба! Тепер натисніть кнопку "Виконати / Битва", щоб перевірити результат захисту.');
   }
   testLionDefense(): void {
     this.gameStateService.setupLionDefenseTest();
     this.isScreenOpen = false;
-    alert('Тестовий ворожий загін додано на провінцію Лева! Тепер натисніть кнопку "Виконати / Битва", щоб перевірити результат захисту.');
+    // alert('Тестовий ворожий загін додано на провінцію Лева! Тепер натисніть кнопку "Виконати / Битва", щоб перевірити результат захисту.');
   }
- 
+
+  // Стан, який відстежує, чи ми зараз робимо крок скиду карти після Рокіровки
+  // (можеш також тримати цей стан у gameStateService, якщо робиш це глобально)
+  
+  selectCard(token: BattleToken): void {
+   // Перевіряємо, чи є в активній руці щойно повернута карта з Рокіровки (з міткою isNewlyAdded)
+    const newlyAddedCard = this.playerState?.activeHandTokens.find((t: any) => t.isNewlyAdded);
+
+    if (newlyAddedCard && !token.isNewlyAdded && token.type !== 'Blank') {
+      // КРОК 8-9: Гравець натиснув на іншу карту в ширмі — відправляємо її у скид замість неї!
+      // Зупиняємо таймер рокіровки, оскільки гравець зробив вибір
+      clearInterval(this.rokirovkaTimerInterval);
+      this.rokirovkaTimerInterval = null;
+      if (this.playerState) {
+        // 1. Видаляємо вибрану для скиду карту з активної руки
+        this.playerState.activeHandTokens = this.playerState.activeHandTokens.filter(t => t.id !== token.id);
+        
+        // 2. Додаємо її до масиву скиду (discardPile)
+        this.playerState.discardPile.push(token);
+
+        // 3. Знімаємо мітку isNewlyAdded з повернутої карти, щоб зелена обводка зникла
+        this.playerState.activeHandTokens.forEach((t: any) => {
+          delete t.isNewlyAdded;
+        });
+
+        // Списуємо картку регіону
+        this.consumeRokirovkaCard();
+        // 4. Зберігаємо зміни через сервіс стану гри
+        this.gameStateService.saveGame();
+        
+        // alert('Зайву карту успішно відправлено у скид! Кількість карт у ширмі знову в нормі.');
+        return;
+      }
+    }
+
+    // Звичайний вибір карти для розміщення на мапі (якщо Рокіровка не активна)
+    this.gameStateService.setSelectedToken(token);
+    if (this.isSelected(token)) {
+      this.isScreenOpen = false;
+    }
+  }
+ hasNewlyAddedCard(): boolean {
+    return !!this.playerState?.activeHandTokens?.some((t: any) => t.isNewlyAdded);
+  }
+
+  // Стан локального таймера для Рокіровки
+  localRokirovkaTimer: number = 10;
+  private rokirovkaTimerInterval: any = null;
+
+  // Перевірка, чи активний режим вибору карти для скиду після Рокіровки
+  get isRokirovkaSelectionActive(): boolean {
+    const hasNewlyAdded = !!this.playerState?.activeHandTokens?.some((t: any) => t.isNewlyAdded);
+    
+    // Якщо режим активний, а таймер ще не запущено — запускаємо його
+    if (hasNewlyAdded && !this.rokirovkaTimerInterval) {
+      this.startRokirovkaTimer();
+    }
+    return hasNewlyAdded;
+  }
+
+  startRokirovkaTimer() {
+    this.localRokirovkaTimer = 10;
+    clearInterval(this.rokirovkaTimerInterval);
+
+    this.rokirovkaTimerInterval = setInterval(() => {
+      if (this.localRokirovkaTimer > 0) {
+        this.localRokirovkaTimer--;
+        this.cdr.detectChanges(); // Оновлюємо UI щосекунди
+      } else {
+        clearInterval(this.rokirovkaTimerInterval);
+        this.rokirovkaTimerInterval = null;
+        this.handleRokirovkaTimeout();
+      }
+    }, 1000);
+  }
+
+  // Час вийшов — рандомно вибираємо карту і скидаємо її
+  handleRokirovkaTimeout() {
+    if (!this.playerState) return;
+
+    // Знаходимо всі карти, окрім нещодавно доданої та Блефу
+    const eligibleCards = this.playerState.activeHandTokens.filter((t: any) => !t.isNewlyAdded && t.type !== 'Blank');
+    
+    if (eligibleCards.length > 0) {
+      const randomCard = eligibleCards[Math.floor(Math.random() * eligibleCards.length)];
+      
+      // Відправляємо випадкову карту у скид
+      this.playerState.activeHandTokens = this.playerState.activeHandTokens.filter(t => t.id !== randomCard.id);
+      this.playerState.discardPile.push(randomCard);
+    }
+
+    // Знімаємо мітку newlyAdded з поверненої карти
+    this.playerState.activeHandTokens.forEach((t: any) => {
+      delete t.isNewlyAdded;
+    });
+    // Списуємо картку регіону Рокіровка через RegionCardService (шукаємо її за назвою або ID у гравця)
+    this.consumeRokirovkaCard();
+
+    this.gameStateService.saveGame();
+    this.cdr.detectChanges();
+    // alert('Час на рокіровку вийшов! Випадкову карту автоматично відправлено у скид.');
+  }
+  // Допоміжний метод для знаходження та списання карти Рокіровка у поточного гравця
+  consumeRokirovkaCard() {
+    const activeCards = this.regionCardService.getActiveRegionCards();
+    const rokirovkaCard = activeCards.find(c => c.title === 'Рокіровка' && c.ownerClan === this.playerState?.clan && c.status === 'owned');
+    if (rokirovkaCard && this.playerState) {
+      this.regionCardService.useRegionCard(rokirovkaCard.id, this.playerState.clan);
+    }
+  }
 }

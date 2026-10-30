@@ -83,8 +83,12 @@
     <div class="mat-title">КАРТКИ РЕГІОНІВ У ВАШОМУ ВОЛОДІННІ</div>
     
     <div class="regions-tiles-container">
-      <!-- Показуємо тільки карти, які належать поточному гравцю (activePlayerClan) -->
-      <div class="region-tile" *ngFor="let card of ownedRegionCardsForActivePlayer">
+      <!-- Показуємо тільки карти, які належать поточному гравцю (activePlayerClan), і додаємо клік для активації -->
+      <div class="region-tile" 
+           *ngFor="let card of ownedRegionCardsForActivePlayer"
+           [class.disabled-card]="!isCurrentPlayerTurn"
+           (click)="onRegionCardClick(card)"
+           [title]="isCurrentPlayerTurn ? 'Клікніть, щоб використати картку' : 'Доступно тільки під час вашого ходу'">
         <div class="region-tile-info">
           <div class="region-tile-header">
             <span class="region-name-tag">{{ card.regionId }}</span>
@@ -288,5 +292,16 @@
       </div>
     </div>
 </div>
-
+<!-- ========================================== -->
+<!-- ПОВНОЕКРАННА ШИРМА ВИКОНАННЯ КАРТИ РЕГІОНУ "РОКІРОВКА" -->
+<!-- ========================================== -->
+<div сlass="rokirovka-fullscreen-overlay" *ngIf="regionCardService.rokirovkaEffect">
+  <app-discard-selection-modal
+    [rokirovkaEffect]="regionCardService.rokirovkaEffect"
+    [filteredDiscardPile]="filteredDiscardPileForRokirovka"
+    [currentHandTokens]="currentRokirovkaHandTokens"
+    (selectDiscardToken)="onSelectDiscardTokenForRokirovka($event)"
+    (selectHandToken)="onSelectHandTokenToDiscard($event)"
+    (cancelRokirovka)="onCancelRokirovka()">
+  </app-discard-selection-modal>
 </div>

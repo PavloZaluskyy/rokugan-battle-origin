@@ -12,6 +12,7 @@ export interface BattleToken {
   clan: ClanType;         // Якому клану належить
   type: BattleTokenType;  // Тип жетона
   strength: number;       // Сила жетона (0 для пустих, дипломатії, погрому)
+  isNewlyAdded?: boolean;
 }
 
 // 4. Типи особливих жетонів, що змінюють статус провінції
@@ -76,6 +77,7 @@ export interface GameState {
   isScorpionSkillActive?: boolean;
   isDragonSkillSelectionActive?: boolean;
   secretObjectives?: { [clan: string]: SecretObjectiveModel }; //ДОДАЄМО ТАЄМНІ ЦІЛІ ГРАВЦІВ У STATE
+  regionCards?: any[]; // <-- Додаємо збереження регіональних карток
 }
 export interface PlacedToken {
   strength: number;
