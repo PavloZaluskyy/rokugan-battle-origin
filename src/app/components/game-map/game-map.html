@@ -178,7 +178,7 @@
           [class.scorpion-target-highlight]="isScorpionTarget(prov)"
           [class.recon-target-highlight]="isReconTarget(prov)"
           [class.shugenja-target-highlight]="isShugenjaTarget(prov)"
-          [class.harbor-target-highlight]="isHarborTarget(prov)"
+          [class.harbor-target-highlight]="isHarborTarget(prov) || isDiplomacyTarget(prov)"
           >
       <!-- Іконка столиці чи замку -->
       <!-- ТВОЯ 3D-МІНІАТЮРА ЗАМКУ / МІСТА ПО ЦЕНТРУ -->
@@ -330,5 +330,27 @@
       Натисніть на будь-яку підсвічену <strong>материкову провінцію</strong> на мапі, щоб побудувати там порт.
     </p>
 
+  </div>
+</div>
+<!-- БАНЕР ТАЙМЕРА ДЛЯ ЕФЕКТУ "ДИПЛОМАТИЧНА МІСІЯ" -->
+<div class="rokirovka-fullscreen-overlay" *ngIf="regionCardService.diplomacyEffect">
+  <div class="rokirovka-modal bamboo-mat harbor-modal-box">
+    <div class="rokirovka-header">
+      <div class="rokirovka-title-box">
+        <span class="rokirovka-icon">🕊️</span>
+        <h3 class="mat-title-text">
+          {{ regionCardService.diplomacyEffect.step === 'select_target_province' ? 'ДИПЛОМАТИЧНА МІСІЯ: ВИБЕРІТЬ ПРОВІНЦІЮ' : 'ВИБЕРІТЬ СВОЮ ПРОВІНЦІЮ ДЛЯ ЖЕТОНА КОНТРОЛЮ' }}
+        </h3>
+      </div>
+      <div class="rokirovka-header-right">
+        <div class="rokirovka-timer" [class.danger]="regionCardService.diplomacyEffect.timer <= 3">
+          ⏱️ 0:{{ regionCardService.diplomacyEffect.timer < 10 ? '0' + regionCardService.diplomacyEffect.timer : regionCardService.diplomacyEffect.timer }}
+        </div>
+        <button class="rokirovka-cancel-btn" (click)="cancelDiplomacyEffect()">Відмінити</button>
+      </div>
+    </div>
+    <p class="rokirovka-instruction">
+      {{ regionCardService.diplomacyEffect.step === 'select_target_province' ? 'Оберіть провінцію: для своєї — поставиться мир; для чужої — зразу оберете дві свої провінції для жетонів контролю.' : 'Оберіть власну провінцію, щоб збільшити її контроль.' }}
+    </p>
   </div>
 </div>

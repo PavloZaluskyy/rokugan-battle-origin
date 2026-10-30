@@ -77,6 +77,16 @@ export class RegionCardService {
     timerInterval?: any;
   } | null = null;
 
+  // Стан виконання карти регіону "Дипломатична місія"
+  public diplomacyEffect: {
+    cardId: string;
+    clan: string;
+    step: 'select_target_province' | 'select_first_own_province' | 'select_second_own_province';
+    targetProvinceId?: string;
+    timer: number;
+    timerInterval?: any;
+  } | null = null;
+
   // Активні картки регіонів, задіяні в поточній партії (по 1 на кожен регіон)
   private activeGameRegionCards: RegionCard[] = [];
 
@@ -345,5 +355,45 @@ export class RegionCardService {
     }
 
     this.cancelHarborEffect();
+  }
+
+  /* ДИПЛОМАТИЧНА МІСІЯ */
+  startDiplomacyEffect(cardId: string, clan: string, onTimeout: () => void): boolean {
+    this.diplomacyEffect = {
+      cardId: cardId,
+      clan: clan,
+      step: 'select_target_province',
+      timer: 10
+    };
+
+    if (this.diplomacyEffect.timerInterval) {
+      clearInterval(this.diplomacyEffect.timerInterval);
+    }
+
+    this.diplomacyEffect.timerInterval = setInterval(() => {
+      this.ngZone.run(() => {
+        if (this.diplomacyEffect && this.diplomacyEffect.timer > 0) {
+          this.diplomacyEffect.timer--;
+        } else {
+          // Час вийшов: списуємо картку регіону
+          if (this.diplomacyEffect) {
+            this.useRegionCard(this.diplomacyEffect.cardId, this.diplomacyEffect.clan);
+          }
+          this.cancelDiplomacyEffect();
+          onTimeout();
+        }
+        this.closeRokirovkaModalSubject.next();
+      });
+    }, 1000);
+
+    return true;
+  }
+
+  cancelDiplomacyEffect(): void {
+    if (this.diplomacyEffect && this.diplomacyEffect.timerInterval) {
+      clearInterval(this.diplomacyEffect.timerInterval);
+    }
+    this.diplomacyEffect = null;
+    this.closeRokirovkaModalSubject.next();
   }
 }

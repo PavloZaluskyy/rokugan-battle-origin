@@ -407,6 +407,11 @@ onTouchStart(event: TouchEvent) {
       this.onHarborProvinceClick(province);
       return;
     }
+    // 2. ПЕРЕВІРКА ЕФЕКТУ "ДИПЛОМАТИЧНА МІСІЯ"
+    if (this.regionCardService.diplomacyEffect) {
+      this.onDiplomacyProvinceClick(province);
+      return;
+    }
     
   }
 
@@ -751,6 +756,8 @@ onTouchStart(event: TouchEvent) {
       const success = this.regionCardService.startHarborEffect(card.id, this.activePlayerClan, () => {
         console.log('⏰ Час виконання картки "Вихід до моря" вийшов!');
       });
+    } else if (card.title === 'Дипломатична місія') {
+      const success = this.regionCardService.startDiplomacyEffect(card.id, this.activePlayerClan, () => {});
       if (success) {
         this.isRegionDrawerOpen = false; // Закриваємо шухлядку регіонів
       }
@@ -850,5 +857,69 @@ onTouchStart(event: TouchEvent) {
   // Кнопка відміни ефекту
   cancelHarborEffect(): void {
     this.regionCardService.cancelHarborEffect();
+  }
+
+  /* ДИПЛОМАТИЧНА МІСІЯ */
+  // Відміна ефекту Дипломатії
+  cancelDiplomacyEffect(): void {
+    this.regionCardService.cancelDiplomacyEffect();
+  }
+
+  // Які провінції підсвічуються залежно від кроку ефекту
+  isDiplomacyTarget(province: Province): boolean {
+    const effect = this.regionCardService.diplomacyEffect;
+    if (!effect) return false;
+
+    if (effect.step === 'select_target_province') {
+      return true; // На першому кроці мигають ВСІ провінції
+    }
+    if (effect.step === 'select_first_own_province' || effect.step === 'select_second_own_province') {
+      return province.controllingClan === this.activePlayerClan; // На наступних кроках — тільки свої провінції
+    }
+    return false;
+  }
+
+  // Обробка кліку по провінції для Дипломатії
+  onDiplomacyProvinceClick(province: Province): void {
+    const effect = this.regionCardService.diplomacyEffect;
+    if (!effect) return;
+    const gameState = this.gameStateService.getGameState();
+    if (!gameState) return;
+
+    if (effect.step === 'select_target_province') {
+      // Перевіряємо, чи провінція належить поточному гравцю
+      if (province.controllingClan === this.activePlayerClan) {
+        // Якщо своя — ставимо значок миру туди, і місія виконана
+        province.hasPeaceToken = true;
+        this.regionCardService.useRegionCard(effect.cardId, effect.clan);
+        gameState.roundLog.push(`🕊️ Дипломатична місія завершена: встановлено мир у власній провінції ${province.name}.`);
+        this.regionCardService.cancelDiplomacyEffect();
+      } else {
+        // Якщо чужа або нейтральна — мир НЕ ставимо, а зразу переходимо до вибору своїх провінцій для контролю
+        effect.step = 'select_first_own_province';
+        effect.targetProvinceId = province.id;
+        gameState.roundLog.push(`🕊️ Дипломатична місія: обрано чужу/нейтральну провінцію ${province.name}. Мир не встановлено. Оберіть першу свою провінцію для бонусу контролю.`);
+      }
+    } 
+    else if (effect.step === 'select_first_own_province') {
+      if (province.controllingClan !== this.activePlayerClan) return; // Можна клікати тільки на свої провінції
+
+      province.controlTokensFaceUp += 1;
+      effect.step = 'select_second_own_province';
+      gameState.roundLog.push(`🕊️ Виберіть другу свою провінцію для збільшення жетона контролю.`);
+    } 
+    else if (effect.step === 'select_second_own_province') {
+      if (province.controllingClan !== this.activePlayerClan) return;
+
+      province.controlTokensFaceUp += 1;
+      gameState.roundLog.push(`🕊️ Дипломатична місія повністю завершена!`);
+
+      // Списуємо картку регіону
+      this.regionCardService.useRegionCard(effect.cardId, effect.clan);
+      this.regionCardService.cancelDiplomacyEffect();
+    }
+
+    this.gameStateService.saveGame();
+    this.loadGameState();
   }
 }
