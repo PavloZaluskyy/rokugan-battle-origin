@@ -178,7 +178,7 @@
           [class.scorpion-target-highlight]="isScorpionTarget(prov)"
           [class.recon-target-highlight]="isReconTarget(prov)"
           [class.shugenja-target-highlight]="isShugenjaTarget(prov)"
-          [class.harbor-target-highlight]="isHarborTarget(prov) || isDiplomacyTarget(prov) || isHonorCodeTarget(prov)"
+          [class.harbor-target-highlight]="isHarborTarget(prov) || isDiplomacyTarget(prov) || isHonorCodeTarget(prov) || isShrineTarget(prov)"
           >
           <!-- МІНІАТЮРНИЙ ІНДИКАТОР ЧЕСТІ ЗЛІВА (ДЛЯ МОБІЛЬНИХ / КОМПАКТНИЙ ВИГЛЯД) -->
       <div class="mobile-honor-badge" *ngIf="prov.honorFlowers && prov.honorFlowers > 0" title="Очки честі: {{ prov.honorFlowers }}">
@@ -382,6 +382,26 @@
     </div>
     <p class="rokirovka-instruction">
       {{ regionCardService.honorCodeEffect.step === 'select_first_province' ? 'Виберіть першу провінцію (крім тіньових земель), щоб додати бонус честі (🌸).' : 'Виберіть другу провінцію для другого бонусу честі (🌸).' }}
+    </p>
+  </div>
+</div>
+<!-- БАНЕР ТАЙМЕРА ДЛЯ ЕФЕКТУ "БЛАГОСЛОВЕННА ЗЕМЛЯ" -->
+<div class="rokirovka-fullscreen-overlay" *ngIf="regionCardService.shrineEffect">
+  <div class="rokirovka-modal bamboo-mat harbor-modal-box">
+    <div class="rokirovka-header">
+      <div class="rokirovka-title-box">
+        <span class="rokirovka-icon">⛩️</span>
+        <h3 class="mat-title-text">БЛАГОСЛОВЕННА ЗЕМЛЯ: ВИБЕРІТЬ ПРОВІНЦІЮ ДЛЯ СВЯТИНІ</h3>
+      </div>
+      <div class="rokirovka-header-right">
+        <div class="rokirovka-timer" [class.danger]="regionCardService.shrineEffect.timer <= 3">
+          ⏱️ 0:{{ regionCardService.shrineEffect.timer < 10 ? '0' + regionCardService.shrineEffect.timer : regionCardService.shrineEffect.timer }}
+        </div>
+        <button class="rokirovka-cancel-btn" (click)="cancelShrineEffect()">Відмінити</button>
+      </div>
+    </div>
+    <p class="rokirovka-instruction">
+      Оберіть свою провінцію, щоб звести там святиню. Її не можна буде атакувати, але ви зможете атакувати з неї сусідні території.
     </p>
   </div>
 </div>

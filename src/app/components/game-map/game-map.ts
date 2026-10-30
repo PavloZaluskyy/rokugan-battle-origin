@@ -417,6 +417,10 @@ onTouchStart(event: TouchEvent) {
       this.onHonorCodeProvinceClick(province);
       return;
     }
+    if (this.regionCardService.shrineEffect) {
+      this.onShrineProvinceClick(province);
+      return;
+    }
     
   }
 
@@ -765,6 +769,8 @@ onTouchStart(event: TouchEvent) {
       const success = this.regionCardService.startDiplomacyEffect(card.id, this.activePlayerClan, () => {});
     } else if (card.title === 'Кодекс честі') {
       const success = this.regionCardService.startHonorCodeEffect(card.id, this.activePlayerClan, () => {});
+    }else if (card.title === 'Благословенна земля') {
+      const success = this.regionCardService.startShrineEffect(card.id, this.activePlayerClan, () => {});
 
       if (success) {
         this.isRegionDrawerOpen = false; // Закриваємо шухлядку регіонів
@@ -988,6 +994,31 @@ onTouchStart(event: TouchEvent) {
       this.regionCardService.cancelHonorCodeEffect();
     }
 
+    this.gameStateService.saveGame();
+    this.loadGameState();
+  }
+
+  /* КАРТА РЕГІОНУ "БЛАГОСЛОВЕННА ЗЕМЛЯ" */
+  cancelShrineEffect(): void {
+    this.regionCardService.cancelShrineEffect();
+  }
+
+  // Підсвічування провінцій для побудови святині (наприклад, підконтрольні гравцю провінції без святині)
+  isShrineTarget(province: Province): boolean {
+    const effect = this.regionCardService.shrineEffect;
+    if (!effect) return false;
+    return province.controllingClan === this.activePlayerClan && !province.hasShrine;
+  }
+
+  onShrineProvinceClick(province: Province): void {
+    const effect = this.regionCardService.shrineEffect;
+    if (!effect) return;
+    if (province.controllingClan !== this.activePlayerClan) return;
+
+    const gameState = this.gameStateService.getGameState();
+    if (!gameState) return;
+
+    this.regionCardService.completeShrineEffect(province.id, gameState);
     this.gameStateService.saveGame();
     this.loadGameState();
   }

@@ -97,6 +97,14 @@ export class RegionCardService {
     timerInterval?: any;
   } | null = null;
 
+  // Стан виконання карти регіону "Благословенна земля"
+  public shrineEffect: {
+    cardId: string;
+    clan: string;
+    timer: number;
+    timerInterval?: any;
+  } | null = null;
+
   // Активні картки регіонів, задіяні в поточній партії (по 1 на кожен регіон)
   private activeGameRegionCards: RegionCard[] = [];
 
@@ -444,5 +452,63 @@ export class RegionCardService {
     }
     this.honorCodeEffect = null;
     this.closeRokirovkaModalSubject.next();
+  }
+
+  /* БЛАГОСЛОВЕННА ЗЕМЛЯ */
+  startShrineEffect(cardId: string, clan: string, onTimeout: () => void): boolean {
+    this.shrineEffect = {
+      cardId: cardId,
+      clan: clan,
+      timer: 10
+    };
+
+    if (this.shrineEffect.timerInterval) {
+      clearInterval(this.shrineEffect.timerInterval);
+    }
+
+    this.shrineEffect.timerInterval = setInterval(() => {
+      this.ngZone.run(() => {
+        if (this.shrineEffect && this.shrineEffect.timer > 0) {
+          this.shrineEffect.timer--;
+        } else {
+          if (this.shrineEffect) {
+            this.useRegionCard(this.shrineEffect.cardId, this.shrineEffect.clan);
+          }
+          this.cancelShrineEffect();
+          onTimeout();
+        }
+        this.closeRokirovkaModalSubject.next();
+      });
+    }, 1000);
+
+    return true;
+  }
+
+  cancelShrineEffect(): void {
+    if (this.shrineEffect && this.shrineEffect.timerInterval) {
+      clearInterval(this.shrineEffect.timerInterval);
+    }
+    this.shrineEffect = null;
+    this.closeRokirovkaModalSubject.next();
+  }
+
+  completeShrineEffect(provinceId: string, gameState: any): void {
+    if (!this.shrineEffect) return;
+
+    const { cardId, clan } = this.shrineEffect;
+    const province = gameState.provinces[provinceId];
+
+    if (province) {
+      // Ставимо жетон святині та робимо провінцію своєю (або залишаємо контроль гравця)
+      province.hasShrine = true;
+      province.controllingClan = clan as any;
+
+      gameState.roundLog.push(`⛩️ Клан ${clan} звів святиню у провінції ${province.name}! Цю землю тепер не можна атакувати.`);
+
+      // Списуємо картку регіону
+      this.useRegionCard(cardId, clan);
+    }
+
+    this.cancelShrineEffect();
   }
 }
