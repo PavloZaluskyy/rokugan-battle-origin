@@ -178,7 +178,12 @@
           [class.scorpion-target-highlight]="isScorpionTarget(prov)"
           [class.recon-target-highlight]="isReconTarget(prov)"
           [class.shugenja-target-highlight]="isShugenjaTarget(prov)"
-          [class.harbor-target-highlight]="isHarborTarget(prov) || isDiplomacyTarget(prov) || isHonorCodeTarget(prov) || isShrineTarget(prov)"
+          [class.harbor-target-highlight]="
+               isHarborTarget(prov) 
+            || isDiplomacyTarget(prov) 
+            || isHonorCodeTarget(prov) 
+            || isShrineTarget(prov)
+            || isTargetMovementTarget(prov)"
           >
           <!-- МІНІАТЮРНИЙ ІНДИКАТОР ЧЕСТІ ЗЛІВА (ДЛЯ МОБІЛЬНИХ / КОМПАКТНИЙ ВИГЛЯД) -->
       <div class="mobile-honor-badge" *ngIf="prov.honorFlowers && prov.honorFlowers > 0" title="Очки честі: {{ prov.honorFlowers }}">
@@ -402,6 +407,28 @@
     </div>
     <p class="rokirovka-instruction">
       Оберіть свою провінцію, щоб звести там святиню. Її не можна буде атакувати, але ви зможете атакувати з неї сусідні території.
+    </p>
+  </div>
+</div>
+<!-- БАНЕР ТАЙМЕРА ДЛЯ ЕФЕКТУ "РУХ ДО ЦІЛІ" -->
+<div class="rokirovka-fullscreen-overlay" *ngIf="regionCardService.targetMovementEffect">
+  <div class="rokirovka-modal bamboo-mat harbor-modal-box">
+    <div class="rokirovka-header">
+      <div class="rokirovka-title-box">
+        <span class="rokirovka-icon">🎯</span>
+        <h3 class="mat-title-text">
+          {{ regionCardService.targetMovementEffect.step === 'select_first_province' ? 'РУХ ДО ЦІЛІ: ВИБЕРІТЬ 1-У ПРОВІНЦІЮ' : 'РУХ ДО ЦІЛІ: ВИБЕРІТЬ 2-У ПРОВІНЦІЮ' }}
+        </h3>
+      </div>
+      <div class="rokirovka-header-right">
+        <div class="rokirovka-timer" [class.danger]="regionCardService.targetMovementEffect.timer <= 3">
+          ⏱️ 0:{{ regionCardService.targetMovementEffect.timer < 10 ? '0' + regionCardService.targetMovementEffect.timer : regionCardService.targetMovementEffect.timer }}
+        </div>
+        <button class="rokirovka-cancel-btn" (click)="cancelTargetMovementEffect()">Відмінити</button>
+      </div>
+    </div>
+    <p class="rokirovka-instruction">
+      {{ regionCardService.targetMovementEffect.step === 'select_first_province' ? 'Виберіть першу вашу підконтрольну провінцію, щоб додати жетон контролю.' : 'Виберіть другу вашу підконтрольну провінцію для другого жетона контролю.' }}
     </p>
   </div>
 </div>

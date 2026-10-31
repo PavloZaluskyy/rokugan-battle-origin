@@ -417,8 +417,14 @@ onTouchStart(event: TouchEvent) {
       this.onHonorCodeProvinceClick(province);
       return;
     }
+    // 4. ПЕРЕВІРКА ЕФЕКТУ "БЛАГОСЛОВЕННА ЗЕМЛЯ"
     if (this.regionCardService.shrineEffect) {
       this.onShrineProvinceClick(province);
+      return;
+    }
+    // 5. ПЕРЕВІРКА ЕФЕКТУ "РУХ ДЛЯ ЦІЛІ"
+    if (this.regionCardService.targetMovementEffect) {
+      this.onTargetMovementProvinceClick(province);
       return;
     }
     
@@ -771,7 +777,8 @@ onTouchStart(event: TouchEvent) {
       const success = this.regionCardService.startHonorCodeEffect(card.id, this.activePlayerClan, () => {});
     }else if (card.title === 'Благословенна земля') {
       const success = this.regionCardService.startShrineEffect(card.id, this.activePlayerClan, () => {});
-
+    } else if (card.title === 'Рух до цілі') {
+      const success = this.regionCardService.startTargetMovementEffect(card.id, this.activePlayerClan, () => {});
       if (success) {
         this.isRegionDrawerOpen = false; // Закриваємо шухлядку регіонів
       }
@@ -1019,6 +1026,56 @@ onTouchStart(event: TouchEvent) {
     if (!gameState) return;
 
     this.regionCardService.completeShrineEffect(province.id, gameState);
+    this.gameStateService.saveGame();
+    this.loadGameState();
+  }
+  // /* КАРТА РЕГІОНУ "РУХ ДЛЯ ЦІЛІ" */
+  cancelTargetMovementEffect(): void {
+    this.regionCardService.cancelTargetMovementEffect();
+  }
+
+  // Перевірка підсвічування: тільки підконтрольні поточниму клану провінції (на другому кроці не можна обрати ту саму двічі)
+  isTargetMovementTarget(province: Province): boolean {
+    const effect = this.regionCardService.targetMovementEffect;
+    if (!effect) return false;
+
+    if (province.controllingClan !== this.activePlayerClan) return false;
+
+    if (effect.step === 'select_second_province' && effect.firstProvinceId === province.id) {
+      return false;
+    }
+
+    return true;
+  }
+
+  // Обробка кліку по провінції для "Руху до цілі"
+  onTargetMovementProvinceClick(province: Province): void {
+    const effect = this.regionCardService.targetMovementEffect;
+    if (!effect) return;
+    if (province.controllingClan !== this.activePlayerClan) return;
+
+    const gameState = this.gameStateService.getGameState();
+    if (!gameState) return;
+
+    if (effect.step === 'select_first_province') {
+      province.controlTokensFaceUp += 1;
+      
+      effect.step = 'select_second_province';
+      effect.firstProvinceId = province.id;
+      gameState.roundLog.push(`🐉 Рух до цілі: обрано першу провінцію ${province.name}. Оберіть другу провінцію.`);
+    } 
+    else if (effect.step === 'select_second_province') {
+      if (effect.firstProvinceId === province.id) return;
+
+      province.controlTokensFaceUp += 1;
+      
+      gameState.roundLog.push(`🐉 Рух до цілі успішно застосовано! У дві провінції додано по жетону контролю.`);
+
+      // Списуємо картку регіону та завершуємо ефект
+      this.regionCardService.useRegionCard(effect.cardId, effect.clan);
+      this.regionCardService.cancelTargetMovementEffect();
+    }
+
     this.gameStateService.saveGame();
     this.loadGameState();
   }

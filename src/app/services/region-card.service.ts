@@ -104,6 +104,15 @@ export class RegionCardService {
     timer: number;
     timerInterval?: any;
   } | null = null;
+  // Стан виконання карти регіону "Рух до цілі"
+  public targetMovementEffect: {
+    cardId: string;
+    clan: string;
+    step: 'select_first_province' | 'select_second_province';
+    firstProvinceId?: string;
+    timer: number;
+    timerInterval?: any;
+  } | null = null;
 
   // Активні картки регіонів, задіяні в поточній партії (по 1 на кожен регіон)
   private activeGameRegionCards: RegionCard[] = [];
@@ -510,5 +519,44 @@ export class RegionCardService {
     }
 
     this.cancelShrineEffect();
+  }
+
+  /* РУХ ДО ЦІЛІ */
+  startTargetMovementEffect(cardId: string, clan: string, onTimeout: () => void): boolean {
+    this.targetMovementEffect = {
+      cardId: cardId,
+      clan: clan,
+      step: 'select_first_province',
+      timer: 10
+    };
+
+    if (this.targetMovementEffect.timerInterval) {
+      clearInterval(this.targetMovementEffect.timerInterval);
+    }
+
+    this.targetMovementEffect.timerInterval = setInterval(() => {
+      this.ngZone.run(() => {
+        if (this.targetMovementEffect && this.targetMovementEffect.timer > 0) {
+          this.targetMovementEffect.timer--;
+        } else {
+          if (this.targetMovementEffect) {
+            this.useRegionCard(this.targetMovementEffect.cardId, this.targetMovementEffect.clan);
+          }
+          this.cancelTargetMovementEffect();
+          onTimeout();
+        }
+        this.closeRokirovkaModalSubject.next();
+      });
+    }, 1000);
+
+    return true;
+  }
+
+  cancelTargetMovementEffect(): void {
+    if (this.targetMovementEffect && this.targetMovementEffect.timerInterval) {
+      clearInterval(this.targetMovementEffect.timerInterval);
+    }
+    this.targetMovementEffect = null;
+    this.closeRokirovkaModalSubject.next();
   }
 }
