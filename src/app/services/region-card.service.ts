@@ -114,6 +114,14 @@ export class RegionCardService {
     timerInterval?: any;
   } | null = null;
 
+  // Стан виконання карти регіону "Бусідо"
+  public bushidoEffect: {
+    cardId: string;
+    clan: string;
+    timer: number;
+    timerInterval?: any;
+  } | null = null;
+
   // Активні картки регіонів, задіяні в поточній партії (по 1 на кожен регіон)
   private activeGameRegionCards: RegionCard[] = [];
 
@@ -325,7 +333,7 @@ export class RegionCardService {
     this.closeRokirovkaModalSubject.next(); // Закриваємо модалку при відмініі
   }
 
-  /*ВИХІД ДО МОРЯ */
+  /* Карта регіону  ВИХІД ДО МОРЯ */
   startHarborEffect(cardId: string, clan: string, onTimeout: () => void): boolean {
     this.harborEffect = {
       cardId: cardId,
@@ -384,7 +392,7 @@ export class RegionCardService {
     this.cancelHarborEffect();
   }
 
-  /* ДИПЛОМАТИЧНА МІСІЯ */
+  /* Карта регіону  ДИПЛОМАТИЧНА МІСІЯ */
   startDiplomacyEffect(cardId: string, clan: string, onTimeout: () => void): boolean {
     this.diplomacyEffect = {
       cardId: cardId,
@@ -424,7 +432,7 @@ export class RegionCardService {
     this.closeRokirovkaModalSubject.next();
   }
 
-  /* КОДЕКС ЧЕСТІ */
+  /* Карта регіону  КОДЕКС ЧЕСТІ */
   startHonorCodeEffect(cardId: string, clan: string, onTimeout: () => void): boolean {
     this.honorCodeEffect = {
       cardId: cardId,
@@ -463,7 +471,7 @@ export class RegionCardService {
     this.closeRokirovkaModalSubject.next();
   }
 
-  /* БЛАГОСЛОВЕННА ЗЕМЛЯ */
+  /* Карта регіону  БЛАГОСЛОВЕННА ЗЕМЛЯ */
   startShrineEffect(cardId: string, clan: string, onTimeout: () => void): boolean {
     this.shrineEffect = {
       cardId: cardId,
@@ -521,7 +529,7 @@ export class RegionCardService {
     this.cancelShrineEffect();
   }
 
-  /* РУХ ДО ЦІЛІ */
+  /* Карта регіону  РУХ ДО ЦІЛІ */
   startTargetMovementEffect(cardId: string, clan: string, onTimeout: () => void): boolean {
     this.targetMovementEffect = {
       cardId: cardId,
@@ -558,5 +566,62 @@ export class RegionCardService {
     }
     this.targetMovementEffect = null;
     this.closeRokirovkaModalSubject.next();
+  }
+
+  /* Карта регіону  БУСІДО */
+  startBushidoEffect(cardId: string, clan: string, onTimeout: () => void): boolean {
+    this.bushidoEffect = {
+      cardId: cardId,
+      clan: clan,
+      timer: 10
+    };
+
+    if (this.bushidoEffect.timerInterval) {
+      clearInterval(this.bushidoEffect.timerInterval);
+    }
+
+    this.bushidoEffect.timerInterval = setInterval(() => {
+      this.ngZone.run(() => {
+        if (this.bushidoEffect && this.bushidoEffect.timer > 0) {
+          this.bushidoEffect.timer--;
+        } else {
+          if (this.bushidoEffect) {
+            this.useRegionCard(this.bushidoEffect.cardId, this.bushidoEffect.clan);
+          }
+          this.cancelBushidoEffect();
+          onTimeout();
+        }
+        this.closeRokirovkaModalSubject.next();
+      });
+    }, 1000);
+
+    return true;
+  }
+
+  cancelBushidoEffect(): void {
+    if (this.bushidoEffect && this.bushidoEffect.timerInterval) {
+      clearInterval(this.bushidoEffect.timerInterval);
+    }
+    this.bushidoEffect = null;
+    this.closeRokirovkaModalSubject.next();
+  }
+
+  completeBushidoEffect(provinceId: string, gameState: any): void {
+    if (!this.bushidoEffect) return;
+
+    const { cardId, clan } = this.bushidoEffect;
+    const province = gameState.provinces[provinceId];
+
+    if (province) {
+      // Встановлюємо значення очок честі рівно на 4
+      province.honorFlowers = 4;
+
+      gameState.roundLog.push(`🦁 Бусідо застосовано: честь провінції ${province.name} встановлено на рівно 4.`);
+
+      // Списуємо картку регіону
+      this.useRegionCard(cardId, clan);
+    }
+
+    this.cancelBushidoEffect();
   }
 }

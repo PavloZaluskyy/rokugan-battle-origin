@@ -427,6 +427,11 @@ onTouchStart(event: TouchEvent) {
       this.onTargetMovementProvinceClick(province);
       return;
     }
+    // 6. ПЕРЕВІРКА ЕФЕКТУ "БУСІДО"
+    if (this.regionCardService.bushidoEffect) {
+      this.onBushidoProvinceClick(province);
+      return;
+    }
     
   }
 
@@ -779,6 +784,8 @@ onTouchStart(event: TouchEvent) {
       const success = this.regionCardService.startShrineEffect(card.id, this.activePlayerClan, () => {});
     } else if (card.title === 'Рух до цілі') {
       const success = this.regionCardService.startTargetMovementEffect(card.id, this.activePlayerClan, () => {});
+    } else if (card.title === 'Бусідо') {
+      const success = this.regionCardService.startBushidoEffect(card.id, this.activePlayerClan, () => {});
       if (success) {
         this.isRegionDrawerOpen = false; // Закриваємо шухлядку регіонів
       }
@@ -1076,6 +1083,40 @@ onTouchStart(event: TouchEvent) {
       this.regionCardService.cancelTargetMovementEffect();
     }
 
+    this.gameStateService.saveGame();
+    this.loadGameState();
+  }
+
+  /* КАРТА РЕГІОНУ "БУСІДО" */
+  cancelBushidoEffect(): void {
+    this.regionCardService.cancelBushidoEffect();
+  }
+
+  // Перевірка підсвічування: всі провінції, крім тіньових земель
+  isBushidoTarget(province: Province): boolean {
+    const effect = this.regionCardService.bushidoEffect;
+    if (!effect) return false;
+
+    if (province.regionId.toLowerCase().includes('shadowlands') || province.regionId.includes('Тіньових Земель')) {
+      return false;
+    }
+
+    return true;
+  }
+
+  // Обробка кліку по провінції для "Бусідо"
+  onBushidoProvinceClick(province: Province): void {
+    const effect = this.regionCardService.bushidoEffect;
+    if (!effect) return;
+
+    if (province.regionId.toLowerCase().includes('shadowlands') || province.regionId.includes('Тіньових Земель')) {
+      return;
+    }
+
+    const gameState = this.gameStateService.getGameState();
+    if (!gameState) return;
+
+    this.regionCardService.completeBushidoEffect(province.id, gameState);
     this.gameStateService.saveGame();
     this.loadGameState();
   }
