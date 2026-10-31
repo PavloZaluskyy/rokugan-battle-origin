@@ -187,6 +187,7 @@
             || isBushidoTarget(prov)
             || isGloryTarget(prov)
             || isKamiSupportTarget(prov)
+            || isCleansingTarget(prov)
             "
             
           >
@@ -223,7 +224,7 @@
       <img src="assets/images/units/peace.png" alt="Peace" class="badge-png" />
     </div>
     <div class="map-badge" *ngIf="prov.hasScorchedEarth" title="Випалена земля">
-      <img src="assets/images/units/raid.png" alt="Scorched Earth" class="badge-png" />
+      <img src="assets/images/units/scorched.png" alt="Scorched Earth" class="badge-png" />
     </div>
     <div class="map-badge" *ngIf="prov.hasShrine" title="Святиня">
       <img src="assets/images/units/shrine.png" alt="Shrine" class="badge-png" />
@@ -494,6 +495,26 @@
     </div>
     <p class="rokirovka-instruction">
       Виберіть провінцію (крім тіньових земель), щоб помістити туди бонус до захисту +2.
+    </p>
+  </div>
+</div>
+<!-- БАНЕР ТАЙМЕРА ДЛЯ ЕФЕКТУ "ОЧИЩЕННЯ" -->
+<div class="rokirovka-fullscreen-overlay" *ngIf="regionCardService.cleansingEffect">
+  <div class="rokirovka-modal bamboo-mat harbor-modal-box">
+    <div class="rokirovka-header">
+      <div class="rokirovka-title-box">
+        <span class="rokirovka-icon">✨</span>
+        <h3 class="mat-title-text">ОЧИЩЕННЯ: ВИБЕРІТЬ СПАЛЕНУ ПРОВІНЦІЮ</h3>
+      </div>
+      <div class="rokirovka-header-right">
+        <div class="rokirovka-timer" [class.danger]="regionCardService.cleansingEffect.timer <= 3">
+          ⏱️ 0:{{ regionCardService.cleansingEffect.timer < 10 ? '0' + regionCardService.cleansingEffect.timer : regionCardService.cleansingEffect.timer }}
+        </div>
+        <button class="rokirovka-cancel-btn" (click)="cancelCleansingEffect()">Відмінити</button>
+      </div>
+    </div>
+    <p class="rokirovka-instruction">
+      Виберіть провінцію зі статусом погрому (випаленої землі), щоб очистити її та додати туди 2 жетони захисту.
     </p>
   </div>
 </div>

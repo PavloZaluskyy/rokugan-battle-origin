@@ -441,6 +441,11 @@ onTouchStart(event: TouchEvent) {
       this.onKamiSupportProvinceClick(province);
       return;
     }
+    // 8. ПЕРЕВІРКА ЕФЕКТУ "ОЧИЩЕННЯ"
+    if (this.regionCardService.cleansingEffect) {
+      this.onCleansingProvinceClick(province);
+      return;
+    }
     
   }
 
@@ -799,6 +804,8 @@ onTouchStart(event: TouchEvent) {
       const success = this.regionCardService.startGloryEffect(card.id, this.activePlayerClan, () => {});
     } else if (card.title === 'Підтримка Камі') {
       const success = this.regionCardService.startKamiSupportEffect(card.id, this.activePlayerClan, () => {});
+    } else if (card.title === 'Очищення') {
+      const success = this.regionCardService.startCleansingEffect(card.id, this.activePlayerClan, () => {});
       if (success) {
         this.isRegionDrawerOpen = false; // Закриваємо шухлядку регіонів
       }
@@ -1198,6 +1205,32 @@ onTouchStart(event: TouchEvent) {
     if (!gameState) return;
 
     this.regionCardService.completeKamiSupportEffect(province.id, gameState);
+    this.gameStateService.saveGame();
+    this.loadGameState();
+  }
+
+  /* КАРТА РЕГІОНУ "ОЧИЩЕННЯ" */
+  cancelCleansingEffect(): void {
+    this.regionCardService.cancelCleansingEffect();
+  }
+
+  // Перевірка підсвічування: тільки провінції зі спаленою землею (погромом)
+  isCleansingTarget(province: Province): boolean {
+    const effect = this.regionCardService.cleansingEffect;
+    if (!effect) return false;
+    return Boolean(province.hasScorchedEarth);
+  }
+
+  // Обробка кліку по провінції для "Очищення"
+  onCleansingProvinceClick(province: Province): void {
+    const effect = this.regionCardService.cleansingEffect;
+    if (!effect) return;
+    if (!province.hasScorchedEarth) return;
+
+    const gameState = this.gameStateService.getGameState();
+    if (!gameState) return;
+
+    this.regionCardService.completeCleansingEffect(province.id, this.activePlayerClan, gameState);
     this.gameStateService.saveGame();
     this.loadGameState();
   }

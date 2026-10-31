@@ -138,6 +138,14 @@ export class RegionCardService {
     timerInterval?: any;
   } | null = null;
 
+  // Стан виконання карти регіону "Очищення"
+  public cleansingEffect: {
+    cardId: string;
+    clan: string;
+    timer: number;
+    timerInterval?: any;
+  } | null = null;
+
   // Активні картки регіонів, задіяні в поточній партії (по 1 на кожен регіон)
   private activeGameRegionCards: RegionCard[] = [];
 
@@ -754,5 +762,64 @@ export class RegionCardService {
     }
 
     this.cancelKamiSupportEffect();
+  }
+
+  /* Карта регіону  ОЧИЩЕННЯ */
+  startCleansingEffect(cardId: string, clan: string, onTimeout: () => void): boolean {
+    this.cleansingEffect = {
+      cardId: cardId,
+      clan: clan,
+      timer: 10
+    };
+
+    if (this.cleansingEffect.timerInterval) {
+      clearInterval(this.cleansingEffect.timerInterval);
+    }
+
+    this.cleansingEffect.timerInterval = setInterval(() => {
+      this.ngZone.run(() => {
+        if (this.cleansingEffect && this.cleansingEffect.timer > 0) {
+          this.cleansingEffect.timer--;
+        } else {
+          if (this.cleansingEffect) {
+            this.useRegionCard(this.cleansingEffect.cardId, this.cleansingEffect.clan);
+          }
+          this.cancelCleansingEffect();
+          onTimeout();
+        }
+        this.closeRokirovkaModalSubject.next();
+      });
+    }, 1000);
+
+    return true;
+  }
+
+  cancelCleansingEffect(): void {
+    if (this.cleansingEffect && this.cleansingEffect.timerInterval) {
+      clearInterval(this.cleansingEffect.timerInterval);
+    }
+    this.cleansingEffect = null;
+    this.closeRokirovkaModalSubject.next();
+  }
+
+  completeCleansingEffect(provinceId: string, clan: string, gameState: any): void {
+    if (!this.cleansingEffect) return;
+
+    const { cardId } = this.cleansingEffect;
+    const province = gameState.provinces[provinceId];
+
+    if (province) {
+      // Знімаємо попіл/погром і робимо провінцію підконтрольною гравцю з +2 захисту
+      province.hasScorchedEarth = false;
+      province.controllingClan = clan as any;
+      province.controlTokensFaceUp = (province.controlTokensFaceUp || 0) + 2;
+
+      gameState.roundLog.push(`✨ Очищення: провінцію ${province.name} очищено від погрому. Клан ${clan} встановив там контроль і +2 захисту.`);
+
+      // Списуємо картку регіону
+      this.useRegionCard(cardId, clan);
+    }
+
+    this.cancelCleansingEffect();
   }
 }
