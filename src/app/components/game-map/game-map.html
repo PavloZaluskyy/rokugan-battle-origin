@@ -186,6 +186,7 @@
             || isTargetMovementTarget(prov)
             || isBushidoTarget(prov)
             || isGloryTarget(prov)
+            || isKamiSupportTarget(prov)
             "
             
           >
@@ -473,6 +474,26 @@
     </div>
     <p class="rokirovka-instruction">
       Виберіть провінцію (крім тіньових земель), щоб розмістити там жетон Слави (glory.png). Старі жетони миру чи погрому заміняться на нього.
+    </p>
+  </div>
+</div>
+<!-- БАНЕР ТАЙМЕРА ДЛЯ ЕФЕКТУ "ПІДТРИМКА КАМІ" -->
+<div class="rokirovka-fullscreen-overlay" *ngIf="regionCardService.kamiSupportEffect">
+  <div class="rokirovka-modal bamboo-mat harbor-modal-box">
+    <div class="rokirovka-header">
+      <div class="rokirovka-title-box">
+        <span class="rokirovka-icon">⛩️</span>
+        <h3 class="mat-title-text">ПІДТРИМКА КАМІ: ВИБЕРІТЬ ПРОВІНЦІЮ</h3>
+      </div>
+      <div class="rokirovka-header-right">
+        <div class="rokirovka-timer" [class.danger]="regionCardService.kamiSupportEffect.timer <= 3">
+          ⏱️ 0:{{ regionCardService.kamiSupportEffect.timer < 10 ? '0' + regionCardService.kamiSupportEffect.timer : regionCardService.kamiSupportEffect.timer }}
+        </div>
+        <button class="rokirovka-cancel-btn" (click)="cancelKamiSupportEffect()">Відмінити</button>
+      </div>
+    </div>
+    <p class="rokirovka-instruction">
+      Виберіть провінцію (крім тіньових земель), щоб помістити туди бонус до захисту +2.
     </p>
   </div>
 </div>

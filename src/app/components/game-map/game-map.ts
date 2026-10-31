@@ -436,6 +436,11 @@ onTouchStart(event: TouchEvent) {
       this.onGloryProvinceClick(province);
       return;
     }
+    // 7. ПЕРЕВІРКА ЕФЕКТУ "ПІДТРИМКА КАМІ"
+    if (this.regionCardService.kamiSupportEffect) {
+      this.onKamiSupportProvinceClick(province);
+      return;
+    }
     
   }
 
@@ -792,6 +797,8 @@ onTouchStart(event: TouchEvent) {
       const success = this.regionCardService.startBushidoEffect(card.id, this.activePlayerClan, () => {});
     } else if (card.title === 'Шляхетна битва') {
       const success = this.regionCardService.startGloryEffect(card.id, this.activePlayerClan, () => {});
+    } else if (card.title === 'Підтримка Камі') {
+      const success = this.regionCardService.startKamiSupportEffect(card.id, this.activePlayerClan, () => {});
       if (success) {
         this.isRegionDrawerOpen = false; // Закриваємо шухлядку регіонів
       }
@@ -1157,6 +1164,40 @@ onTouchStart(event: TouchEvent) {
     if (!gameState) return;
 
     this.regionCardService.completeGloryEffect(province.id, gameState);
+    this.gameStateService.saveGame();
+    this.loadGameState();
+  }
+
+  /* КАРТА РЕГІОНУ "ПІДТРИМКА КАМІ" */
+  cancelKamiSupportEffect(): void {
+    this.regionCardService.cancelKamiSupportEffect();
+  }
+
+  // Перевірка підсвічування: всі провінції, крім тіньових земель
+  isKamiSupportTarget(province: Province): boolean {
+    const effect = this.regionCardService.kamiSupportEffect;
+    if (!effect) return false;
+
+    if (province.regionId.toLowerCase().includes('shadowlands') || province.regionId.includes('Тіньових Земель')) {
+      return false;
+    }
+
+    return true;
+  }
+
+  // Обробка кліку по провінції для "Підтримки Камі"
+  onKamiSupportProvinceClick(province: Province): void {
+    const effect = this.regionCardService.kamiSupportEffect;
+    if (!effect) return;
+
+    if (province.regionId.toLowerCase().includes('shadowlands') || province.regionId.includes('Тіньових Земель')) {
+      return;
+    }
+
+    const gameState = this.gameStateService.getGameState();
+    if (!gameState) return;
+
+    this.regionCardService.completeKamiSupportEffect(province.id, gameState);
     this.gameStateService.saveGame();
     this.loadGameState();
   }

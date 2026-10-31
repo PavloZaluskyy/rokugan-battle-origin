@@ -130,6 +130,14 @@ export class RegionCardService {
     timerInterval?: any;
   } | null = null;
 
+  // Стан виконання карти регіону "Підтримка Камі"
+  public kamiSupportEffect: {
+    cardId: string;
+    clan: string;
+    timer: number;
+    timerInterval?: any;
+  } | null = null;
+
   // Активні картки регіонів, задіяні в поточній партії (по 1 на кожен регіон)
   private activeGameRegionCards: RegionCard[] = [];
 
@@ -689,5 +697,62 @@ export class RegionCardService {
     }
 
     this.cancelGloryEffect();
+  }
+
+  // Карта регіону  ПІДТРИМКА КАМІ
+  startKamiSupportEffect(cardId: string, clan: string, onTimeout: () => void): boolean {
+    this.kamiSupportEffect = {
+      cardId: cardId,
+      clan: clan,
+      timer: 10
+    };
+
+    if (this.kamiSupportEffect.timerInterval) {
+      clearInterval(this.kamiSupportEffect.timerInterval);
+    }
+
+    this.kamiSupportEffect.timerInterval = setInterval(() => {
+      this.ngZone.run(() => {
+        if (this.kamiSupportEffect && this.kamiSupportEffect.timer > 0) {
+          this.kamiSupportEffect.timer--;
+        } else {
+          if (this.kamiSupportEffect) {
+            this.useRegionCard(this.kamiSupportEffect.cardId, this.kamiSupportEffect.clan);
+          }
+          this.cancelKamiSupportEffect();
+          onTimeout();
+        }
+        this.closeRokirovkaModalSubject.next();
+      });
+    }, 1000);
+
+    return true;
+  }
+
+  cancelKamiSupportEffect(): void {
+    if (this.kamiSupportEffect && this.kamiSupportEffect.timerInterval) {
+      clearInterval(this.kamiSupportEffect.timerInterval);
+    }
+    this.kamiSupportEffect = null;
+    this.closeRokirovkaModalSubject.next();
+  }
+
+  completeKamiSupportEffect(provinceId: string, gameState: any): void {
+    if (!this.kamiSupportEffect) return;
+
+    const { cardId, clan } = this.kamiSupportEffect;
+    const province = gameState.provinces[provinceId];
+
+    if (province) {
+      // Додаємо +2 до захисту (controlTokensFaceUp)
+      province.controlTokensFaceUp += 2;
+
+      gameState.roundLog.push(`🔥 Підтримка Камі: у провінції ${province.name} збільшено захист на +2 завдяки божественній благодаті.`);
+
+      // Списуємо картку регіону
+      this.useRegionCard(cardId, clan);
+    }
+
+    this.cancelKamiSupportEffect();
   }
 }

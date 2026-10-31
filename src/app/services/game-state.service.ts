@@ -604,7 +604,7 @@ export class GameStateService {
           }
         }
       }
-      
+
       if (attackerClans.length > 0) {
         let strongestAttackerClan: ClanType | null = null;
         let maxAttackStrength = -1;
@@ -644,7 +644,8 @@ export class GameStateService {
         
         if (strongestAttackerClan && (maxAttackStrength > effectiveDefenseForWinner || isCraneTieBreak)) {
           province.controllingClan = strongestAttackerClan;
-          province.controlTokensFaceUp = 1;
+          const defenseBonus = strongestAttackerClan === 'Crab' ? 2 : 1;
+          province.controlTokensFaceUp = defenseBonus;
         } else {
           if (defenderClan === 'Crab') {
             province.baseDefense += 2;
