@@ -271,6 +271,10 @@ export class GameStateService {
     const isOwner = province.controllingClan === playerClan;
 
     if (province.hasScorchedEarth || province.hasPeaceToken) return false;
+    const selectedTokenClan = token.clan;
+    if (['Army', 'Navy', 'Shinobi'].includes(tokenType)) {
+      const adjacentIds = PROVINCE_ADJACENCY[province.id] || [];
+    }
     if (province.hasShrine && !isOwner) return false;
     if (tokenType === 'Harbor') return isOwner && !province.isCoastal;
 
@@ -302,6 +306,13 @@ export class GameStateService {
       if (token.type === 'Navy') {
         return Boolean(province.isCoastal || province.hasHarbor) && Boolean(province.isCoastal || province.hasHarbor);
       }
+      const adjacentIds = PROVINCE_ADJACENCY[province.id] || [];
+      const hasValidBorderWithoutPeace = adjacentIds.some(adjId => {
+        const adjProv = this.state?.provinces[adjId];
+        return adjProv && adjProv.controllingClan === playerClan && !adjProv.hasPeaceToken;
+      });
+
+      if (!hasValidBorderWithoutPeace) return false;
       const controlledBorders = this.getControlledBorderCount(province, playerClan);
       const existingFriendlyTokensCount = (province.placedTokens || []).filter(
         pt => pt.clan === playerClan && ['Army', 'Navy'].includes(pt.token.type)
@@ -515,6 +526,30 @@ export class GameStateService {
 
       placedTokens.forEach(pt => pt.isFaceUp = true);
 
+      const raidTokens = placedTokens.filter(pt => pt.token.type === 'Raid');
+      if (raidTokens.length > 0) {
+        let raidSuccessful = false;
+        raidTokens.forEach(rt => {
+          const hasCombatToken = placedTokens.some(pt => pt.clan === rt.clan && ['Army', 'Navy', 'Shinobi'].includes(pt.token.type));
+          const hasShinobiHere = placedTokens.some(pt => pt.clan === rt.clan && pt.token.type === 'Shinobi');
+          const hasBorder = this.hasLandBorder(province, rt.clan);
+          const hasNavyHere = placedTokens.some(pt => pt.clan === rt.clan && pt.token.type === 'Navy');
+          const isCoastalAccess = Boolean(province.isCoastal || province.hasHarbor) && hasNavyHere;
+
+          if (hasCombatToken && (hasShinobiHere || hasBorder || isCoastalAccess)) {
+            raidSuccessful = true;
+          }
+          
+        }); 
+        if (raidSuccessful) {
+            province.hasScorchedEarth = true;
+            province.controllingClan = 'Neutral';
+            province.controlTokensFaceUp = 0;
+            province.placedTokens = [];
+            this.state!.roundLog.push(`🔥 Погром (Raid) силами флоту/армії у провінції ${province.name} успішно виконано! Земля спустошена.`);
+          }
+        return;
+      }
       const blessingTokens = placedTokens.filter(pt => pt.token.type === 'Blessing');
       blessingTokens.forEach(blessingToken => {
         const targetCombatToken = placedTokens.find(pt => 
@@ -533,19 +568,7 @@ export class GameStateService {
         return;
       }
 
-      const raidTokens = placedTokens.filter(pt => pt.token.type === 'Raid');
-      raidTokens.forEach(rt => {
-        const hasCombatToken = placedTokens.some(pt => pt.clan === rt.clan && ['Army', 'Navy', 'Shinobi'].includes(pt.token.type));
-        const hasShinobiHere = placedTokens.some(pt => pt.clan === rt.clan && pt.token.type === 'Shinobi');
-        const hasBorder = this.hasLandBorder(province, rt.clan);
-
-        if (hasCombatToken && (hasShinobiHere || hasBorder)) {
-          province.hasScorchedEarth = true;
-          province.controllingClan = 'Neutral';
-          province.controlTokensFaceUp = 0;
-          province.placedTokens = [];
-        }
-      });
+      
 
       if (province.hasScorchedEarth) return;
 
@@ -568,6 +591,20 @@ export class GameStateService {
         placedTokens.filter(pt => pt.clan !== defenderClan).map(pt => pt.clan)
       ));
 
+      // ЯКЩО НІХТО НЕ НАПАВ НА ВЛАСНУ ПРОВІНЦІЮ (або атакуючих нема)
+      if (attackerClans.length === 0 && defenderClan !== 'Neutral') {
+        const hasFriendlyTokens = placedTokens.some(pt => pt.clan === defenderClan);
+        if (hasFriendlyTokens) {
+          if (defenderClan === 'Crab') {
+            province.baseDefense += 2; // Спец-скіл Краба: +2 за кожен неопосередкований раунд
+            this.state!.roundLog.push(`🦀 Клан Краба зміцнив провінцію ${province.name}: захист збільшено на +2.`);
+          } else {
+            province.controlTokensFaceUp += 1; // Стандартний бонус +1 до захисту/контролю
+            this.state!.roundLog.push(`🛡️ Провінція ${province.name} під захистом власника: жетон контролю збільшено на +1.`);
+          }
+        }
+      }
+      
       if (attackerClans.length > 0) {
         let strongestAttackerClan: ClanType | null = null;
         let maxAttackStrength = -1;

@@ -432,6 +432,10 @@ onTouchStart(event: TouchEvent) {
       this.onBushidoProvinceClick(province);
       return;
     }
+    if (this.regionCardService.gloryEffect) {
+      this.onGloryProvinceClick(province);
+      return;
+    }
     
   }
 
@@ -786,6 +790,8 @@ onTouchStart(event: TouchEvent) {
       const success = this.regionCardService.startTargetMovementEffect(card.id, this.activePlayerClan, () => {});
     } else if (card.title === 'Бусідо') {
       const success = this.regionCardService.startBushidoEffect(card.id, this.activePlayerClan, () => {});
+    } else if (card.title === 'Шляхетна битва') {
+      const success = this.regionCardService.startGloryEffect(card.id, this.activePlayerClan, () => {});
       if (success) {
         this.isRegionDrawerOpen = false; // Закриваємо шухлядку регіонів
       }
@@ -1117,6 +1123,40 @@ onTouchStart(event: TouchEvent) {
     if (!gameState) return;
 
     this.regionCardService.completeBushidoEffect(province.id, gameState);
+    this.gameStateService.saveGame();
+    this.loadGameState();
+  }
+
+  /* КАРТА РЕГІОНУ "ШЛЯХЕТНА БИТВА" */
+  cancelGloryEffect(): void {
+    this.regionCardService.cancelGloryEffect();
+  }
+
+  // Перевірка підсвічування: всі провінції, крім тіньових земель
+  isGloryTarget(province: Province): boolean {
+    const effect = this.regionCardService.gloryEffect;
+    if (!effect) return false;
+
+    if (province.regionId.toLowerCase().includes('shadowlands') || province.regionId.includes('Тіньових Земель')) {
+      return false;
+    }
+
+    return true;
+  }
+
+  // Обробка кліку по провінції для "Шляхетної битви"
+  onGloryProvinceClick(province: Province): void {
+    const effect = this.regionCardService.gloryEffect;
+    if (!effect) return;
+
+    if (province.regionId.toLowerCase().includes('shadowlands') || province.regionId.includes('Тіньових Земель')) {
+      return;
+    }
+
+    const gameState = this.gameStateService.getGameState();
+    if (!gameState) return;
+
+    this.regionCardService.completeGloryEffect(province.id, gameState);
     this.gameStateService.saveGame();
     this.loadGameState();
   }

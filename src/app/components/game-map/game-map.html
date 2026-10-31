@@ -185,6 +185,7 @@
             || isShrineTarget(prov)
             || isTargetMovementTarget(prov)
             || isBushidoTarget(prov)
+            || isGloryTarget(prov)
             "
             
           >
@@ -452,6 +453,26 @@
     </div>
     <p class="rokirovka-instruction">
       Виберіть провінцію (крім тіньових земель), щоб встановити її честь (🌸) рівно на 4.
+    </p>
+  </div>
+</div>
+<!-- БАНЕР ТАЙМЕРА ДЛЯ ЕФЕКТУ "ШЛЯХЕТНА БИТВА" -->
+<div class="rokirovka-fullscreen-overlay" *ngIf="regionCardService.gloryEffect">
+  <div class="rokirovka-modal bamboo-mat harbor-modal-box">
+    <div class="rokirovka-header">
+      <div class="rokirovka-title-box">
+        <span class="rokirovka-icon">🎌</span>
+        <h3 class="mat-title-text">ШЛЯХЕТНА БИТВА: ВИБЕРІТЬ ПРОВІНЦІЮ</h3>
+      </div>
+      <div class="rokirovka-header-right">
+        <div class="rokirovka-timer" [class.danger]="regionCardService.gloryEffect.timer <= 3">
+          ⏱️ 0:{{ regionCardService.gloryEffect.timer < 10 ? '0' + regionCardService.gloryEffect.timer : regionCardService.gloryEffect.timer }}
+        </div>
+        <button class="rokirovka-cancel-btn" (click)="cancelGloryEffect()">Відмінити</button>
+      </div>
+    </div>
+    <p class="rokirovka-instruction">
+      Виберіть провінцію (крім тіньових земель), щоб розмістити там жетон Слави (glory.png). Старі жетони миру чи погрому заміняться на нього.
     </p>
   </div>
 </div>

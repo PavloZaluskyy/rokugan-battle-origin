@@ -122,6 +122,14 @@ export class RegionCardService {
     timerInterval?: any;
   } | null = null;
 
+  // Стан виконання карти регіону "Шляхетна битва"
+  public gloryEffect: {
+    cardId: string;
+    clan: string;
+    timer: number;
+    timerInterval?: any;
+  } | null = null;
+
   // Активні картки регіонів, задіяні в поточній партії (по 1 на кожен регіон)
   private activeGameRegionCards: RegionCard[] = [];
 
@@ -623,5 +631,63 @@ export class RegionCardService {
     }
 
     this.cancelBushidoEffect();
+  }
+  /* Карта регіону  ШЛЯХЕТНА БИТВА */
+  startGloryEffect(cardId: string, clan: string, onTimeout: () => void): boolean {
+    this.gloryEffect = {
+      cardId: cardId,
+      clan: clan,
+      timer: 10
+    };
+
+    if (this.gloryEffect.timerInterval) {
+      clearInterval(this.gloryEffect.timerInterval);
+    }
+
+    this.gloryEffect.timerInterval = setInterval(() => {
+      this.ngZone.run(() => {
+        if (this.gloryEffect && this.gloryEffect.timer > 0) {
+          this.gloryEffect.timer--;
+        } else {
+          if (this.gloryEffect) {
+            this.useRegionCard(this.gloryEffect.cardId, this.gloryEffect.clan);
+          }
+          this.cancelGloryEffect();
+          onTimeout();
+        }
+        this.closeRokirovkaModalSubject.next();
+      });
+    }, 1000);
+
+    return true;
+  }
+
+  cancelGloryEffect(): void {
+    if (this.gloryEffect && this.gloryEffect.timerInterval) {
+      clearInterval(this.gloryEffect.timerInterval);
+    }
+    this.gloryEffect = null;
+    this.closeRokirovkaModalSubject.next();
+  }
+
+  completeGloryEffect(provinceId: string, gameState: any): void {
+    if (!this.gloryEffect) return;
+
+    const { cardId, clan } = this.gloryEffect;
+    const province = gameState.provinces[provinceId];
+
+    if (province) {
+      // Розміщуємо жетон Слави та очищаємо старі статуси Миру/Погрому (замінюємо їх)
+      province.hasGlory = true;
+      province.hasPeaceToken = false;
+      province.hasScorchedEarth = false;
+
+      gameState.roundLog.push(`🦁 Шляхетна битва: на провінції ${province.name} встановлено жетон Слави. Попередні жетони миру чи погрому скасовано.`);
+
+      // Списуємо картку регіону
+      this.useRegionCard(cardId, clan);
+    }
+
+    this.cancelGloryEffect();
   }
 }
