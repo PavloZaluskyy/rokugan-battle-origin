@@ -446,7 +446,11 @@ onTouchStart(event: TouchEvent) {
       this.onCleansingProvinceClick(province);
       return;
     }
-    
+    // 9. ПЕРЕВІРКА ЕФЕКТУ "ВОГНІ ПОВСТАННЯ"
+    if (this.regionCardService.firesOfRebellionEffect) {
+      this.onFiresOfRebellionProvinceClick(province);
+      return;
+    } 
   }
 
   
@@ -783,13 +787,9 @@ onTouchStart(event: TouchEvent) {
 
     // Якщо це карта регіону "Рокіровка"
     if (card.title === 'Рокіровка') {
-      const success = this.regionCardService.startRokirovkaEffect(card.id, this.activePlayerClan, () => {
-        console.log('⏰ Час виконання картки регіону Рокіровка вийшов!');
-      });
+      const success = this.regionCardService.startRokirovkaEffect(card.id, this.activePlayerClan, () => {});
     } else if (card.title === 'Вихід до моря') {
-      const success = this.regionCardService.startHarborEffect(card.id, this.activePlayerClan, () => {
-        console.log('⏰ Час виконання картки "Вихід до моря" вийшов!');
-      });
+      const success = this.regionCardService.startHarborEffect(card.id, this.activePlayerClan, () => {});
     } else if (card.title === 'Дипломатична місія') {
       const success = this.regionCardService.startDiplomacyEffect(card.id, this.activePlayerClan, () => {});
     } else if (card.title === 'Кодекс честі') {
@@ -806,8 +806,13 @@ onTouchStart(event: TouchEvent) {
       const success = this.regionCardService.startKamiSupportEffect(card.id, this.activePlayerClan, () => {});
     } else if (card.title === 'Очищення') {
       const success = this.regionCardService.startCleansingEffect(card.id, this.activePlayerClan, () => {});
+    } else if (card.title === 'Вогні повстання') {
+      const success = this.regionCardService.startFiresOfRebellionEffect(card.id, this.activePlayerClan, () => {});
+    } else if (card.title === 'Шпіонська мережа') {
+      const success = this.regionCardService.startSpyNetworkEffect(card.id, this.activePlayerClan, () => {});
       if (success) {
         this.isRegionDrawerOpen = false; // Закриваємо шухлядку регіонів
+        this.cdr.detectChanges();        // Примусово оновлюємо інтерфейс
       }
     } else {
       // alert(`Ефект картки "${card.title}" буде реалізовано на наступному етапі!`);
@@ -1234,4 +1239,72 @@ onTouchStart(event: TouchEvent) {
     this.gameStateService.saveGame();
     this.loadGameState();
   }
+  /* КАРТА РЕГІОНУ "ВОГНІ ПОВСТАННЯ" */
+  cancelFiresOfRebellionEffect(): void {
+    this.regionCardService.cancelFiresOfRebellionEffect();
+  }
+
+  // Перевірка підсвічування: тільки провінції з жетоном миру
+  isFiresOfRebellionTarget(province: Province): boolean {
+    const effect = this.regionCardService.firesOfRebellionEffect;
+    if (!effect) return false;
+    return Boolean(province.hasPeaceToken);
+  }
+
+  // Обробка кліку по провінції для "Вогнів повстання"
+  onFiresOfRebellionProvinceClick(province: Province): void {
+    const effect = this.regionCardService.firesOfRebellionEffect;
+    if (!effect) return;
+    if (!province.hasPeaceToken) return;
+
+    const gameState = this.gameStateService.getGameState();
+    if (!gameState) return;
+
+    this.regionCardService.completeFiresOfRebellionEffect(province.id, this.activePlayerClan, gameState);
+    this.gameStateService.saveGame();
+    this.loadGameState();
+  }
+
+  /* КАРТА РЕГІОНУ "ШПИГУНСЬКА МЕРЕЖА" */
+  // Отримати список суперників (усі окрім поточного гравця) для Шпигунської мережі
+  get availableClansForSpy(): string[] {
+    const gameState = this.gameStateService.getGameState();
+    if (!gameState) return [];
+    return Object.keys(gameState.players).filter(clan => clan !== this.activePlayerClan);
+  }
+
+  // Отримати карти руки цільового гравця для відображення на кроці view_hand
+  get targetPlayerHandTokens(): any[] {
+    const effect = this.regionCardService.spyNetworkEffect;
+    if (!effect || !effect.targetClan) return [];
+    const gameState = this.gameStateService.getGameState();
+    const player = gameState?.players[effect.targetClan as keyof NonNullable<typeof gameState>['players']];
+    return player?.activeHandTokens || [];
+  }
+
+  // Обробка вибору клану суперника у модалці
+  onSelectSpyClan(targetClan: string): void {
+   const gameState = this.gameStateService.getGameState();
+    if (!gameState) return;
+    const effect = this.regionCardService.spyNetworkEffect as any;
+    if (!effect || !gameState.players[targetClan as keyof typeof gameState.players]) return;
+    
+    effect.targetClan = targetClan;
+    effect.step = 'view_hand';
+    
+    this.gameStateService.saveGame();
+    this.cdr.detectChanges();
+  }
+
+  // Закриття модалки шпигунства та списання карти регіону
+  onCloseSpyModal(): void {
+    const effect = this.regionCardService.spyNetworkEffect;
+    if (effect) {
+      this.regionCardService.useRegionCard(effect.cardId, effect.clan);
+    }
+    this.regionCardService.spyNetworkEffect = null;
+    this.gameStateService.saveGame();
+    this.loadGameState();
+  }
+  
 }

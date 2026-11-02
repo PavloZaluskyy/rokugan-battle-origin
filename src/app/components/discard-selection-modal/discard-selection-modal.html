@@ -1,7 +1,6 @@
+<!-- РОКІРОВКА -->
 <div class="rokirovka-overlay" *ngIf="rokirovkaEffect">
   <div class="rokirovka-modal bamboo-mat">
-    
-    <!-- Верхня панель: Заголовок та таймер -->
     <div class="rokirovka-header">
       <div class="rokirovka-title-box">
         <span class="rokirovka-icon">⛩️</span>
@@ -13,7 +12,6 @@
       <button class="rokirovka-cancel-btn" (click)="onCancelClick($event)">Відмінити</button>
     </div>
 
-    <!-- КРОК 4: Вибір карти зі скиду -->
     <div *ngIf="rokirovkaEffect.step === 'select_from_discard'">
       <p class="rokirovka-instruction">
         Виберіть одну картку <strong>Армії, Флоту чи Шинобі</strong> у вашому скиді, щоб повернути її у вашу ширму:
@@ -38,32 +36,87 @@
         </div>
       </div>
     </div>
+  </div>
+</div>
 
-    <!-- КРОК 8: Вибір карти з ширми для відправки у скид -->
-    <!-- <div *ngIf="rokirovkaEffect.step === 'select_from_hand'">
+<!-- ШПИГУНСЬКА МЕРЕЖА (ВИПРАВЛЕНО РІВЕНЬ ВКЛАДЕНОСТІ) -->
+<div class="rokirovka-overlay" *ngIf="spyNetworkEffect">
+  <div class="rokirovka-modal bamboo-mat">
+    
+    <!-- КРОК 1: Вибір клану суперника -->
+    <div *ngIf="spyNetworkEffect.step === 'select_target_clan'">
+      <div class="rokirovka-header">
+        <div class="rokirovka-title-box">
+          <span class="rokirovka-icon">🥷</span>
+          <h3 class="mat-title-text">ШПИГУНСЬКА МЕРЕЖА: ВИБЕРІТЬ КЛАН</h3>
+        </div>
+        <div class="rokirovka-timer" [class.danger]="spyNetworkEffect.timer <= 3">
+          ⏱️ 0:{{ spyNetworkEffect.timer < 10 ? '0' + spyNetworkEffect.timer : spyNetworkEffect.timer }}
+        </div>
+        <!-- Кнопка Відмінити є тільки тут -->
+        <button class="rokirovka-cancel-btn" (click)="onCancelClick($event)">Відмінити</button>
+      </div>
+
       <p class="rokirovka-instruction">
-        Картку успішно повернуто в ширму! Тепер виберіть <strong>іншу картку</strong> з вашої ширми, щоб відправити її у скид:
+        Виберіть суперника, щоб зазирнути в його ширму та вивести з ладу його пустий жетон:
       </p>
 
       <div class="cards-grid">
         <div class="clan-card discard-selectable" 
-             *ngFor="let token of currentHandTokens"
-             (click)="onHandTokenClick(token, $event)">
+            *ngFor="let clan of availableClans"
+            (click)="onClanSelectClick(clan, $event)">
+          
+          <!-- Картинка клану на фоні розтягнеться на всю картку -->
+          <div class="card-illustration" [style.backgroundImage]="'url(assets/images/Clans/' + clan.toLowerCase() + '.jpg)'">
+            <div class="card-overlay"></div>
+          </div>
+          
+          <!-- Назва клану красиво ляже знизу поверх карти -->
+          <div class="card-footer">
+            <div class="card-type-name">Клан {{ clan }}</div>
+          </div>
+          
+        </div>
+      </div>
+    </div>
+
+    <!-- КРОК 2: Перегляд карт обраного гравця (Кнопки Відмінити НЕМАЄ) -->
+    <div *ngIf="spyNetworkEffect.step === 'view_hand'">
+      <div class="rokirovka-header">
+        <div class="rokirovka-title-box">
+          <span class="rokirovka-icon">👁️</span>
+          <h3 class="mat-title-text">КАРТИ АТАКИ КЛАНУ {{ spyNetworkEffect.targetClan | uppercase }}</h3>
+        </div>
+        <div class="rokirovka-timer" [class.danger]="spyNetworkEffect.timer <= 3">
+          ⏱️ 0:{{ spyNetworkEffect.timer < 10 ? '0' + spyNetworkEffect.timer : spyNetworkEffect.timer }}
+        </div>
+      </div>
+
+      <p class="rokirovka-instruction">
+        Пустий жетон цього гравця було автоматично переведено у скид на цей раунд. Ось його поточні карти в ширмі:
+      </p>
+
+      <div class="cards-grid">
+        <div class="clan-card" *ngFor="let token of targetPlayerHandTokens">
           <div class="card-illustration" [style.backgroundImage]="'url(assets/images/tokens/' + token.type.toLowerCase() + '_cart.jpg)'">
             <div class="card-overlay"></div>
-            <div class="card-strength" *ngIf="token.strength && token.strength > 0 && token.type !== 'Raid'">
+            <div class="card-strength" *ngIf="token.strength && token.strength > 0">
               {{ token.strength }}
             </div>
           </div>
           <div class="card-footer">
             <div class="card-type-name">
-              {{ getTokenLabel(token) }}
+              {{ getTokenLabelFullCart(token) }}
               <span *ngIf="token.strength > 0">({{ token.strength }})</span>
             </div>
           </div>
         </div>
       </div>
+
+      <div style="text-align: center; margin-top: 20px;">
+        <button class="rokirovka-cancel-btn" style="padding: 8px 20px;" (click)="onCloseSpyClick($event)">Зрозуміло / Завершити</button>
+      </div>
     </div>
 
   </div>
-</div> -->
+</div>

@@ -146,6 +146,23 @@ export class RegionCardService {
     timerInterval?: any;
   } | null = null;
 
+  // Стан виконання карти регіону "Вогні повстання"
+  public firesOfRebellionEffect: {
+    cardId: string;
+    clan: string;
+    timer: number;
+    timerInterval?: any;
+  } | null = null;
+
+  public spyNetworkEffect: {
+    cardId: string;
+    clan: string; // Клан Скорпіона, що розігрує карту
+    step: 'select_target_clan' | 'view_hand';
+    targetClan: string | null;
+    timer: number;
+    timerInterval?: any;
+  } | null = null;
+
   // Активні картки регіонів, задіяні в поточній партії (по 1 на кожен регіон)
   private activeGameRegionCards: RegionCard[] = [];
 
@@ -821,5 +838,110 @@ export class RegionCardService {
     }
 
     this.cancelCleansingEffect();
+  }
+
+  /* Карта регіону  ВОГНІ ПОВСТАННЯ */
+  startFiresOfRebellionEffect(cardId: string, clan: string, onTimeout: () => void): boolean {
+    this.firesOfRebellionEffect = {
+      cardId: cardId,
+      clan: clan,
+      timer: 10
+    };
+
+    if (this.firesOfRebellionEffect.timerInterval) {
+      clearInterval(this.firesOfRebellionEffect.timerInterval);
+    }
+
+    this.firesOfRebellionEffect.timerInterval = setInterval(() => {
+      this.ngZone.run(() => {
+        if (this.firesOfRebellionEffect && this.firesOfRebellionEffect.timer > 0) {
+          this.firesOfRebellionEffect.timer--;
+        } else {
+          if (this.firesOfRebellionEffect) {
+            this.useRegionCard(this.firesOfRebellionEffect.cardId, this.firesOfRebellionEffect.clan);
+          }
+          this.cancelFiresOfRebellionEffect();
+          onTimeout();
+        }
+        this.closeRokirovkaModalSubject.next();
+      });
+    }, 1000);
+
+    return true;
+  }
+
+  cancelFiresOfRebellionEffect(): void {
+    if (this.firesOfRebellionEffect && this.firesOfRebellionEffect.timerInterval) {
+      clearInterval(this.firesOfRebellionEffect.timerInterval);
+    }
+    this.firesOfRebellionEffect = null;
+    this.closeRokirovkaModalSubject.next();
+  }
+
+  completeFiresOfRebellionEffect(provinceId: string, clan: string, gameState: any): void {
+    if (!this.firesOfRebellionEffect) return;
+
+    const { cardId } = this.firesOfRebellionEffect;
+    const province = gameState.provinces[provinceId];
+
+    if (province) {
+      // Знімаємо жетон миру
+      province.hasPeaceToken = false;
+
+      // Якщо провінція підконтрольна гравцю, додаємо 2 жетони захисту
+      if (province.controllingClan === clan) {
+        province.controlTokensFaceUp = (province.controlTokensFaceUp || 0) + 2;
+        gameState.roundLog.push(`🔥 Вогні повстання: з провінції ${province.name} знято мир. Клан ${clan} контролює її, тому додано +2 захисту.`);
+      } else {
+        gameState.roundLog.push(`🔥 Вогні повстання: з провінції ${province.name} знято мир.`);
+      }
+
+      // Списуємо картку регіону
+      this.useRegionCard(cardId, clan);
+    }
+
+    this.cancelFiresOfRebellionEffect();
+  }
+
+  /* Карта регіону  ШПИГУНСЬКА МЕРЕЖА */
+  startSpyNetworkEffect(cardId: string, clan: string, onTimeout: () => void): boolean {
+    this.spyNetworkEffect = {
+      cardId: cardId,
+      clan: clan,
+      step: 'select_target_clan',
+      targetClan: null,
+      timer: 10
+    };
+
+    if (this.spyNetworkEffect.timerInterval) {
+      clearInterval(this.spyNetworkEffect.timerInterval);
+    }
+
+    this.spyNetworkEffect.timerInterval = setInterval(() => {
+      this.ngZone.run(() => {
+        if (this.spyNetworkEffect && this.spyNetworkEffect.timer > 0) {
+          this.spyNetworkEffect.timer--;
+        } else {
+          if (this.spyNetworkEffect) {
+            this.useRegionCard(this.spyNetworkEffect.cardId, this.spyNetworkEffect.clan);
+          }
+          this.cancelSpyNetworkEffect();
+          onTimeout();
+        }
+        this.closeRokirovkaModalSubject.next();
+      });
+    }, 1000);
+
+    // Обов'язково повідомляємо підписників про відкриття модалки
+    this.closeRokirovkaModalSubject.next();
+    return true;
+  }
+
+  cancelSpyNetworkEffect(): void {
+    if (this.spyNetworkEffect && this.spyNetworkEffect.timerInterval) {
+      clearInterval(this.spyNetworkEffect.timerInterval);
+    }
+    this.spyNetworkEffect = null;
+    this.closeRokirovkaModalSubject.next();
   }
 }

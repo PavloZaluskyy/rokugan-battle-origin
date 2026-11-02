@@ -188,6 +188,7 @@
             || isGloryTarget(prov)
             || isKamiSupportTarget(prov)
             || isCleansingTarget(prov)
+            || isFiresOfRebellionTarget(prov)
             "
             
           >
@@ -317,14 +318,19 @@
 <!-- ========================================== -->
 <!-- ПОВНОЕКРАННА ШИРМА ВИКОНАННЯ КАРТИ РЕГІОНУ "РОКІРОВКА" -->
 <!-- ========================================== -->
-<div сlass="rokirovka-fullscreen-overlay" *ngIf="regionCardService.rokirovkaEffect">
+<div class="rokirovka-fullscreen-overlay" *ngIf="regionCardService.rokirovkaEffect || regionCardService.spyNetworkEffect">
   <app-discard-selection-modal
     [rokirovkaEffect]="regionCardService.rokirovkaEffect"
     [filteredDiscardPile]="filteredDiscardPileForRokirovka"
     [currentHandTokens]="currentRokirovkaHandTokens"
+    [spyNetworkEffect]="regionCardService.spyNetworkEffect"
+    [availableClans]="availableClansForSpy"
+    [targetPlayerHandTokens]="targetPlayerHandTokens"
     (selectDiscardToken)="onSelectDiscardTokenForRokirovka($event)"
     (selectHandToken)="onSelectHandTokenToDiscard($event)"
-    (cancelRokirovka)="onCancelRokirovka()">
+    (cancelRokirovka)="onCancelRokirovka()"
+    (selectSpyClan)="onSelectSpyClan($event)"
+    (closeSpyModal)="onCloseSpyModal()"> 
   </app-discard-selection-modal>
 </div>
 <!-- БАНЕР ТАЙМЕРА ДЛЯ ЕФЕКТУ "ВИХІД ДО МОРЯ" -->
@@ -515,6 +521,26 @@
     </div>
     <p class="rokirovka-instruction">
       Виберіть провінцію зі статусом погрому (випаленої землі), щоб очистити її та додати туди 2 жетони захисту.
+    </p>
+  </div>
+</div>
+<!-- БАНЕР ТАЙМЕРА ДЛЯ ЕФЕКТУ "ВОГНІ ПОВСТАННЯ" -->
+<div class="rokirovka-fullscreen-overlay" *ngIf="regionCardService.firesOfRebellionEffect">
+  <div class="rokirovka-modal bamboo-mat harbor-modal-box">
+    <div class="rokirovka-header">
+      <div class="rokirovka-title-box">
+        <span class="rokirovka-icon">🔥</span>
+        <h3 class="mat-title-text">ВОГНІ ПОВСТАННЯ: ВИБЕРІТЬ ПРОВІНЦІЮ З МИРОМ</h3>
+      </div>
+      <div class="rokirovka-header-right">
+        <div class="rokirovka-timer" [class.danger]="regionCardService.firesOfRebellionEffect.timer <= 3">
+          ⏱️ 0:{{ regionCardService.firesOfRebellionEffect.timer < 10 ? '0' + regionCardService.firesOfRebellionEffect.timer : regionCardService.firesOfRebellionEffect.timer }}
+        </div>
+        <button class="rokirovka-cancel-btn" (click)="cancelFiresOfRebellionEffect()">Відмінити</button>
+      </div>
+    </div>
+    <p class="rokirovka-instruction">
+      Виберіть провінцію із жетоном миру, щоб зняти його. Якщо ви її контролюєте, туди додатково додасться 2 жетони захисту.
     </p>
   </div>
 </div>

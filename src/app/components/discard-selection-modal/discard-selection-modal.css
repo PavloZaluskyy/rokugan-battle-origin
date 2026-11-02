@@ -196,6 +196,26 @@
   color: #fff;
   box-shadow: 0 0 10px rgba(184, 59, 35, 0.6);
 }
+
+
+/*Шпіонська мережа*/
+.clan-card {
+  position: relative;
+  width: 140px;          /* Задай свою ширину, яка використовується */
+  height: 210px;         /* Пропорція картки */
+  border-radius: 12px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+  border: 2px solid #8c6747; /* Колір рамки під стиль гри */
+}
+
+.clan-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 20px rgba(255, 214, 153, 0.3);
+  border-color: #ffd699;
+}
 /* ==========================================================================
    МОБІЛЬНА АДАПТИВНІСТЬ ШИРМИ (Смартфони та планшети)
    ========================================================================== */
