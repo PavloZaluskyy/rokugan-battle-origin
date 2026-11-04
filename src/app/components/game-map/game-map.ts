@@ -451,6 +451,11 @@ onTouchStart(event: TouchEvent) {
       this.onFiresOfRebellionProvinceClick(province);
       return;
     } 
+    // 10. ПЕРЕВІРКА ЕФЕКТУ "КУЛЬТУРНИЙ ОБМІН"
+    if (this.regionCardService.culturalExchangeEffect) {
+      this.onCulturalExchangeProvinceClick(province);
+      return;
+    }
   }
 
   
@@ -803,6 +808,8 @@ onTouchStart(event: TouchEvent) {
       const success = this.regionCardService.startSpyNetworkEffect(card.id, this.activePlayerClan, () => {});
     } else if (card.title === 'Підкріплення') {
       const success = this.regionCardService.startReinforcementEffect(card.id, this.activePlayerClan, () => {});
+    }else if (card.title === 'Культурний обмін') {
+      const success = this.regionCardService.startCulturalExchangeEffect(card.id, this.activePlayerClan, () => {});
       if (success) {
         this.cdr.detectChanges();        // Примусово оновлюємо інтерфейс
       }
@@ -1328,4 +1335,47 @@ onTouchStart(event: TouchEvent) {
     this.regionCardService.cancelReinforcementEffect();
   }
   
+  /* КАРТА РЕГІОНУ "КУЛЬТУРНИЙ ОБМІН" */
+  isCulturalExchangeTarget(province: Province): boolean {
+    const effect = this.regionCardService.culturalExchangeEffect;
+    if (!effect) return false;
+
+    if (effect.step === 'select_own_province') {
+      // На першому кроці підсвічуємо тільки власні провінції гравця
+      return province.controllingClan === this.activePlayerClan;
+    } else if (effect.step === 'select_enemy_province') {
+      // На другому кроці підсвічуємо провінції іншого гравця (не свої)
+      return province.controllingClan !== this.activePlayerClan;
+    }
+    return false;
+  }
+  onCulturalExchangeProvinceClick(province: Province): void {
+    const effect = this.regionCardService.culturalExchangeEffect;
+    if (!effect) return;
+    const gameState = this.gameStateService.getGameState();
+    if (!gameState) return;
+
+    if (effect.step === 'select_own_province') {
+      if (province.controllingClan !== this.activePlayerClan) return; // Тільки своя
+
+      effect.ownProvinceId = province.id;
+      effect.step = 'select_enemy_province';
+      gameState.roundLog.push(`🦄 Культурний обмін: обрано свою провінцію ${province.name}. Тепер оберіть провінцію супротивника.`);
+      this.gameStateService.saveGame();
+      this.loadGameState();
+      this.cdr.detectChanges();
+    } 
+    else if (effect.step === 'select_enemy_province') {
+      if (province.controllingClan === this.activePlayerClan) return; // Тільки чужа
+
+      this.regionCardService.completeCulturalExchangeEffect(province.id, gameState);
+      this.gameStateService.saveGame();
+      this.loadGameState();
+      this.cdr.detectChanges();
+    }
+  }
+
+  cancelCulturalExchangeEffect(): void {
+    this.regionCardService.cancelCulturalExchangeEffect();
+  }
 }

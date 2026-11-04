@@ -173,6 +173,16 @@ export class RegionCardService {
     timerInterval?: any;
   } | null = null;
 
+  // Стан виконання карти регіону "Культурний обмін"
+  public culturalExchangeEffect: {
+    cardId: string;
+    clan: string;
+    step: 'select_own_province' | 'select_enemy_province';
+    ownProvinceId?: string;
+    timer: number;
+    timerInterval?: any;
+  } | null = null;
+
   // Активні картки регіонів, задіяні в поточній партії (по 1 на кожен регіон)
   private activeGameRegionCards: RegionCard[] = [];
 
@@ -1068,5 +1078,83 @@ export class RegionCardService {
     }
     this.reinforcementEffect = null;
     this.closeRokirovkaModalSubject.next();
+  }
+
+  /* Карта регіону Культурний обмін */
+  /* Карта регіону: КУЛЬТУРНИЙ ОБМІН (Єдиноріг) */
+  startCulturalExchangeEffect(cardId: string, clan: string, onTimeout: () => void): boolean {
+    this.culturalExchangeEffect = {
+      cardId: cardId,
+      clan: clan,
+      step: 'select_own_province',
+      timer: 10
+    };
+
+    if (this.culturalExchangeEffect.timerInterval) {
+      clearInterval(this.culturalExchangeEffect.timerInterval);
+    }
+
+    this.culturalExchangeEffect.timerInterval = setInterval(() => {
+      this.ngZone.run(() => {
+        if (this.culturalExchangeEffect && this.culturalExchangeEffect.timer > 0) {
+          this.culturalExchangeEffect.timer--;
+        } else {
+          if (this.culturalExchangeEffect) {
+            this.useRegionCard(this.culturalExchangeEffect.cardId, this.culturalExchangeEffect.clan);
+          }
+          this.cancelCulturalExchangeEffect();
+          onTimeout();
+        }
+        this.closeRokirovkaModalSubject.next();
+      });
+    }, 1000);
+
+    return true;
+  }
+
+  cancelCulturalExchangeEffect(): void {
+    if (this.culturalExchangeEffect && this.culturalExchangeEffect.timerInterval) {
+      clearInterval(this.culturalExchangeEffect.timerInterval);
+    }
+    this.culturalExchangeEffect = null;
+    this.closeRokirovkaModalSubject.next();
+  }
+
+  /**
+   * Завершення Культурного обміну (обмін жетонами контролю та власністю між двома провінціями)
+   */
+  completeCulturalExchangeEffect(enemyProvinceId: string, gameState: any): void {
+    if (!this.culturalExchangeEffect || !this.culturalExchangeEffect.ownProvinceId) return;
+
+    const { cardId, clan, ownProvinceId } = this.culturalExchangeEffect;
+    const ownProv = gameState.provinces[ownProvinceId];
+    const enemyProv = gameState.provinces[enemyProvinceId];
+
+    if (ownProv && enemyProv) {
+      // 1. Зберігаємо старі значення для власної провінції гравця
+      const tempControlTokens = ownProv.controlTokensFaceUp || 0;
+      const tempClan = ownProv.controllingClan;
+      const tempBaseDefense = ownProv.baseDefense || 0;
+
+      // 2. Переносимо параметри ворожої провінції на власну
+      ownProv.controlTokensFaceUp = enemyProv.controlTokensFaceUp || 0;
+      ownProv.controllingClan = enemyProv.controllingClan;
+      
+      // Зберігаємо оригінальний базовий захист ворожої провінції (не чіпаємо звичайні провінції, роблячи їх базовий захист 0 або відповідно до типу)
+      ownProv.baseDefense = enemyProv.isCapital ? 2 : (enemyProv.regionId?.includes('shadowlands') ? 1 : 0);
+      // Якщо це була столиця або тіньові землі, залишаємо їхню базову силу, інакше для звичайної провінції ставимо 0
+
+      // 3. Переносимо параметри власної провінції на колишню ворожу
+      enemyProv.controlTokensFaceUp = tempControlTokens;
+      enemyProv.controllingClan = tempClan;
+      enemyProv.baseDefense = ownProv.isCapital ? 2 : (ownProv.regionId?.includes('shadowlands') ? 1 : 0);
+
+      gameState.roundLog.push(`🦄 Культурний обмін: клан ${clan} помінявся володінням та жетонами контролю між провінціями ${ownProv.name} та ${enemyProv.name}!`);
+
+      // 4. Списуємо картку регіону
+      this.useRegionCard(cardId, clan);
+    }
+
+    this.cancelCulturalExchangeEffect();
   }
 }

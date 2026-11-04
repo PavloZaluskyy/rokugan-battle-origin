@@ -189,6 +189,7 @@
             || isKamiSupportTarget(prov)
             || isCleansingTarget(prov)
             || isFiresOfRebellionTarget(prov)
+            || isCulturalExchangeTarget(prov)
             "
             
           >
@@ -550,6 +551,28 @@
     </div>
     <p class="rokirovka-instruction">
       Виберіть провінцію із жетоном миру, щоб зняти його. Якщо ви її контролюєте, туди додатково додасться 2 жетони захисту.
+    </p>
+  </div>
+</div>
+<!-- БАНЕР ТАЙМЕРА ДЛЯ ЕФЕКТУ "КУЛЬТУРНИЙ ОБМІН" -->
+<div class="rokirovka-fullscreen-overlay" *ngIf="regionCardService.culturalExchangeEffect">
+  <div class="rokirovka-modal bamboo-mat harbor-modal-box">
+    <div class="rokirovka-header">
+      <div class="rokirovka-title-box">
+        <span class="rokirovka-icon">🔄</span>
+        <h3 class="mat-title-text">
+          {{ regionCardService.culturalExchangeEffect.step === 'select_own_province' ? 'КУЛЬТУРНИЙ ОБМІН: ВИБЕРІТЬ СВОЮ ПРОВІНЦІЮ' : 'КУЛЬТУРНИЙ ОБМІН: ВИБЕРІТЬ ПРОВІНЦІЮ СУПРОТИВНИКА' }}
+        </h3>
+      </div>
+      <div class="rokirovka-header-right">
+        <div class="rokirovka-timer" [class.danger]="regionCardService.culturalExchangeEffect.timer <= 3">
+          ⏱️ 0:{{ regionCardService.culturalExchangeEffect.timer < 10 ? '0' + regionCardService.culturalExchangeEffect.timer : regionCardService.culturalExchangeEffect.timer }}
+        </div>
+        <button class="rokirovka-cancel-btn" (click)="cancelCulturalExchangeEffect()">Відмінити</button>
+      </div>
+    </div>
+    <p class="rokirovka-instruction">
+      {{ regionCardService.culturalExchangeEffect.step === 'select_own_province' ? 'Оберіть одну зі своїх провінцій для обміну.' : 'Оберіть провінцію супротивника, щоб помінятися з нею жетонами контролю та володінням.' }}
     </p>
   </div>
 </div>

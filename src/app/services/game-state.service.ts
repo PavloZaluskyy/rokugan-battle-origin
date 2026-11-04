@@ -595,13 +595,9 @@ export class GameStateService {
       if (attackerClans.length === 0 && defenderClan !== 'Neutral') {
         const hasFriendlyTokens = placedTokens.some(pt => pt.clan === defenderClan);
         if (hasFriendlyTokens) {
-          if (defenderClan === 'Crab') {
-            province.baseDefense += 2; // Спец-скіл Краба: +2 за кожен неопосередкований раунд
-            this.state!.roundLog.push(`🦀 Клан Краба зміцнив провінцію ${province.name}: захист збільшено на +2.`);
-          } else {
-            province.controlTokensFaceUp += 1; // Стандартний бонус +1 до захисту/контролю
-            this.state!.roundLog.push(`🛡️ Провінція ${province.name} під захистом власника: жетон контролю збільшено на +1.`);
-          }
+          const defenseBonus = defenderClan === 'Crab' ? 2 : 1;
+          province.controlTokensFaceUp = (province.controlTokensFaceUp || 0) + defenseBonus;
+          this.state!.roundLog.push(`🛡️ Провінція ${province.name} під захистом власника: жетон контролю збільшено на +${defenseBonus}.`);
         }
       }
 
@@ -647,11 +643,9 @@ export class GameStateService {
           const defenseBonus = strongestAttackerClan === 'Crab' ? 2 : 1;
           province.controlTokensFaceUp = defenseBonus;
         } else {
-          if (defenderClan === 'Crab') {
-            province.baseDefense += 2;
-          } else {
-            province.controlTokensFaceUp += 1;
-          }
+          const defenseBonus = defenderClan === 'Crab' ? 2 : 1;
+          province.controlTokensFaceUp = (province.controlTokensFaceUp || 0) + defenseBonus;
+          this.state!.roundLog.push(`🛡️ Провінція ${province.name} успішно відбила атаку! Захист (жетони контролю) збільшено на +${defenseBonus}.`);
         }
       }
     });
