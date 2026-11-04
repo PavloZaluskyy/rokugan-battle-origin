@@ -318,7 +318,12 @@
 <!-- ========================================== -->
 <!-- ПОВНОЕКРАННА ШИРМА ВИКОНАННЯ КАРТИ РЕГІОНУ "РОКІРОВКА" -->
 <!-- ========================================== -->
-<div class="rokirovka-fullscreen-overlay" *ngIf="regionCardService.rokirovkaEffect || regionCardService.spyNetworkEffect">
+<div class="rokirovka-fullscreen-overlay" 
+    *ngIf="
+        regionCardService.rokirovkaEffect 
+        || regionCardService.spyNetworkEffect 
+        || regionCardService.reinforcementEffect 
+        ">
   <app-discard-selection-modal
     [rokirovkaEffect]="regionCardService.rokirovkaEffect"
     [filteredDiscardPile]="filteredDiscardPileForRokirovka"
@@ -326,11 +331,15 @@
     [spyNetworkEffect]="regionCardService.spyNetworkEffect"
     [availableClans]="availableClansForSpy"
     [targetPlayerHandTokens]="targetPlayerHandTokens"
+    [reinforcementEffect]="regionCardService.reinforcementEffect"
+    [filteredReinforcementDiscard]="filteredReinforcementDiscardForModal"
     (selectDiscardToken)="onSelectDiscardTokenForRokirovka($event)"
     (selectHandToken)="onSelectHandTokenToDiscard($event)"
     (cancelRokirovka)="onCancelRokirovka()"
     (selectSpyClan)="onSelectSpyClan($event)"
-    (closeSpyModal)="onCloseSpyModal()"> 
+    (closeSpyModal)="onCloseSpyModal()"
+    (selectReinforcementToken)="onSelectReinforcementToken($event)"
+    (cancelReinforcement)="onCancelReinforcement()"> 
   </app-discard-selection-modal>
 </div>
 <!-- БАНЕР ТАЙМЕРА ДЛЯ ЕФЕКТУ "ВИХІД ДО МОРЯ" -->

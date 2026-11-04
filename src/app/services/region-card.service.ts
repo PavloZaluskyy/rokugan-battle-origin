@@ -163,6 +163,16 @@ export class RegionCardService {
     timerInterval?: any;
   } | null = null;
 
+  // Стан виконання карти регіону "Підкріплення" (Єдиноріг)
+  public reinforcementEffect: {
+    cardId: string;
+    clan: string;
+    step: 'select_two_from_discard' | 'select_two_from_hand';
+    selectedTokens: any[]; // Дві вибрані карти армії зі скиду
+    timer: number;
+    timerInterval?: any;
+  } | null = null;
+
   // Активні картки регіонів, задіяні в поточній партії (по 1 на кожен регіон)
   private activeGameRegionCards: RegionCard[] = [];
 
@@ -330,6 +340,7 @@ export class RegionCardService {
 
     // 3. Повністю закриваємо ефект Рокіровки (модалка скиду закриється, відкриється ширма player-screen)
     this.cancelRokirovkaEffect();
+    this.closeRokirovkaModalSubject.next();
   }
 
   /**
@@ -942,6 +953,120 @@ export class RegionCardService {
       clearInterval(this.spyNetworkEffect.timerInterval);
     }
     this.spyNetworkEffect = null;
+    this.closeRokirovkaModalSubject.next();
+  }
+
+  /* Карта регіону  Підкріплення */
+  startReinforcementEffect(cardId: string, clan: string, onTimeout: () => void): boolean {
+    this.reinforcementEffect = {
+      cardId: cardId,
+      clan: clan,
+      step: 'select_two_from_discard',
+      selectedTokens: [],
+      timer: 10
+    };
+
+    if (this.reinforcementEffect.timerInterval) {
+      clearInterval(this.reinforcementEffect.timerInterval);
+    }
+
+    this.reinforcementEffect.timerInterval = setInterval(() => {
+      this.ngZone.run(() => {
+        if (this.reinforcementEffect && this.reinforcementEffect.timer > 0) {
+          this.reinforcementEffect.timer--;
+        } else {
+          if (this.reinforcementEffect) {
+            this.useRegionCard(this.reinforcementEffect.cardId, this.reinforcementEffect.clan);
+          }
+          this.cancelReinforcementEffect();
+          onTimeout();
+        }
+        this.closeRokirovkaModalSubject.next();
+      });
+    }, 1000);
+
+    this.closeRokirovkaModalSubject.next();
+    return true;
+  }
+
+  /**
+   * Вибір картки армії зі скиду для Підкріплення (збираємо рівно 2)
+   */
+  selectReinforcementDiscardToken(token: any, gameState: any): void {
+    if (!this.reinforcementEffect) return;
+
+    // Перевіряємо, чи ця карта вже не була обрана
+    if (this.reinforcementEffect.selectedTokens.some((t: any) => t.id === token.id)) return;
+
+    this.reinforcementEffect.selectedTokens.push(token);
+
+    // Якщо вибрали рівно 2 карти
+    if (this.reinforcementEffect.selectedTokens.length === 2) {
+      const clan = this.reinforcementEffect.clan;
+      const player = gameState.players[clan];
+      if (!player) return;
+
+      // 1. Видаляємо обидві карти зі скиду і додаємо в активну руку з унікальним прапорцем підсвічування
+      this.reinforcementEffect.selectedTokens.forEach(t => {
+        player.discardPile = player.discardPile.filter((item: any) => item.id !== t.id);
+        player.activeHandTokens.push({ ...t, isReinforcementAdded: true });
+      });
+
+      // 2. Списуємо картку регіону
+      this.useRegionCard(this.reinforcementEffect.cardId, clan);
+
+      // 3. Закриваємо модалку скиду і даємо сигнал відкрити ширму
+      this.cancelReinforcementEffect();
+    }
+  }
+
+  /**
+   * Завершення Підкріплення (коли гравець у ширмі вибрав 2 карти і куди їх діти: discard / reserve)
+   */
+  completeReinforcementEffect(chosenTokens: any[], action: 'discard' | 'reserve', gameState: any, targetClan?: string): void {
+    // Визначаємо клан (або з переданого параметра, або з поточного ефекту, або з активного гравця)
+    const clan = targetClan || (this.reinforcementEffect ? this.reinforcementEffect.clan : null) || gameState.firstPlayerClan;
+    const player = gameState.players[clan];
+    
+    if (!player || !chosenTokens || chosenTokens.length !== 2) {
+      console.error('Помилка виконання Підкріплення: не знайдено гравця або обрано не 2 карти.');
+      return;
+    }
+
+    chosenTokens.forEach(tokenToProcess => {
+      // 1. Видаляємо карту з активної руки (ширми)
+      player.activeHandTokens = player.activeHandTokens.filter((t: any) => t.id !== tokenToProcess.id);
+
+      // Очищаємо службові мітки
+      delete tokenToProcess.isReinforcementAdded;
+      delete tokenToProcess.isNewlyAdded;
+
+      // 2. Переносимо відповідно до вибору гравця
+      if (action === 'discard') {
+        if (!player.discardPile) player.discardPile = [];
+        player.discardPile.push(tokenToProcess);
+      } else if (action === 'reserve') {
+        if (!player.deck) player.deck= [];
+        player.deck.push(tokenToProcess);
+      }
+    });
+
+    // 3. Очищаємо службовий прапорець у решти карт у ширмі
+    player.activeHandTokens.forEach((t: any) => {
+      delete t.isReinforcementAdded;
+    });
+
+    gameState.roundLog.push(`🦄 Клан ${clan} завершив «Підкріплення»: обрані карти перенесено у ${action === 'discard' ? 'скид' : 'запас'}.`);
+    
+    // Завершуємо та повністю очищаємо ефект регіону
+    this.cancelReinforcementEffect();
+  }
+
+  cancelReinforcementEffect(): void {
+    if (this.reinforcementEffect && this.reinforcementEffect.timerInterval) {
+      clearInterval(this.reinforcementEffect.timerInterval);
+    }
+    this.reinforcementEffect = null;
     this.closeRokirovkaModalSubject.next();
   }
 }

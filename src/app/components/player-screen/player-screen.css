@@ -658,6 +658,90 @@
   100% { transform: translateY(-8px); filter: brightness(1.2); box-shadow: 0 5px 15px rgba(255, 214, 153, 0.4); }
 }
 
+
+/* Кастомний КОНФІРМ-МОДАЛ */
+/* Оверлей кастомного конфірму */
+.reinforcement-confirm-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.75);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+
+.reinforcement-confirm-modal {
+  width: 400px;
+  padding: 25px;
+  text-align: center;
+  border-radius: 12px;
+}
+
+.confirm-buttons-grid {
+  display: flex;
+  gap: 15px;
+  justify-content: center;
+  margin-top: 20px;
+}
+
+.bamboo-btn {
+  padding: 10px 20px;
+  font-family: serif;
+  font-size: 16px;
+  font-weight: bold;
+  border-radius: 8px;
+  cursor: pointer;
+  border: 2px solid #8c6747;
+  background: #3a2518;
+  color: #ffd699;
+  transition: all 0.2s ease;
+}
+
+.bamboo-btn:hover {
+  background: #523523;
+  border-color: #ffd699;
+  transform: translateY(-2px);
+}
+/* Зелене світіння для щойно повернутих зі скиду карт (їх не можна вибрати) */
+.clan-card.reinforcement-glow {
+  border: 2px solid #63e295 !important;
+  box-shadow: 0 0 20px rgba(99, 226, 149, 0.7);
+  opacity: 0.85;
+}
+
+.clan-card.reinforcement-disabled-card {
+  cursor: not-allowed !important;
+}
+
+.clan-card.reinforcement-disabled-card:hover {
+  transform: none !important;
+  border-color: #63e295 !important;
+  box-shadow: 0 0 20px rgba(99, 226, 149, 0.7) !important;
+}
+/* Пунктирна обводка та анімація підстрибування для карт, доступних для Підкріплення */
+.clan-card.reinforcement-bouncing-card {
+  border: 2px dashed #63e295 !important;
+  animation: reinforcementCardBounce 0.8s infinite alternate ease-in-out;
+  cursor: pointer;
+}
+
+@keyframes reinforcementCardBounce {
+  0% { transform: translateY(0); filter: brightness(1); }
+  100% { transform: translateY(-8px); filter: brightness(1.2); box-shadow: 0 5px 15px rgba(99, 226, 149, 0.4); }
+}
+/* Обрані карти під час Підкріплення у ширмі та модалці */
+.clan-card.selected-for-reinforcement,
+.discard-token-card.selected {
+  transform: translateY(-14px) scale(1.05) !important;
+  border: 2px solid #ffd699 !important;
+  box-shadow: 0 10px 25px rgba(255, 214, 153, 0.6), 0 0 15px rgba(255, 214, 153, 0.4) !important;
+  z-index: 10;
+  position: relative;
+}
 /* ==========================================================================
    МОБІЛЬНА АДАПТИВНІСТЬ ШИРМИ (Смартфони та планшети)
    ========================================================================== */

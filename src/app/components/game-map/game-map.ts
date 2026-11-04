@@ -457,7 +457,6 @@ onTouchStart(event: TouchEvent) {
  async executeBattleCinematicSequence() {
     if (this.isCinematicPlaying) return;
 
-    // 1. Збираємо всі унікальні провінції, де є бої або атаки
     const battleProvinces = Array.from(
       new Set(
         this.provinces
@@ -469,6 +468,7 @@ onTouchStart(event: TouchEvent) {
     if (battleProvinces.length === 0) {
       this.gameStateService.nextPhase();
       this.loadGameState();
+      this.cdr.detectChanges();
       return;
     }
 
@@ -476,25 +476,22 @@ onTouchStart(event: TouchEvent) {
     this.scale = 1;
     this.translateX = 0;
     this.translateY = 0;
+    this.cdr.detectChanges(); // Примусово оновлюємо стан на початку
 
     // Розкриваємо жетони через сервіс
     this.gameStateService.startCinematicResolution(() => {
       this.loadGameState();
+      this.cdr.detectChanges();
     });
 
     try {
       const totalProvincesCount = battleProvinces.length;
 
-      // Цільовий загальний час — 10 секунд (10000 мс)
-      // Виділяємо фіксований час на перельоти камери для кожного замку (наприклад, 800мс на вліт + 600мс на відліт = 1400мс на замок)
-      // решту часу ділимо на бої та удари.
-      
       for (const provId of battleProvinces) {
         this.currentBattleProvinceId = provId;
         
         const prov = this.provinces.find(p => p.id === provId);
         if (prov) {
-          // ПЕРЕВІРКА СПЕЦІАЛЬНИХ СТАНІВ (МИР / ПОГРОМ / АТАКА)
           if (prov.hasPeaceToken) {
             this.currentBannerState = { text: 'МИР', type: 'peace' };
           } else if (prov.hasScorchedEarth) {
@@ -502,28 +499,15 @@ onTouchStart(event: TouchEvent) {
           } else {
             const activeToken = prov.placedTokens?.find(pt => pt.isFaceUp);
             const clan = activeToken ? activeToken.clan : 'Ворог';
-            const unitType = activeToken ? activeToken.token.type : 'Армія';
             const faceUpTokens = prov.placedTokens?.filter(
               pt => pt.isFaceUp && pt.token.strength > 0
             ) ?? [];
             
-            let strength = 1;
-            if (faceUpTokens.length > 0) {
-              strength = Math.max(...faceUpTokens.map(t => t.token.strength));
-            }
             let totalAttackStrength = 0;
-            const tokenDescriptions: string[] = [];
-
             faceUpTokens.forEach(pt => {
               if (['Army', 'Navy', 'Shinobi'].includes(pt.token.type)) {
-                // Використовуємо актуальну силу (з урахуванням Благословення, якщо воно вже застосоване)
                 const str = pt.strength !== undefined ? pt.strength : pt.token.strength;
                 totalAttackStrength += str;
-                tokenDescriptions.push(`${pt.token.type} (${str})`);
-              } else if (pt.token.type === 'Blessing') {
-                tokenDescriptions.push(`Благословення (+2)`);
-              } else if (pt.token.type === 'Raid') {
-                tokenDescriptions.push(`Погром`);
               }
             });
 
@@ -536,11 +520,14 @@ onTouchStart(event: TouchEvent) {
           }
         }
 
+        // Оновлюємо UI перед зближенням камери
+        this.cdr.detectChanges();
+
         // Зближення камери з містом
         this.zoomToProvince(provId);
-        await this.delay(800); // Час підльоту камери
+        this.cdr.detectChanges();
+        await this.delay(800);
 
-        // Визначаємо кількість ударів для поточного юніта
         let strikesCount = 1;
         if (prov && prov.placedTokens) {
           const activeTokens = prov.placedTokens.filter(pt => pt.isFaceUp);
@@ -550,29 +537,28 @@ onTouchStart(event: TouchEvent) {
           }
         }
 
-        // Динамічний розрахунок часу на один удар, щоб укластися в загальний бюджет 10 секунд на всю гру
-        // Наприклад, виділяємо приблизно (10000мс / кількість провінцій) на один замок.
         const timeBudgetPerProvince = Math.max(1500, Math.floor(10000 / totalProvincesCount) - 1400);
         const singleStrikeCycleTime = Math.max(100, Math.floor(timeBudgetPerProvince / strikesCount));
         
-        // Розбиваємо цей час на сам удар (60%) та паузу після нього (40%)
         const strikeDuration = Math.max(80, Math.floor(singleStrikeCycleTime * 0.6));
         const strikePause = Math.max(40, Math.floor(singleStrikeCycleTime * 0.4));
 
-        // Серія ударів юніта
         for (let i = 0; i < strikesCount; i++) {
-          this.isAttackingStrikeActive = true;  
+          this.isAttackingStrikeActive = true;
+          this.cdr.detectChanges(); // Оновлюємо для початку удару
           await this.delay(strikeDuration);                
+          
           this.isAttackingStrikeActive = false; 
+          this.cdr.detectChanges(); // Оновлюємо для завершення удару
           await this.delay(strikePause);                
         }
 
-        // Ховаємо банер для цього замку
         this.currentBannerState = null;
+        this.cdr.detectChanges();
         await this.delay(200);
 
-        // Віддалення камери перед переходом до наступного замку
         this.resetCamera();
+        this.cdr.detectChanges();
         await this.delay(600); 
       }
     } catch (error) {
@@ -585,12 +571,17 @@ onTouchStart(event: TouchEvent) {
       
       this.gameStateService.nextPhase();
       this.loadGameState();
+      this.cdr.detectChanges();
     }
   }
 
+  // Оновлений метод delay із вбудованим викликом ChangeDetectorRef
   private delay(ms: number): Promise<void> {
     return new Promise(resolve => {
-      setTimeout(resolve, ms);
+      setTimeout(() => {
+        this.cdr.detectChanges(); // Гарантовано рендерить зміни після кожної мікропаузи
+        resolve();
+      }, ms);
     });
   }
 
@@ -784,7 +775,7 @@ onTouchStart(event: TouchEvent) {
   // Клік на картку регіону в шухлядці (активація) з перевіркою ходу та збереженням в localStorage
   onRegionCardClick(card: RegionCard): void {
    if (card.status !== 'owned') return;
-
+    this.isRegionDrawerOpen = false; // Закриваємо шухлядку регіонів
     // Якщо це карта регіону "Рокіровка"
     if (card.title === 'Рокіровка') {
       const success = this.regionCardService.startRokirovkaEffect(card.id, this.activePlayerClan, () => {});
@@ -810,8 +801,9 @@ onTouchStart(event: TouchEvent) {
       const success = this.regionCardService.startFiresOfRebellionEffect(card.id, this.activePlayerClan, () => {});
     } else if (card.title === 'Шпіонська мережа') {
       const success = this.regionCardService.startSpyNetworkEffect(card.id, this.activePlayerClan, () => {});
+    } else if (card.title === 'Підкріплення') {
+      const success = this.regionCardService.startReinforcementEffect(card.id, this.activePlayerClan, () => {});
       if (success) {
-        this.isRegionDrawerOpen = false; // Закриваємо шухлядку регіонів
         this.cdr.detectChanges();        // Примусово оновлюємо інтерфейс
       }
     } else {
@@ -1305,6 +1297,35 @@ onTouchStart(event: TouchEvent) {
     this.regionCardService.spyNetworkEffect = null;
     this.gameStateService.saveGame();
     this.loadGameState();
+  }
+
+  /* КАРТА РЕГІОНУ "ПІДКРІПЛЕННЯ" */
+  get filteredReinforcementDiscardForModal() {
+    const effect = this.regionCardService.reinforcementEffect;
+    if (!effect) return [];
+    const gameState = this.gameStateService.getGameState();
+    const player = gameState?.players[effect.clan as keyof NonNullable<typeof gameState>['players']];
+    if (!player || !player.discardPile) return [];
+    // Тільки карти типу 'Army'
+    return player.discardPile.filter((t: any) => t.type === 'Army');
+  }
+
+  onSelectReinforcementToken(token: any): void {
+    const gameState = this.gameStateService.getGameState();
+    if (!gameState) return;
+    
+    this.regionCardService.selectReinforcementDiscardToken(token, gameState);
+    this.gameStateService.saveGame();
+
+    // Автоматично відкриваємо ігрову ширму гравця для подальшого вибору 2 карт
+    if (this.activePlayerClan !== 'Neutral' && gameState.players[this.activePlayerClan]) {
+      (this.gameStateService as any).openPlayerScreenTrigger = true;
+    }
+    this.cdr.detectChanges();
+  }
+
+  onCancelReinforcement(): void {
+    this.regionCardService.cancelReinforcementEffect();
   }
   
 }

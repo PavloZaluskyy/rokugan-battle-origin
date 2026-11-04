@@ -120,3 +120,42 @@
 
   </div>
 </div>
+<!-- ПІДКРІПЛЕННЯ (ЄДИНОРІГ) -->
+<div class="rokirovka-overlay" *ngIf="reinforcementEffect">
+  <div class="rokirovka-modal bamboo-mat">
+    <div class="rokirovka-header">
+      <div class="rokirovka-title-box">
+        <span class="rokirovka-icon">🦄</span>
+        <h3 class="mat-title-text">ВИКОНАННЯ КАРТИ РЕГІОНУ: ПІДКРІПЛЕННЯ</h3>
+      </div>
+      <div class="rokirovka-timer" [class.danger]="reinforcementEffect.timer <= 3">
+        ⏱️ 0:{{ reinforcementEffect.timer < 10 ? '0' + reinforcementEffect.timer : reinforcementEffect.timer }}
+      </div>
+      <button class="rokirovka-cancel-btn" (click)="onCancelReinforcementClick($event)">Відмінити</button>
+    </div>
+
+    <!-- КРОК 1: Вибір двох карт армії зі скиду -->
+    <div *ngIf="reinforcementEffect.step === 'select_two_from_discard'">
+      <p class="rokirovka-instruction">
+        Виберіть <strong>дві картки армії</strong> у вашому скиді (обрано: {{ reinforcementEffect.selectedTokens.length }} / 2):
+      </p>
+
+      <div class="cards-grid">
+        <div class="clan-card discard-selectable discard-token-card" 
+             *ngFor="let token of filteredReinforcementDiscard"
+             [class.selected]="isTokenSelected(token)"
+             (click)="onReinforcementTokenClick(token, $event)">
+          <div class="card-illustration" [style.backgroundImage]="'url(assets/images/tokens/' + token.type.toLowerCase() + '_cart.jpg)'">
+            <div class="card-overlay"></div>
+            <div class="card-strength" *ngIf="token.strength && token.strength > 0">
+              {{ token.strength }}
+            </div>
+          </div>
+          <div class="card-footer">
+            <div class="card-type-name">Армія ({{ token.strength }})</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

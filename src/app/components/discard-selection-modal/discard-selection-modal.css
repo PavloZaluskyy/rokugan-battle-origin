@@ -216,6 +216,15 @@
   box-shadow: 0 8px 20px rgba(255, 214, 153, 0.3);
   border-color: #ffd699;
 }
+/* Стиль для вибраної карти у модалці вибору зі скиду */
+.discard-token-card.selected,
+.token-card.selected {
+  transform: translateY(-14px) scale(1.05) !important;
+  border: 2px solid #ffd699 !important;
+  box-shadow: 0 10px 25px rgba(255, 214, 153, 0.6), 0 0 15px rgba(255, 214, 153, 0.4) !important;
+  z-index: 10;
+  position: relative;
+}
 /* ==========================================================================
    МОБІЛЬНА АДАПТИВНІСТЬ ШИРМИ (Смартфони та планшети)
    ========================================================================== */

@@ -26,6 +26,13 @@ export class DiscardSelectionModal  implements OnInit, OnDestroy{
   @Output() selectSpyClan = new EventEmitter<string>();
   @Output() closeSpyModal = new EventEmitter<void>();
 
+  /* Підкріплення */
+  @Input() reinforcementEffect: any = null;
+  @Input() filteredReinforcementDiscard: any[] = [];
+  @Output() selectReinforcementToken = new EventEmitter<any>();
+  @Output() cancelReinforcement = new EventEmitter<void>();
+
+
   private componentInterval: any = null;
 
   constructor(private cdr: ChangeDetectorRef) {}
@@ -82,5 +89,27 @@ getTokenLabelFullCart(token: any): string {
     if (this.componentInterval) {
       clearInterval(this.componentInterval);
     }
+  }
+
+  /* Підкріплення */
+  onReinforcementTokenClick(token: any, event: MouseEvent): void {
+    event.stopPropagation();
+    this.selectReinforcementToken.emit(token);
+  }
+  onCancelReinforcementClick(event: MouseEvent): void {
+    event.stopPropagation();
+    this.cancelReinforcement.emit();
+  }
+  // Перевіряє, чи конкретна карта вже обрана у поточній сесії модалки
+  isTokenSelected(token: any): boolean {
+    // Якщо це Підкріплення, перевіряємо масив selectedTokens
+    if (this.reinforcementEffect && this.reinforcementEffect.selectedTokens) {
+      return this.reinforcementEffect.selectedTokens.some((t: any) => t.id === token.id);
+    }
+    // Якщо це Рокіровка, перевіряємо selectedDiscardToken
+    if (this.rokirovkaEffect && this.rokirovkaEffect.selectedDiscardToken) {
+      return this.rokirovkaEffect.selectedDiscardToken.id === token.id;
+    }
+    return false;
   }
 }

@@ -1,4 +1,4 @@
-import { Component, Input, OnInit, DoCheck, ChangeDetectorRef } from '@angular/core';
+import { Component, Input, OnInit, DoCheck, ChangeDetectorRef, OnDestroy } from '@angular/core';
 import { GameStateService } from '../../services/game-state.service';
 import { RegionCardService } from '../../services/region-card.service';
 import { PlayerState, BattleToken } from '../../models/game.model';
@@ -9,7 +9,7 @@ import { PlayerState, BattleToken } from '../../models/game.model';
   templateUrl: './player-screen.html',
   styleUrls: ['./player-screen.css'],
 })
-export class PlayerScreen implements OnInit, DoCheck {
+export class PlayerScreen implements OnInit, DoCheck, OnDestroy {
   // Передаємо тип клану з батьківського компонента (наприклад, 'Crab')
   @Input() clanType!: string;
   isScreenOpen: boolean = false;
@@ -17,6 +17,12 @@ export class PlayerScreen implements OnInit, DoCheck {
  
   localDragonTimer: number = 10;
   private dragonTimerInterval: any = null;
+
+  // Масив для збереження id вибраних 2 карт під час Підкріплення
+  selectedReinforcementCards: string[] = [];
+  isReinforcementConfirmOpen: boolean = false;
+  localReinforcementTimer: number = 10;
+  private reinforcementTimerInterval: any = null;
 
   constructor(
     private gameStateService: GameStateService,
@@ -40,6 +46,29 @@ export class PlayerScreen implements OnInit, DoCheck {
       gameState.openPlayerScreenTrigger = false; // скидаємо тригер
       this.updateScreenData();
     }
+    // Запускаємо таймер ширми Підкріплення, як тільки з'явилися карти з міткою
+    if (this.hasReinforcementCardsInHand && !this.reinforcementTimerInterval) {
+      this.isScreenOpen = true; // Автоматично відкриваємо ширму гравцю
+      this.startPlayerScreenReinforcementTimer();
+    }
+  }
+  ngOnDestroy() {
+    if (this.dragonTimerInterval) clearInterval(this.dragonTimerInterval);
+    if (this.rokirovkaTimerInterval) clearInterval(this.rokirovkaTimerInterval);
+    if (this.reinforcementTimerInterval) clearInterval(this.reinforcementTimerInterval);
+  }
+
+  
+  // Геттер, щоб перевірити, чи зараз активний другий крок Підкріплення
+  get hasReinforcementCardsInHand(): boolean {
+    return !!this.playerState?.activeHandTokens?.some((t: any) => t.isReinforcementAdded);
+  }
+  // Геттер: чітко перевіряє, чи активний ефект Рокіровки (Краб)
+  get isRokirovkaActive(): boolean {
+    return !!this.regionCardService.rokirovkaEffect;
+  }
+  get getRegionCardService(): any {
+    return !!this.regionCardService;
   }
   toggleScreen(): void {
     this.isScreenOpen = !this.isScreenOpen;
@@ -211,10 +240,18 @@ isSelected(token: BattleToken): boolean {
     if (!this.isDragonSelectionActive) return;
     if (token.type === 'Blank') return; // Блеф чіпати не можна
 
-    clearInterval(this.dragonTimerInterval);
-    this.dragonTimerInterval = null;
+    // Зупиняємо таймер
+    if (this.dragonTimerInterval) {
+      clearInterval(this.dragonTimerInterval);
+      this.dragonTimerInterval = null;
+    }
+
+    // Викликаємо повернення через сервіс стану
     this.gameStateService.returnCardToDeck(token.id);
+    
+    // Примусово закриваємо режим вибору/очищаємо стейт якщо треба та оновлюємо дані
     this.updateScreenData();
+    this.cdr.detectChanges();
   }
 
   get dragonDisplayTimer(): number {
@@ -232,41 +269,64 @@ isSelected(token: BattleToken): boolean {
     // alert('Тестовий ворожий загін додано на провінцію Лева! Тепер натисніть кнопку "Виконати / Битва", щоб перевірити результат захисту.');
   }
 
+
+  /*Карта регіону РОКІРОВКА*/
   // Стан, який відстежує, чи ми зараз робимо крок скиду карти після Рокіровки
   // (можеш також тримати цей стан у gameStateService, якщо робиш це глобально)
   
   selectCard(token: BattleToken): void {
-   // Перевіряємо, чи є в активній руці щойно повернута карта з Рокіровки (з міткою isNewlyAdded)
+    // 0. ДРАКОН МАЄ ПРІОРИТЕТ
+    if (this.isDragonSelectionActive) {
+      this.onDragonCardClick(token);
+      return;
+    }
+
+    // 1. ПІДКРІПЛЕННЯ МАЄ ПРІОРИТЕТ
+    if (this.hasReinforcementCardsInHand) {
+      this.onReinforcementCardClick(token);
+      return;
+    }
+
+    // 2. РОКІРОВКА: перевіряємо, чи є щойно додана карта
     const newlyAddedCard = this.playerState?.activeHandTokens.find((t: any) => t.isNewlyAdded);
 
-    if (newlyAddedCard && !token.isNewlyAdded && token.type !== 'Blank') {
-      // КРОК 8-9: Гравець натиснув на іншу карту в ширмі — відправляємо її у скид замість неї!
-      // Зупиняємо таймер рокіровки, оскільки гравець зробив вибір
+    if (newlyAddedCard) {
+      // ЗАБОРОНА 1: Якщо гравець клікнув саме на саму зелену (щойно додану) карту — ІГНОРУЄМО КЛІК ПОВНІСТЮ!
+      if (token.id === newlyAddedCard.id || token.isNewlyAdded) {
+        return; 
+      }
+
+      // ЗАБОРОНА 2: Блеф (Blank) під час рокіровки теж не можна скидати
+      if (token.type === 'Blank') {
+        return;
+      }
+
+      // Якщо клікнули на будь-яку іншу валідну карту армії/флоту/синобі:
       clearInterval(this.rokirovkaTimerInterval);
       this.rokirovkaTimerInterval = null;
+
       if (this.playerState) {
-        // 1. Видаляємо вибрану для скиду карту з активної руки
+        // 1. Видаляємо вибрану карту з активної руки
         this.playerState.activeHandTokens = this.playerState.activeHandTokens.filter(t => t.id !== token.id);
         
-        // 2. Додаємо її до масиву скиду (discardPile)
+        // 2. Додаємо її у скид
         this.playerState.discardPile.push(token);
 
-        // 3. Знімаємо мітку isNewlyAdded з повернутої карти, щоб зелена обводка зникла
+        // 3. Знімаємо зелену мітку з нової карти
         this.playerState.activeHandTokens.forEach((t: any) => {
           delete t.isNewlyAdded;
         });
 
-        // Списуємо картку регіону
+        // 4. Списуємо карту регіону Рокіровка
         this.consumeRokirovkaCard();
-        // 4. Зберігаємо зміни через сервіс стану гри
         this.gameStateService.saveGame();
-        
-        // alert('Зайву карту успішно відправлено у скид! Кількість карт у ширмі знову в нормі.');
+        this.updateScreenData();
+        this.cdr.detectChanges();
         return;
       }
     }
 
-    // Звичайний вибір карти для розміщення на мапі (якщо Рокіровка не активна)
+    // Звичайний вибір карти (якщо ніякі спец-ефекти не активні)
     this.gameStateService.setSelectedToken(token);
     if (this.isSelected(token)) {
       this.isScreenOpen = false;
@@ -340,5 +400,106 @@ isSelected(token: BattleToken): boolean {
     if (rokirovkaCard && this.playerState) {
       this.regionCardService.useRegionCard(rokirovkaCard.id, this.playerState.clan);
     }
+  }
+  /*Карта регіону ПІДКРІПЛЕННЯ*/
+// Абсолютно ізольований метод кліку по карті в ширмі для Підкріплення
+ onReinforcementCardClick(token: any): void {
+    // ЗАБОРОНА: карти, які щойно повернулися зі скиду (isReinforcementAdded), вибирати НЕ МОЖНА!
+    if (token.isReinforcementAdded) return;
+
+    const index = this.selectedReinforcementCards.indexOf(token.id);
+    
+    if (index > -1) {
+      this.selectedReinforcementCards.splice(index, 1);
+    } else {
+      if (this.selectedReinforcementCards.length < 2) {
+        this.selectedReinforcementCards.push(token.id);
+      }
+    }
+
+    this.cdr.detectChanges();
+
+    // Якшо обрано рівно ДВІ карти — відкриваємо конфірм
+    if (this.selectedReinforcementCards.length === 2) {
+      this.isReinforcementConfirmOpen = true;
+      this.cdr.detectChanges();
+    }
+  }
+
+  isCardSelectedForReinforcement(token: any): boolean {
+    return this.selectedReinforcementCards.includes(token.id);
+  }
+
+  // Фінальний вибір (у скид чи у запас) для Підкріплення
+  resolveReinforcementChoice(action: 'discard' | 'reserve'): void {
+    const gameState = this.gameStateService.getGameState();
+    if (!gameState || !this.playerState) return;
+
+    // Зупиняємо таймер ширми, оскільки вибір зроблено
+    if (this.reinforcementTimerInterval) {
+      clearInterval(this.reinforcementTimerInterval);
+      this.reinforcementTimerInterval = null;
+    }
+
+    const chosenTokens = this.playerState.activeHandTokens.filter((t: any) => 
+      this.selectedReinforcementCards.includes(t.id)
+    );
+
+    // Викликаємо сервіс із передачею поточного клану гравця
+    this.regionCardService.completeReinforcementEffect(chosenTokens, action, gameState, this.playerState.clan);
+    this.gameStateService.saveGame();
+
+    // Скидаємо локальний стан
+    this.selectedReinforcementCards = [];
+    this.isReinforcementConfirmOpen = false;
+    this.updateScreenData();
+    this.cdr.detectChanges();
+  }
+  // Метод запуску таймера ширми Підкріплення
+  startPlayerScreenReinforcementTimer(): void {
+    this.localReinforcementTimer = 10;
+    if (this.reinforcementTimerInterval) clearInterval(this.reinforcementTimerInterval);
+
+    this.reinforcementTimerInterval = setInterval(() => {
+      if (this.localReinforcementTimer > 0) {
+        this.localReinforcementTimer--;
+        this.cdr.detectChanges();
+      } else {
+        clearInterval(this.reinforcementTimerInterval);
+        this.reinforcementTimerInterval = null;
+        this.handleReinforcementTimeout();
+      }
+    }, 1000);
+  }
+
+  // Дія, коли час на таймері вичерпався (автоматичне завершення заради безпеки мережі)
+  handleReinforcementTimeout(): void {
+    const gameState = this.gameStateService.getGameState();
+    if (!gameState || !this.playerState) return;
+
+    // Шукаємо всі доступні карти (окрім позначених isReinforcementAdded)
+    const eligibleCards = this.playerState.activeHandTokens.filter((t: any) => !t.isReinforcementAdded);
+    
+    if (eligibleCards.length >= 2) {
+      // Вибираємо дві рандомні карти для автоматичного завершення
+      const shuffled = [...eligibleCards].sort(() => 0.5 - Math.random());
+      const autoChosen = [shuffled[0], shuffled[1]];
+      
+      this.regionCardService.completeReinforcementEffect(autoChosen, 'discard', gameState, this.playerState.clan);
+      this.gameStateService.saveGame();
+    } else {
+      this.regionCardService.cancelReinforcementEffect();
+    }
+
+    this.selectedReinforcementCards = [];
+    this.isReinforcementConfirmOpen = false;
+    this.updateScreenData();
+    this.cdr.detectChanges();
+  }
+  // Перевірка, чи картка доступна для вибору (нещодавно додані зі скиду карти вибирати НЕ МОЖНА)
+  canSelectForReinforcement(token: any): boolean {
+    // Якщо карта має прапорець isReinforcementAdded, вона заблокована для вибору
+    if (token.isReinforcementAdded) return false;
+    return true;
   }
 }

@@ -8,11 +8,13 @@ export type BattleTokenType = 'Army' | 'Navy' | 'Shinobi' | 'Blessing' | 'Diplom
 
 // 3. Інтерфейс для Жетона Битви
 export interface BattleToken {
+[x: string]: any;
   id: string;             // Унікальний ID жетона (наприклад, 'crab-army-1')
   clan: ClanType;         // Якому клану належить
   type: BattleTokenType;  // Тип жетона
   strength: number;       // Сила жетона (0 для пустих, дипломатії, погрому)
   isNewlyAdded?: boolean;
+  isReinforcementAdded?: boolean;
 }
 
 // 4. Типи особливих жетонів, що змінюють статус провінції

@@ -91,31 +91,39 @@
     <div class="mat-title">ВІЙСЬКОВИЙ АКТИВ НА ПОТОЧНИЙ РАУНД (ЗА ШИРМОЮ)</div>
     <!-- Банер таймера Рокіровки -->
     <div class="dragon-screen-prompt" *ngIf="isRokirovkaSelectionActive">
-      <h3>ОБЕРІТЬ КАРТУ ДЛЯ СКИНУ У СКИНУ</h3>
+      <h3>ОБЕРІТЬ КАРТУ ДЛЯ СКИДУ</h3>
       <p class="dragon-banner-timer">Часу залишилось: {{ localRokirovkaTimer }}с | Натисніть на іншу карту, щоб завершити рокіровку.</p>
+    </div>
+   <!-- Банер для Підкріплення у ширмі -->
+    <div class="dragon-screen-prompt" *ngIf="hasReinforcementCardsInHand">
+      <h3>ПІДКРІПЛЕННЯ: ОБЕРІТЬ 2 КАРТИ З ШИРМИ</h3>
+      <p class="dragon-banner-timer">Виберіть дві карти (не з тих, що повернулися зі скиду), обрано: {{ selectedReinforcementCards.length }} / 2</p>
+      <p class="dragon-banner-timer" [class.danger]="localReinforcementTimer <= 3">⏱️ Часу залишилось: {{ localReinforcementTimer }}с</p>
     </div>
     <div class="dragon-screen-prompt" *ngIf="isDragonSelectionActive">
       <h3>Виберіть одну карту яка вирушить в колоду</h3>
       <p class="dragon-banner-timer">Часу залишилось: {{ localDragonTimer }}с</p>
     </div>
-    <div class="cards-grid">
-      <!-- Стилізована Карта-Жетон -->
-        <div class="clan-card" 
-          *ngFor="let token of playerState.activeHandTokens" 
-          [ngClass]="[
-            token.type.toLowerCase(), 
-            token.isNewlyAdded ? 'newly-added-card' : '',
-            isRokirovkaSelectionActive && !token.isNewlyAdded && token.type !== 'Blank' ? 'rokirovka-bouncing-card' : '',
-            isDragonSelectionActive && token.type !== 'Blank' ? 'dragon-bouncing-card' : ''
-          ]"
-          [class.active-card]="isSelected(token)"
-          (click)="isDragonSelectionActive ? onDragonCardClick(token) : selectCard(token)">
-          <div class="card-illustration" [style.backgroundImage]="'url(' + getCardImage(token.type) + ')'">
-            <div class="card-overlay"></div>
-            <div class="card-strength" *ngIf="token.strength && token.strength > 0 && token.type !== 'Raid'">{{ token.strength }}</div>
-          </div>
-          <div class="card-footer">
-              <div class="lion-blank-bonus-badge" *ngIf="token.clan === 'Lion' && token.type === 'Blank'">+2 Захист</div>
+   <div class="cards-grid">
+      <div class="clan-card" 
+        *ngFor="let token of playerState.activeHandTokens" 
+        [ngClass]="[
+          token.type.toLowerCase(), 
+          token.isReinforcementAdded ? 'reinforcement-glow reinforcement-disabled-card' : '',
+          isCardSelectedForReinforcement(token) ? 'selected-for-reinforcement' : '',
+          isDragonSelectionActive && token.type !== 'Blank' ? 'dragon-bouncing-card' : '',
+          isRokirovkaSelectionActive && !token.isNewlyAdded && token.type !== 'Blank' ? 'rokirovka-bouncing-card' : '',
+          token.isNewlyAdded && !hasReinforcementCardsInHand ? 'newly-added-card' : '',
+          hasReinforcementCardsInHand && !token.isReinforcementAdded && token.type !== 'Blank' ? 'reinforcement-bouncing-card' : '',
+        ]"
+        [class.active-card]="isSelected(token)"
+        (click)="isDragonSelectionActive ? onDragonCardClick(token) : (hasReinforcementCardsInHand ? onReinforcementCardClick(token) : selectCard(token))">
+        
+        <div class="card-illustration" [style.backgroundImage]="'url(' + getCardImage(token.type) + ')'">
+          <div class="card-overlay"></div>
+          <div class="card-strength" *ngIf="token.strength && token.strength > 0 && token.type !== 'Raid'">{{ token.strength }}</div>
+        </div>
+        <div class="card-footer">
           <div class="card-type-name">{{ getTokenLabel(token) }}</div>
         </div>
       </div>
@@ -125,4 +133,23 @@
 
 <div *ngIf="!playerState" class="error-msg">
   Ширму не вдалося завантажити.
+</div>
+
+
+<!-- КАСТОМНИЙ КОНФІРМ-МОДАЛ ДЛЯ ПІДКРІПЛЕННЯ -->
+<div class="reinforcement-confirm-overlay" *ngIf="isReinforcementConfirmOpen">
+  <div class="reinforcement-confirm-modal bamboo-mat">
+    <h3 class="mat-title">КУДИ ПЕРЕНОСИМО КАРТИ?</h3>
+    <p class="dragon-banner-timer">
+      Ви обрали дві картки армії. Оберіть, куди їх направити:
+    </p>
+    <div class="confirm-buttons-grid">
+      <button class="bamboo-btn discard-choice-btn" (click)="resolveReinforcementChoice('discard')">
+        📥 У скид
+      </button>
+      <button class="bamboo-btn reserve-choice-btn" (click)="resolveReinforcementChoice('reserve')">
+        🛡️ У запас
+      </button>
+    </div>
+  </div>
 </div>
