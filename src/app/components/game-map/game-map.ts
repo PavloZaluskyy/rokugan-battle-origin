@@ -469,6 +469,17 @@ onTouchStart(event: TouchEvent) {
       }
       return;
     }
+    // 12. ПЕРЕВІРКА ЕФЕКТУ "ВЛАДА ЖАХУ"
+    if (this.regionCardService.terrorRuleEffect) {
+      // Якщо це другий крок і на провінції немає особливих жетонів — ПОВНІСТЮ БЛОКУЄМО КЛІК
+      if (this.regionCardService.terrorRuleEffect.step === 'remove_special_tokens') {
+        if (!this.regionCardService.hasProvinceSpecialTokens(province)) {
+          return; // Клік по звичайній провінції повністю ігнорується
+        }
+      }
+      this.onTerrorRuleProvinceClick(province);
+      return;
+    }
   }
 
   
@@ -825,6 +836,8 @@ onTouchStart(event: TouchEvent) {
       const success = this.regionCardService.startCulturalExchangeEffect(card.id, this.activePlayerClan, () => {});
     } else if (card.title.includes('Воскресіння мертвих')) {
       const success = this.regionCardService.startResurrectionEffect(card.id, this.activePlayerClan, () => {});
+    } else if (card.title.includes('Влада жаху')) {
+      const success = this.regionCardService.startTerrorRuleEffect(card.id, this.activePlayerClan, () => {});
       if (success) {
         this.cdr.detectChanges();        // Примусово оновлюємо інтерфейс
       }
@@ -1430,6 +1443,57 @@ onTouchStart(event: TouchEvent) {
 
   onCancelResurrection(): void {
     this.regionCardService.cancelResurrectionEffect();
+    this.loadGameState();
+    this.cdr.detectChanges();
+  }
+
+  /* КАРТА РЕГІОНУ "ВЛАДА ЖАХУ" */
+  isTerrorRuleTarget(province: Province): boolean {
+    const effect = this.regionCardService.terrorRuleEffect;
+    if (!effect) return false;
+
+    if (effect.step === 'select_province_for_sacrifice') {
+      // Крок 1: Тільки власні провінції, де є хоча б 1 жетон контролю
+      return province.controllingClan === this.activePlayerClan && (province.controlTokensFaceUp || 0) > 0;
+    } else if (effect.step === 'remove_special_tokens') {
+      // Крок 2: ТІЛЬКИ ті провінції, які реально мають спеціальні жетони
+      return this.regionCardService.hasProvinceSpecialTokens(province);
+    }
+    return false;
+  }
+
+  onTerrorRuleProvinceClick(province: Province): void {
+    const effect = this.regionCardService.terrorRuleEffect;
+    if (!effect) return;
+    const gameState = this.gameStateService.getGameState();
+    if (!gameState) return;
+
+    if (effect.step === 'select_province_for_sacrifice') {
+      if (province.controllingClan !== this.activePlayerClan || (province.controlTokensFaceUp || 0) <= 0) return;
+      this.regionCardService.sacrificeTokenForTerrorRule(province.id, gameState);
+    } else if (effect.step === 'remove_special_tokens') {
+      // Подвійна перевірка через сервіс: якщо жетонів немає, повністю ігноруємо
+      if (!this.regionCardService.hasProvinceSpecialTokens(province)) {
+        return;
+      }
+      this.regionCardService.removeSpecialTokenFromProvince(province.id, gameState);
+    }
+
+    this.gameStateService.saveGame();
+    this.loadGameState();
+    this.cdr.detectChanges();
+  }
+
+  // Завершити ефект Влади жаху достроково (якщо забрано 0 або 1 жетон)
+  completeTerrorRuleEarly(): void {
+    const effect = this.regionCardService.terrorRuleEffect;
+    if (!effect) return;
+    const gameState = this.gameStateService.getGameState();
+    if (gameState) {
+      this.regionCardService.useRegionCard(effect.cardId, effect.clan);
+      gameState.roundLog.push(`👹 Влада жаху: гравець завершив прибирання жетонів (${effect.removedCount} з 2).`);
+    }
+    this.regionCardService.cancelTerrorRuleEffect();
     this.loadGameState();
     this.cdr.detectChanges();
   }

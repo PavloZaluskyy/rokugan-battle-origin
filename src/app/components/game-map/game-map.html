@@ -191,6 +191,7 @@
             || isFiresOfRebellionTarget(prov)
             || isCulturalExchangeTarget(prov)
             || isResurrectionTarget(prov)
+            || isTerrorRuleTarget(prov)
             "
             
           >
@@ -600,5 +601,38 @@
     <p class="rokirovka-instruction">
       Оберіть свою провінцію, щоб зняти з неї один жетон контролю і перейти до вибору картки атаки зі скиду.
     </p>
+  </div>
+</div>
+<!-- БАНЕР ТАЙМЕРА ДЛЯ ЕФЕКТУ "ВЛАДА ЖАХУ" -->
+<div class="rokirovka-fullscreen-overlay" *ngIf="regionCardService.terrorRuleEffect">
+  <div class="rokirovka-modal bamboo-mat harbor-modal-box">
+    <div class="rokirovka-header">
+      <div class="rokirovka-title-box">
+        <span class="rokirovka-icon">👹</span>
+        <h3 class="mat-title-text">
+          {{ regionCardService.terrorRuleEffect.step === 'select_province_for_sacrifice' ? 'ВЛАДА ЖАХУ: ВИБЕРІТЬ ПРОВІНЦІЮ ДЛЯ ЖЕРТВИ' : 'ВЛАДА ЖАХУ: ПРИБЕРІТЬ ДО 2 ЖЕТОНІВ (' + regionCardService.terrorRuleEffect.removedCount + '/2)' }}
+        </h3>
+      </div>
+      <div class="rokirovka-header-right">
+        <div class="rokirovka-timer" [class.danger]="regionCardService.terrorRuleEffect.timer <= 3">
+          ⏱️ 0:{{ regionCardService.terrorRuleEffect.timer < 10 ? '0' + regionCardService.terrorRuleEffect.timer : regionCardService.terrorRuleEffect.timer }}
+        </div>
+        <button class="rokirovka-cancel-btn" (click)="regionCardService.cancelTerrorRuleEffect()">Відмінити</button>
+      </div>
+    </div>
+    
+    <p class="rokirovka-instruction" *ngIf="regionCardService.terrorRuleEffect.step === 'select_province_for_sacrifice'">
+      Оберіть свою провінцію, щоб зняти з неї жетон контролю (для Краба — 2) і розпочати очищення мапи.
+    </p>
+
+    <p class="rokirovka-instruction" *ngIf="regionCardService.terrorRuleEffect.step === 'remove_special_tokens'">
+      Натискайте на провінції з особливими жетонами (мир, попіл, святиня, слава, порт, честь), щоб прибрати їх. Ви можете прибрати до 2 жетонів.
+    </p>
+
+    <div style="text-align: center; margin-top: 15px;" *ngIf="regionCardService.terrorRuleEffect.step === 'remove_special_tokens'">
+      <button class="rokirovka-cancel-btn" style="padding: 8px 20px; background-color: #4a3b32; color: #ffd699;" (click)="completeTerrorRuleEarly()">
+        Завершити вибір (Готово)
+      </button>
+    </div>
   </div>
 </div>

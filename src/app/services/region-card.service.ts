@@ -198,6 +198,16 @@ export class RegionCardService {
     timerInterval?: any;
   } | null = null;
 
+  // Стан виконання карти регіону "Влада жаху" (Південні Тіньові Землі)
+  public terrorRuleEffect: {
+    cardId: string;
+    clan: string;
+    step: 'select_province_for_sacrifice' | 'remove_special_tokens';
+    removedCount: number; // Скільки жетонів уже прибрано (максимум 2)
+    timer: number;
+    timerInterval?: any;
+  } | null = null;
+
   // Активні картки регіонів, задіяні в поточній партії (по 1 на кожен регіон)
   private activeGameRegionCards: RegionCard[] = [];
 
@@ -690,6 +700,9 @@ export class RegionCardService {
     const province = gameState.provinces[provinceId];
 
     if (province) {
+      if (province.originalHonorFlowers === undefined) {
+        province.originalHonorFlowers = province.honorFlowers || 0;
+      }
       // Встановлюємо значення очок честі рівно на 4
       province.honorFlowers = 4;
 
@@ -1279,4 +1292,139 @@ export class RegionCardService {
     // 4. Повністю закриваємо ефект Воскресіння
     this.cancelResurrectionEffect();
   }
+
+  /* КАРТА РЕГІОНУ "ВЛАДА ЖАХУ" */
+  /* Карта регіону: ВЛАДА ЖАХУ (Південні Тіньові Землі) */
+  startTerrorRuleEffect(cardId: string, clan: string, onTimeout: () => void): boolean {
+    this.terrorRuleEffect = {
+      cardId: cardId,
+      clan: clan,
+      step: 'select_province_for_sacrifice',
+      removedCount: 0,
+      timer: 10
+    };
+
+    if (this.terrorRuleEffect.timerInterval) {
+      clearInterval(this.terrorRuleEffect.timerInterval);
+    }
+
+    this.terrorRuleEffect.timerInterval = setInterval(() => {
+      this.ngZone.run(() => {
+        if (this.terrorRuleEffect && this.terrorRuleEffect.timer > 0) {
+          this.terrorRuleEffect.timer--;
+        } else {
+          if (this.terrorRuleEffect) {
+            this.useRegionCard(this.terrorRuleEffect.cardId, this.terrorRuleEffect.clan);
+          }
+          this.cancelTerrorRuleEffect();
+          onTimeout();
+        }
+        this.closeRokirovkaModalSubject.next();
+      });
+    }, 1000);
+
+    return true;
+  }
+
+  cancelTerrorRuleEffect(): void {
+    if (this.terrorRuleEffect && this.terrorRuleEffect.timerInterval) {
+      clearInterval(this.terrorRuleEffect.timerInterval);
+    }
+    this.terrorRuleEffect = null;
+    this.closeRokirovkaModalSubject.next();
+  }
+
+  /**
+   * Крок 1: Жертвуємо жетон контролю з провінції (враховуючи специфіку Краба)
+   */
+  sacrificeTokenForTerrorRule(provinceId: string, gameState: any): void {
+    if (!this.terrorRuleEffect) return;
+
+    const province = gameState.provinces[provinceId];
+    if (!province) return;
+
+    const sacrificeCost = province.controllingClan === 'Crab' ? 2 : 1;
+    const currentTokens = province.controlTokensFaceUp || 0;
+    if (currentTokens < sacrificeCost) return;
+
+    province.controlTokensFaceUp -= sacrificeCost;
+
+    if (province.controlTokensFaceUp <= 0) {
+      province.controlTokensFaceUp = 0;
+      province.controllingClan = 'Neutral';
+      if (!province.isCapital) {
+        province.baseDefense = province.regionId?.includes('shadowlands') ? 1 : 0;
+      }
+    }
+
+    // Переходимо до кроку видалення спеціальних жетонів
+    this.terrorRuleEffect.step = 'remove_special_tokens';
+    gameState.roundLog.push(`👹 Влада жаху: з провінції ${province.name} знято жетон контролю. Тепер ви можете прибрати до 2 спеціальних жетонів з мапи (або завершити дію).`);
+    
+    this.closeRokirovkaModalSubject.next();
+  }
+
+  /**
+   * Крок 2: Видалення спеціального жетона з обраної провінції
+   */
+  removeSpecialTokenFromProvince(provinceId: string, gameState: any): void {
+  if (!this.terrorRuleEffect || this.terrorRuleEffect.step !== 'remove_special_tokens') return;
+
+  const province = gameState.provinces[provinceId];
+  if (!province) return;
+
+  if (!this.hasProvinceSpecialTokens(province)) {
+    return;
+  }
+
+  let removedSomething = false;
+
+  if (province.hasPeaceToken) {
+    province.hasPeaceToken = false;
+    removedSomething = true;
+  } else if (province.hasScorchedEarth) {
+    province.hasScorchedEarth = false;
+    removedSomething = true;
+  } else if (province.hasShrine) {
+    province.hasShrine = false;
+    removedSomething = true;
+  } else if (province.hasGlory) {
+    province.hasGlory = false;
+    removedSomething = true;
+  } else if (province.hasHarbor) {
+    province.hasHarbor = false;
+    province.isCoastal = false; 
+    removedSomething = true;
+  } else if (province.hasBushido) {
+    province.hasBushido = false;
+    if (province.originalHonorFlowers !== undefined) {
+      province.honorFlowers = province.originalHonorFlowers;
+      delete province.originalHonorFlowers;
+    }
+    removedSomething = true;
+  }
+
+  if (removedSomething) {
+    this.terrorRuleEffect.removedCount++;
+    gameState.roundLog.push(`👹 Влада жаху: з провінції ${province.name} прибрано спеціальний жетон (${this.terrorRuleEffect.removedCount}/2).`);
+
+    if (this.terrorRuleEffect.removedCount >= 2) {
+      this.useRegionCard(this.terrorRuleEffect.cardId, this.terrorRuleEffect.clan);
+      this.cancelTerrorRuleEffect();
+    }
+  }
+
+  this.closeRokirovkaModalSubject.next();
+}
+  hasProvinceSpecialTokens(province: any): boolean {
+  if (!province) return false;
+  return Boolean(
+    province.hasPeaceToken ||
+    province.hasScorchedEarth ||
+    province.hasShrine ||
+    province.hasGlory ||
+    province.hasHarbor ||
+    province.hasBushido
+  );
+}
 }
