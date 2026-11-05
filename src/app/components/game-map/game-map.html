@@ -195,6 +195,7 @@
             || isMurderOfWeakTarget(prov)
             || isDevilContractTarget(prov)  
             || isPirateRaidsTarget(prov)
+            || isProsperityTarget(prov)
             "
             
           >
@@ -726,6 +727,27 @@
 
     <p class="rokirovka-instruction" *ngIf="regionCardService.pirateRaidsEffect.step === 'select_province_for_bonus'">
       Оскільки спалена провінція була вашою, виберіть іншу свою провінцію, щоб отримати +3 жетони контролю.
+    </p>
+  </div>
+</div>
+<!-- БАНЕР ТАЙМЕРА ДЛЯ ЕФЕКТУ "ПРОЦВІТАННЯ" -->
+<div class="rokirovka-fullscreen-overlay" *ngIf="regionCardService.prosperityEffect">
+  <div class="rokirovka-modal bamboo-mat harbor-modal-box">
+    <div class="rokirovka-header">
+      <div class="rokirovka-title-box">
+        <span class="rokirovka-icon">🌸</span>
+        <h3 class="mat-title-text">ПРОЦВІТАННЯ: ОБЕРІТЬ ПРОВІНЦІЮ ДЛЯ БОНУСУ ЧЕСТІ</h3>
+      </div>
+      <div class="rokirovka-header-right">
+        <div class="rokirovka-timer" [class.danger]="regionCardService.prosperityEffect.timer <= 3">
+          ⏱️ 0:{{ regionCardService.prosperityEffect.timer < 10 ? '0' + regionCardService.prosperityEffect.timer : regionCardService.prosperityEffect.timer }}
+        </div>
+        <button class="rokirovka-cancel-btn" (click)="regionCardService.cancelProsperityEffect()">Відмінити</button>
+      </div>
+    </div>
+    
+    <p class="rokirovka-instruction">
+      Оберіть будь-яку провінцію (<strong>крім тіньових земель</strong>), щоб додати туди +2 бонуси честі (🌸).
     </p>
   </div>
 </div>

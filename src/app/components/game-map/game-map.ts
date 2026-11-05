@@ -495,6 +495,10 @@ onTouchStart(event: TouchEvent) {
       this.onPirateRaidsProvinceClick(province);
       return;
     }
+    if (this.regionCardService.prosperityEffect) {
+      this.onProsperityProvinceClick(province);
+      return;
+    }
   }
   
 
@@ -863,6 +867,8 @@ onTouchStart(event: TouchEvent) {
       const success = this.regionCardService.startDevilContractEffect(card.id, this.activePlayerClan, () => {});
     } else if (card.title === 'Піратські набіги') {
       const success = this.regionCardService.startPirateRaidsEffect(card.id, this.activePlayerClan, () => {});
+    } else if (card.title === 'Процвітання') {
+      const success = this.regionCardService.startProsperityEffect(card.id, this.activePlayerClan, () => {});
       if (success) { 
         this.cdr.detectChanges();        
       }
@@ -1630,6 +1636,32 @@ onTouchStart(event: TouchEvent) {
       this.regionCardService.executePirateRaidsBonus(province.id, gameState);
     }
 
+    this.gameStateService.saveGame();
+    this.loadGameState();
+    this.cdr.detectChanges();
+  }
+
+  /* КАРТА РЕГІОНУ "ПРОЦВІТАННЯ" */
+  isProsperityTarget(province: Province): boolean {
+    const effect = this.regionCardService.prosperityEffect;
+    if (!effect) return false;
+
+    // Провінція НЕ повинна належати до тіньових земель
+    const isShadowlands = province.regionId.toLowerCase().includes('shadowlands') || province.regionId.includes('Тіньових Земель');
+    return !isShadowlands;
+  }
+
+  onProsperityProvinceClick(province: Province): void {
+    const effect = this.regionCardService.prosperityEffect;
+    if (!effect) return;
+
+    const isShadowlands = province.regionId.toLowerCase().includes('shadowlands') || province.regionId.includes('Тіньових Земель');
+    if (isShadowlands) return;
+
+    const gameState = this.gameStateService.getGameState();
+    if (!gameState) return;
+
+    this.regionCardService.completeProsperityEffect(province.id, gameState);
     this.gameStateService.saveGame();
     this.loadGameState();
     this.cdr.detectChanges();

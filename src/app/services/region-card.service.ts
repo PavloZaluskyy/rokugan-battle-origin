@@ -217,7 +217,8 @@ export class RegionCardService {
     timer: number;
     timerInterval?: any;
   } | null = null;
-
+ 
+  // Стан виконання карти регіону "Контракт з дияволом" (Північні Тіньові Землі)
   public devilContractEffect: {
     cardId: string;
     clan: string;
@@ -234,6 +235,13 @@ export class RegionCardService {
     clan: string;
     step: 'select_target_province' | 'select_province_for_bonus';
     scorchedProvinceId?: string; // Провінція, яку спалили
+    timer: number;
+    timerInterval?: any;
+  } | null = null;
+  // Стан виконання карти регіону "Процвітання" (Острови Шовкових Шляхів)
+  public prosperityEffect: {
+    cardId: string;
+    clan: string;
     timer: number;
     timerInterval?: any;
   } | null = null;
@@ -1802,5 +1810,63 @@ export class RegionCardService {
     // Списуємо картку регіону та завершуємо ефект
     this.useRegionCard(this.pirateRaidsEffect.cardId, clan);
     this.cancelPirateRaidsEffect();
+  }
+  /* Карта регіону Процвітання (Острови Шовкових Шляхів) */
+  startProsperityEffect(cardId: string, clan: string, onTimeout: () => void): boolean {
+    this.prosperityEffect = {
+      cardId: cardId,
+      clan: clan,
+      timer: 10
+    };
+
+    if (this.prosperityEffect.timerInterval) {
+      clearInterval(this.prosperityEffect.timerInterval);
+    }
+
+    this.prosperityEffect.timerInterval = setInterval(() => {
+      this.ngZone.run(() => {
+        if (this.prosperityEffect && this.prosperityEffect.timer > 0) {
+          this.prosperityEffect.timer--;
+        } else {
+          if (this.prosperityEffect) {
+            this.useRegionCard(this.prosperityEffect.cardId, this.prosperityEffect.clan);
+          }
+          this.cancelProsperityEffect();
+          onTimeout();
+        }
+        this.closeRokirovkaModalSubject.next();
+      });
+    }, 1000);
+
+    return true;
+  }
+
+  cancelProsperityEffect(): void {
+    if (this.prosperityEffect && this.prosperityEffect.timerInterval) {
+      clearInterval(this.prosperityEffect.timerInterval);
+    }
+    this.prosperityEffect = null;
+    this.closeRokirovkaModalSubject.next();
+  }
+
+  /**
+   * Завершення ефекту "Процвітання": додавання +2 очок честі до обраної провінції
+   */
+  completeProsperityEffect(provinceId: string, gameState: any): void {
+    if (!this.prosperityEffect) return;
+
+    const { cardId, clan } = this.prosperityEffect;
+    const province = gameState.provinces[provinceId];
+
+    if (province) {
+      province.honorFlowers = (province.honorFlowers || 0) + 2;
+
+      gameState.roundLog.push(`🌸 Процвітання: у провінцію ${province.name} додано +2 бонуси честі.`);
+
+      // Списуємо картку регіону
+      this.useRegionCard(cardId, clan);
+    }
+
+    this.cancelProsperityEffect();
   }
 }
