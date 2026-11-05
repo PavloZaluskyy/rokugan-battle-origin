@@ -246,6 +246,23 @@ export class RegionCardService {
     timerInterval?: any;
   } | null = null;
 
+  // Стан виконання карти регіону "Народне ополчення" (Узбережжя Торговців)
+  public militiaEffect: {
+    cardId: string;
+    clan: string;
+    selectedProvinceIds: string[]; // Обрані дві провінції (0/2)
+    timer: number;
+    timerInterval?: any;
+  } | null = null;
+
+  // Стан виконання карти регіону "Багатий Врожай" (Узбережжя Торговців)
+  public bountifulHarvestEffect: {
+    cardId: string;
+    clan: string;
+    timer: number;
+    timerInterval?: any;
+  } | null = null;
+
   // Активні картки регіонів, задіяні в поточній партії (по 1 на кожен регіон)
   private activeGameRegionCards: RegionCard[] = [];
 
@@ -1868,5 +1885,135 @@ export class RegionCardService {
     }
 
     this.cancelProsperityEffect();
+  }
+
+  /*Карта регіону НАРОДНЕ ОПОЛЧЕННЯ */
+  startMilitiaEffect(cardId: string, clan: string, onTimeout: () => void): boolean {
+    this.militiaEffect = {
+      cardId: cardId,
+      clan: clan,
+      selectedProvinceIds: [],
+      timer: 10
+    };
+
+    if (this.militiaEffect.timerInterval) {
+      clearInterval(this.militiaEffect.timerInterval);
+    }
+
+    this.militiaEffect.timerInterval = setInterval(() => {
+      this.ngZone.run(() => {
+        if (this.militiaEffect && this.militiaEffect.timer > 0) {
+          this.militiaEffect.timer--;
+        } else {
+          if (this.militiaEffect) {
+            this.useRegionCard(this.militiaEffect.cardId, this.militiaEffect.clan);
+          }
+          this.cancelMilitiaEffect();
+          onTimeout();
+        }
+        this.closeRokirovkaModalSubject.next();
+      });
+    }, 1000);
+
+    return true;
+  }
+
+  cancelMilitiaEffect(): void {
+    if (this.militiaEffect && this.militiaEffect.timerInterval) {
+      clearInterval(this.militiaEffect.timerInterval);
+    }
+    this.militiaEffect = null;
+    this.closeRokirovkaModalSubject.next();
+  }
+
+  /**
+   * Клік по провінції під час ефекту "Народне ополчення" (вибір 2 провінцій поспіль)
+   */
+  selectProvinceForMilitia(provinceId: string, gameState: any): void {
+    if (!this.militiaEffect) return;
+
+    // Перевіряємо, чи вже не була обрана ця провінція
+    if (this.militiaEffect.selectedProvinceIds.includes(provinceId)) return;
+
+    const province = gameState.provinces[provinceId];
+    if (!province) return;
+
+    // Збільшуємо базовий захист на +1
+    province.baseDefense = (province.baseDefense || 0) + 1;
+    this.militiaEffect.selectedProvinceIds.push(provinceId);
+
+    gameState.roundLog.push(`🛡️ Народне ополчення: базовий захист провінції ${province.name} збільшено на +1.`);
+
+    // Якщо обрано рівно 2 провінції — завершуємо роботу карти
+    if (this.militiaEffect.selectedProvinceIds.length === 2) {
+      this.useRegionCard(this.militiaEffect.cardId, this.militiaEffect.clan);
+      this.cancelMilitiaEffect();
+    }
+
+    this.closeRokirovkaModalSubject.next();
+  }
+
+  /* БАГАТИЙ ВРОЖАЙ */
+  startBountifulHarvestEffect(cardId: string, clan: string, onTimeout: () => void): boolean {
+    this.bountifulHarvestEffect = {
+      cardId: cardId,
+      clan: clan,
+      timer: 10
+    };
+
+    if (this.bountifulHarvestEffect.timerInterval) {
+      clearInterval(this.bountifulHarvestEffect.timerInterval);
+    }
+
+    this.bountifulHarvestEffect.timerInterval = setInterval(() => {
+      this.ngZone.run(() => {
+        if (this.bountifulHarvestEffect && this.bountifulHarvestEffect.timer > 0) {
+          this.bountifulHarvestEffect.timer--;
+        } else {
+          if (this.bountifulHarvestEffect) {
+            this.useRegionCard(this.bountifulHarvestEffect.cardId, this.bountifulHarvestEffect.clan);
+          }
+          this.cancelBountifulHarvestEffect();
+          onTimeout();
+        }
+        this.closeRokirovkaModalSubject.next();
+      });
+    }, 1000);
+
+    return true;
+  }
+
+  cancelBountifulHarvestEffect(): void {
+    if (this.bountifulHarvestEffect && this.bountifulHarvestEffect.timerInterval) {
+      clearInterval(this.bountifulHarvestEffect.timerInterval);
+    }
+    this.bountifulHarvestEffect = null;
+    this.closeRokirovkaModalSubject.next();
+  }
+
+  /**
+   * Завершення ефекту "Багатий Врожай": додавання 2 жетонів контролю у власній провінції
+   */
+  completeBountifulHarvestEffect(provinceId: string, gameState: any): void {
+    if (!this.bountifulHarvestEffect) return;
+
+    const { cardId, clan } = this.bountifulHarvestEffect;
+    const province = gameState.provinces[provinceId];
+
+    if (province && province.controllingClan === clan) {
+      // Клан Краба отримує +2 захисту за кожен жетон контролю, інші клани — +1
+      const defenseBonusPerToken = (clan === 'Crab') ? 2 : 1;
+      const tokensToAdd = 2;
+      const totalDefenseIncrease = tokensToAdd * defenseBonusPerToken;
+
+      province.controlTokensFaceUp = (province.controlTokensFaceUp || 0) + totalDefenseIncrease;
+
+      gameState.roundLog.push(`🌾 Багатий Врожай: у провінцію ${province.name} додано 2 жетони контролю (+${totalDefenseIncrease} до захисту).`);
+
+      // Списуємо картку регіону
+      this.useRegionCard(cardId, clan);
+    }
+
+    this.cancelBountifulHarvestEffect();
   }
 }

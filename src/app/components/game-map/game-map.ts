@@ -495,8 +495,19 @@ onTouchStart(event: TouchEvent) {
       this.onPirateRaidsProvinceClick(province);
       return;
     }
+    // 16. ПЕРЕВІРКА ЕФЕКТУ "ПРОЦВІТАННЯ"
     if (this.regionCardService.prosperityEffect) {
       this.onProsperityProvinceClick(province);
+      return;
+    }
+    // 17. ПЕРЕВІРКА ЕФЕКТУ "НАРОДНЕ ОПОЛЧЕННЯ"
+    if (this.regionCardService.militiaEffect) {
+      this.onMilitiaProvinceClick(province);
+      return;
+    }
+    // 18. ПЕРЕВІРКА ЕФЕКТУ "БАГАТИЙ ВРОЖАЙ"
+    if (this.regionCardService.bountifulHarvestEffect) {
+      this.onBountifulHarvestProvinceClick(province);
       return;
     }
   }
@@ -869,6 +880,10 @@ onTouchStart(event: TouchEvent) {
       const success = this.regionCardService.startPirateRaidsEffect(card.id, this.activePlayerClan, () => {});
     } else if (card.title === 'Процвітання') {
       const success = this.regionCardService.startProsperityEffect(card.id, this.activePlayerClan, () => {});
+    } else if (card.title === 'Народне ополчення') {
+      const success = this.regionCardService.startMilitiaEffect(card.id, this.activePlayerClan, () => {});
+    } else if (card.title === 'Багатий Врожай') {
+      const success = this.regionCardService.startBountifulHarvestEffect(card.id, this.activePlayerClan, () => {});
       if (success) { 
         this.cdr.detectChanges();        
       }
@@ -1662,6 +1677,56 @@ onTouchStart(event: TouchEvent) {
     if (!gameState) return;
 
     this.regionCardService.completeProsperityEffect(province.id, gameState);
+    this.gameStateService.saveGame();
+    this.loadGameState();
+    this.cdr.detectChanges();
+  }
+  /* КАРТА РЕГІОНУ "НАРОДНЕ ОПОЛЧЕННЯ" */
+  isMilitiaTarget(province: Province): boolean {
+    const effect = this.regionCardService.militiaEffect;
+    if (!effect) return false;
+
+    // Провінція НЕ повинна належати до тіньових земель, і не повинна бути вже обрана в цій сесії
+    const isShadowlands = province.regionId.toLowerCase().includes('shadowlands') || province.regionId.includes('Тіньових Земель');
+    const isAlreadySelected = effect.selectedProvinceIds.includes(province.id);
+
+    return !isShadowlands && !isAlreadySelected;
+  }
+
+  onMilitiaProvinceClick(province: Province): void {
+    const effect = this.regionCardService.militiaEffect;
+    if (!effect) return;
+
+    const isShadowlands = province.regionId.toLowerCase().includes('shadowlands') || province.regionId.includes('Тіньових Земель');
+    if (isShadowlands || effect.selectedProvinceIds.includes(province.id)) return;
+
+    const gameState = this.gameStateService.getGameState();
+    if (!gameState) return;
+
+    this.regionCardService.selectProvinceForMilitia(province.id, gameState);
+    this.gameStateService.saveGame();
+    this.loadGameState();
+    this.cdr.detectChanges();
+  }
+  /* КАРТА РЕГІОНУ "БАГАТИЙ ВРОЖАЙ" */
+  isBountifulHarvestTarget(province: Province): boolean {
+    const effect = this.regionCardService.bountifulHarvestEffect;
+    if (!effect) return false;
+
+    // Провінція повинна перебувати під контролем активного гравця
+    return province.controllingClan === this.activePlayerClan;
+  }
+
+  onBountifulHarvestProvinceClick(province: Province): void {
+    const effect = this.regionCardService.bountifulHarvestEffect;
+    if (!effect) return;
+
+    if (province.controllingClan !== this.activePlayerClan) return;
+
+    const gameState = this.gameStateService.getGameState();
+    if (!gameState) return;
+
+    this.regionCardService.completeBountifulHarvestEffect(province.id, gameState);
     this.gameStateService.saveGame();
     this.loadGameState();
     this.cdr.detectChanges();

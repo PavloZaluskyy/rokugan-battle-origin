@@ -196,6 +196,8 @@
             || isDevilContractTarget(prov)  
             || isPirateRaidsTarget(prov)
             || isProsperityTarget(prov)
+            || isMilitiaTarget(prov)
+            || isBountifulHarvestTarget(prov)
             "
             
           >
@@ -748,6 +750,52 @@
     
     <p class="rokirovka-instruction">
       Оберіть будь-яку провінцію (<strong>крім тіньових земель</strong>), щоб додати туди +2 бонуси честі (🌸).
+    </p>
+  </div>
+</div>
+
+<!-- БАНЕР ТАЙМЕРА ДЛЯ ЕФЕКТУ "НАРОДНЕ ОПОЛЧЕННЯ" -->
+<div class="rokirovka-fullscreen-overlay" *ngIf="regionCardService.militiaEffect">
+  <div class="rokirovka-modal bamboo-mat harbor-modal-box">
+    <div class="rokirovka-header">
+      <div class="rokirovka-title-box">
+        <span class="rokirovka-icon">🛡️</span>
+        <h3 class="mat-title-text">
+          НАРОДНЕ ОПОЛЧЕННЯ: ОБЕРІТЬ 2 ПРОВІНЦІЇ ({{ regionCardService.militiaEffect.selectedProvinceIds.length }}/2)
+        </h3>
+      </div>
+      <div class="rokirovka-header-right">
+        <div class="rokirovka-timer" [class.danger]="regionCardService.militiaEffect.timer <= 3">
+          ⏱️ 0:{{ regionCardService.militiaEffect.timer < 10 ? '0' + regionCardService.militiaEffect.timer : regionCardService.militiaEffect.timer }}
+        </div>
+        <button class="rokirovka-cancel-btn" (click)="regionCardService.cancelMilitiaEffect()">Відмінити</button>
+      </div>
+    </div>
+    
+    <p class="rokirovka-instruction">
+      Оберіть 2 різні провінції (<strong>крім тіньових земель</strong>), щоб збільшити їхній базовий захист (baseDefense) на +1.
+    </p>
+  </div>
+</div>
+
+<!-- БАНЕР ТАЙМЕРА ДЛЯ ЕФЕКТУ "БАГАТИЙ ВРОЖАЙ" -->
+<div class="rokirovka-fullscreen-overlay" *ngIf="regionCardService.bountifulHarvestEffect">
+  <div class="rokirovka-modal bamboo-mat harbor-modal-box">
+    <div class="rokirovka-header">
+      <div class="rokirovka-title-box">
+        <span class="rokirovka-icon">🌾</span>
+        <h3 class="mat-title-text">БАГАТИЙ ВРОЖАЙ: ОБЕРІТЬ СВОЮ ПРОВІНЦІЮ</h3>
+      </div>
+      <div class="rokirovka-header-right">
+        <div class="rokirovka-timer" [class.danger]="regionCardService.bountifulHarvestEffect.timer <= 3">
+          ⏱️ 0:{{ regionCardService.bountifulHarvestEffect.timer < 10 ? '0' + regionCardService.bountifulHarvestEffect.timer : regionCardService.bountifulHarvestEffect.timer }}
+        </div>
+        <button class="rokirovka-cancel-btn" (click)="regionCardService.cancelBountifulHarvestEffect()">Відмінити</button>
+      </div>
+    </div>
+    
+    <p class="rokirovka-instruction">
+      Оберіть будь-яку провінцію <strong>під вашим контролем</strong>, щоб розмістити туди 2 жетони контролю.
     </p>
   </div>
 </div>
