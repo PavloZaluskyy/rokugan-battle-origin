@@ -208,6 +208,16 @@ export class RegionCardService {
     timerInterval?: any;
   } | null = null;
 
+  // Стан виконання карти регіону "Вбивство слабких" (Північні Тіньові Землі)
+  public murderOfWeakEffect: {
+    cardId: string;
+    clan: string;
+    step: 'select_card_from_hand' | 'remove_enemy_tents';
+    removedCount: number; // Скільки ворожих наметів уже прибрано (максимум 2)
+    timer: number;
+    timerInterval?: any;
+  } | null = null;
+
   // Активні картки регіонів, задіяні в поточній партії (по 1 на кожен регіон)
   private activeGameRegionCards: RegionCard[] = [];
 
@@ -1293,7 +1303,6 @@ export class RegionCardService {
     this.cancelResurrectionEffect();
   }
 
-  /* КАРТА РЕГІОНУ "ВЛАДА ЖАХУ" */
   /* Карта регіону: ВЛАДА ЖАХУ (Південні Тіньові Землі) */
   startTerrorRuleEffect(cardId: string, clan: string, onTimeout: () => void): boolean {
     this.terrorRuleEffect = {
@@ -1425,6 +1434,107 @@ export class RegionCardService {
     province.hasGlory ||
     province.hasHarbor ||
     province.hasBushido
-  );
-}
+    );
+  }
+
+  /* Карта регіону Вбивство слабких (Північні Тіньові Землі) */
+  startMurderOfWeakEffect(cardId: string, clan: string, onTimeout: () => void): boolean {
+    this.murderOfWeakEffect = {
+      cardId: cardId,
+      clan: clan,
+      step: 'select_card_from_hand',
+      removedCount: 0,
+      timer: 10
+    };
+
+    if (this.murderOfWeakEffect.timerInterval) {
+      clearInterval(this.murderOfWeakEffect.timerInterval);
+    }
+
+    this.murderOfWeakEffect.timerInterval = setInterval(() => {
+      this.ngZone.run(() => {
+        if (this.murderOfWeakEffect && this.murderOfWeakEffect.timer > 0) {
+          this.murderOfWeakEffect.timer--;
+        } else {
+          if (this.murderOfWeakEffect) {
+            this.useRegionCard(this.murderOfWeakEffect.cardId, this.murderOfWeakEffect.clan);
+          }
+          this.cancelMurderOfWeakEffect();
+          onTimeout();
+        }
+        this.closeRokirovkaModalSubject.next();
+      });
+    }, 1000);
+
+    return true;
+  }
+
+  cancelMurderOfWeakEffect(): void {
+    if (this.murderOfWeakEffect && this.murderOfWeakEffect.timerInterval) {
+      clearInterval(this.murderOfWeakEffect.timerInterval);
+    }
+    this.murderOfWeakEffect = null;
+    this.closeRokirovkaModalSubject.next();
+  }
+
+  /**
+   * Крок 1: Скидаємо карту битви з активу (ширми) у скид і блокуємо розміщення атак на цей хід
+   */
+  discardCardForMurderOfWeak(tokenToDiscard: any, gameState: any): void {
+    if (!this.murderOfWeakEffect) return;
+
+    const clan = this.murderOfWeakEffect.clan;
+    const player = gameState.players[clan];
+    if (!player) return;
+
+    // 1. Видаляємо карту з активної руки (ширми)
+    player.activeHandTokens = player.activeHandTokens.filter((t: any) => t.id !== tokenToDiscard.id);
+
+    // 2. Додаємо її у скид
+    if (!player.discardPile) player.discardPile = [];
+    player.discardPile.push(tokenToDiscard);
+
+    // 3. Встановлюємо прапорець заборони розміщення карт атаки в цьому ході
+    player.cantPlaceAttackCardsThisTurn = true;
+
+    // Переходимо до кроку вибору 2 ворожих наметів на мапі
+    this.murderOfWeakEffect.step = 'remove_enemy_tents';
+    gameState.roundLog.push(`🗡️ Вбивство слабких: клан ${clan} скинув картку битви. Карты атаки заблоковано в цьому ході. Оберіть до 2 ворожих наметів на мапі для знищення.`);
+
+    this.closeRokirovkaModalSubject.next();
+  }
+
+  /**
+   * Крок 2: Знищення ворожого намету на провінції
+   */
+  removeEnemyTentForMurderOfWeak(provinceId: string, gameState: any): void {
+    if (!this.murderOfWeakEffect || this.murderOfWeakEffect.step !== 'remove_enemy_tents') return;
+
+    const province = gameState.provinces[provinceId];
+    if (!province || !province.placedTokens) return;
+
+    // Знаходимо ворожий намет (не нашого клану)
+    const enemyTokenIndex = province.placedTokens.findIndex((t: any) => t.clan !== this.murderOfWeakEffect?.clan);
+    if (enemyTokenIndex === -1) return;
+
+    const [removedToken] = province.placedTokens.splice(enemyTokenIndex, 1);
+    
+    // Відправляємо ворожий намет у скид його власника
+    const ownerPlayer = gameState.players[removedToken.clan];
+    if (ownerPlayer) {
+      if (!ownerPlayer.discardPile) ownerPlayer.discardPile = [];
+      ownerPlayer.discardPile.push(removedToken);
+    }
+
+    this.murderOfWeakEffect.removedCount++;
+    gameState.roundLog.push(`🗡️ Вбивство слабких: знищено ворожий намет клану ${removedToken.clan} у провінції ${province.name} (${this.murderOfWeakEffect.removedCount}/2).`);
+
+    // Якщо прибрали 2 намети або на мапі більше немає доступних ворожих наметів — завершуємо ефект
+    if (this.murderOfWeakEffect.removedCount >= 2) {
+      this.useRegionCard(this.murderOfWeakEffect.cardId, this.murderOfWeakEffect.clan);
+      this.cancelMurderOfWeakEffect();
+    }
+
+    this.closeRokirovkaModalSubject.next();
+  }
 }

@@ -58,6 +58,9 @@ export class PlayerScreen implements OnInit, DoCheck, OnDestroy {
     if (this.reinforcementTimerInterval) clearInterval(this.reinforcementTimerInterval);
   }
 
+  get isMurderOfWeakSelectionActive(): boolean {
+    return !!this.regionCardService.murderOfWeakEffect && this.regionCardService.murderOfWeakEffect.step === 'select_card_from_hand';
+  }
   
   // Геттер, щоб перевірити, чи зараз активний другий крок Підкріплення
   get hasReinforcementCardsInHand(): boolean {
@@ -275,6 +278,17 @@ isSelected(token: BattleToken): boolean {
   // (можеш також тримати цей стан у gameStateService, якщо робиш це глобально)
   
   selectCard(token: BattleToken): void {
+    if (this.regionCardService.murderOfWeakEffect && this.regionCardService.murderOfWeakEffect.step === 'select_card_from_hand') {
+      const gameState = this.gameStateService.getGameState();
+      if (gameState) {
+        this.regionCardService.discardCardForMurderOfWeak(token, gameState);
+        this.gameStateService.saveGame();
+        this.updateScreenData();
+        this.isScreenOpen = false;
+        this.cdr.detectChanges();
+        return; // Перериваємо стандартну логіку кліку
+      }
+    }
     // 0. ДРАКОН МАЄ ПРІОРИТЕТ
     if (this.isDragonSelectionActive) {
       this.onDragonCardClick(token);

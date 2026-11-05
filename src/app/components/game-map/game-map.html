@@ -192,6 +192,7 @@
             || isCulturalExchangeTarget(prov)
             || isResurrectionTarget(prov)
             || isTerrorRuleTarget(prov)
+            || isMurderOfWeakTarget(prov)
             "
             
           >
@@ -634,5 +635,32 @@
         Завершити вибір (Готово)
       </button>
     </div>
+  </div>
+</div>
+<!-- БАНЕР ТАЙМЕРА ДЛЯ ЕФЕКТУ "ВБИВСТВО СЛАБКИХ" -->
+<div class="rokirovka-fullscreen-overlay" *ngIf="regionCardService.murderOfWeakEffect">
+  <div class="rokirovka-modal bamboo-mat harbor-modal-box">
+    <div class="rokirovka-header">
+      <div class="rokirovka-title-box">
+        <span class="rokirovka-icon">🗡️</span>
+        <h3 class="mat-title-text">
+          {{ regionCardService.murderOfWeakEffect.step === 'select_card_from_hand' ? 'ВБИВСТВО СЛАБКИХ: ОБЕРІТЬ КАРТУ БИТВИ ДЛЯ СКИДУ' : 'ВБИВСТВО СЛАБКИХ: ВИБЕРІТЬ ВОРОЖИЙ НАМЕТ (' + regionCardService.murderOfWeakEffect.removedCount + '/2)' }}
+        </h3>
+      </div>
+      <div class="rokirovka-header-right">
+        <div class="rokirovka-timer" [class.danger]="regionCardService.murderOfWeakEffect.timer <= 3">
+          ⏱️ 0:{{ regionCardService.murderOfWeakEffect.timer < 10 ? '0' + regionCardService.murderOfWeakEffect.timer : regionCardService.murderOfWeakEffect.timer }}
+        </div>
+        <button class="rokirovka-cancel-btn" (click)="regionCardService.cancelMurderOfWeakEffect()">Відмінити</button>
+      </div>
+    </div>
+    
+    <p class="rokirovka-instruction" *ngIf="regionCardService.murderOfWeakEffect.step === 'select_card_from_hand'">
+      Оберіть картку у вашій ігровій ширмі, щоб скинути її. Після цього розміщення атак буде заблоковано на цей хід.
+    </p>
+
+    <p class="rokirovka-instruction" *ngIf="regionCardService.murderOfWeakEffect.step === 'remove_enemy_tents'">
+      Натискайте на підсвічені провінції з ворожими наметами, щоб відправити їх у скид (до 2 наметів).
+    </p>
   </div>
 </div>

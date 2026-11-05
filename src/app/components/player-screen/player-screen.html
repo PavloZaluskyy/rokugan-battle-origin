@@ -89,6 +89,11 @@
   <!-- Ігровий стіл (Бамбуковий килимок / Дерев'яна дошка) -->
   <div class="bamboo-mat">
     <div class="mat-title">ВІЙСЬКОВИЙ АКТИВ НА ПОТОЧНИЙ РАУНД (ЗА ШИРМОЮ)</div>
+    <!-- Банер для ефекту "Вбивство слабких" у ширмі -->
+    <div class="dragon-screen-prompt" *ngIf="isMurderOfWeakSelectionActive">
+      <h3>ВБИВСТВО СЛАБКИХ: ОБЕРІТЬ КАРТУ БИТВИ ДЛЯ СКИДУ</h3>
+      <p class="dragon-banner-timer">Виберіть картку в ширмі, щоб відправити її у скид. Атаки будуть заблоковані на цей хід.</p>
+    </div>
     <!-- Банер таймера Рокіровки -->
     <div class="dragon-screen-prompt" *ngIf="isRokirovkaSelectionActive">
       <h3>ОБЕРІТЬ КАРТУ ДЛЯ СКИДУ</h3>

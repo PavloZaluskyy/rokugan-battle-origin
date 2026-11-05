@@ -344,6 +344,11 @@ export class GameStateService {
 
     const province = this.state.provinces[provinceId];
     const player = this.state.players[playerClan as keyof GameState['players']];
+    if (player && (player as any).cantPlaceAttackCardsThisTurn) {
+      console.warn('Розміщення карт атаки заблоковано ефектом «Вбивство слабких» у цьому ході!');
+      return false; 
+    }
+
 
     if (!province || !player) return false;
     if (!this.isProvinceValidTarget(province, playerClan)) return false;
@@ -484,6 +489,7 @@ export class GameStateService {
     }
 
     Object.values(this.state.players).forEach(p => {
+      (p as any).cantPlaceAttackCardsThisTurn = false;
       p.isSkillUsedThisRound = false;
       delete (p as any)._crabBonusApplied;
     });

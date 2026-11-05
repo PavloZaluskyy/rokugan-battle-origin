@@ -480,6 +480,11 @@ onTouchStart(event: TouchEvent) {
       this.onTerrorRuleProvinceClick(province);
       return;
     }
+    // 13. ПЕРЕВІРКА ЕФЕКТУ "ВБИВСТВО СЛАБКИХ"
+    if (this.regionCardService.murderOfWeakEffect && this.regionCardService.murderOfWeakEffect.step === 'remove_enemy_tents') {
+      this.onMurderOfWeakProvinceClick(province);
+      return;
+    }
   }
 
   
@@ -838,8 +843,13 @@ onTouchStart(event: TouchEvent) {
       const success = this.regionCardService.startResurrectionEffect(card.id, this.activePlayerClan, () => {});
     } else if (card.title.includes('Влада жаху')) {
       const success = this.regionCardService.startTerrorRuleEffect(card.id, this.activePlayerClan, () => {});
+    } else if (card.title === 'Вбивство слабких') {
+     const success = this.regionCardService.startMurderOfWeakEffect(card.id, this.activePlayerClan, () => {});
       if (success) {
-        this.cdr.detectChanges();        // Примусово оновлюємо інтерфейс
+        if (this.activePlayerClan !== 'Neutral') {
+          (this.gameStateService as any).openPlayerScreenTrigger = true;
+        }
+        this.cdr.detectChanges();        
       }
     } else {
       // alert(`Ефект картки "${card.title}" буде реалізовано на наступному етапі!`);
@@ -1494,6 +1504,29 @@ onTouchStart(event: TouchEvent) {
       gameState.roundLog.push(`👹 Влада жаху: гравець завершив прибирання жетонів (${effect.removedCount} з 2).`);
     }
     this.regionCardService.cancelTerrorRuleEffect();
+    this.loadGameState();
+    this.cdr.detectChanges();
+  }
+  /* КАРТА РЕГІОНУ "ВБИВСТВО СЛАБКИХ" */
+  isMurderOfWeakTarget(province: Province): boolean {
+    const effect = this.regionCardService.murderOfWeakEffect;
+    if (!effect || effect.step !== 'remove_enemy_tents') return false;
+    
+    // Провінція повинна містити хоча б один ворожий намет (не нашого клану)
+    return (province.placedTokens || []).some((t: any) => t.clan !== this.activePlayerClan);
+  }
+
+  onMurderOfWeakProvinceClick(province: Province): void {
+    const effect = this.regionCardService.murderOfWeakEffect;
+    if (!effect || effect.step !== 'remove_enemy_tents') return;
+    
+    if (!this.isMurderOfWeakTarget(province)) return;
+
+    const gameState = this.gameStateService.getGameState();
+    if (!gameState) return;
+
+    this.regionCardService.removeEnemyTentForMurderOfWeak(province.id, gameState);
+    this.gameStateService.saveGame();
     this.loadGameState();
     this.cdr.detectChanges();
   }
