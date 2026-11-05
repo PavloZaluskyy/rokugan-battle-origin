@@ -490,6 +490,11 @@ onTouchStart(event: TouchEvent) {
       this.onDevilContractProvinceClick(province);
       return;
     }
+    // 15. ПЕРЕВІРКА ЕФЕКТУ "ПІРАТСЬКІ НАБІГИ"
+    if (this.regionCardService.pirateRaidsEffect) {
+      this.onPirateRaidsProvinceClick(province);
+      return;
+    }
   }
   
 
@@ -856,6 +861,8 @@ onTouchStart(event: TouchEvent) {
         }
     } else if (card.title === 'Контракт з дияволом') {
       const success = this.regionCardService.startDevilContractEffect(card.id, this.activePlayerClan, () => {});
+    } else if (card.title === 'Піратські набіги') {
+      const success = this.regionCardService.startPirateRaidsEffect(card.id, this.activePlayerClan, () => {});
       if (success) { 
         this.cdr.detectChanges();        
       }
@@ -1587,6 +1594,40 @@ onTouchStart(event: TouchEvent) {
           this.regionCardService.destroySelectedRevealedTent(province.id, tokenIndex, gameState);
         }
       }
+    }
+
+    this.gameStateService.saveGame();
+    this.loadGameState();
+    this.cdr.detectChanges();
+  }
+
+  /* КАРТА РЕГІОНУ "ПІРАТСЬКІ НАБІГИ" */
+  isPirateRaidsTarget(province: Province): boolean {
+    const effect = this.regionCardService.pirateRaidsEffect;
+    if (!effect) return false;
+
+    if (effect.step === 'select_target_province') {
+      // Крок 1: Будь-яка провінція, яка ще не має випаленої землі
+      return !province.hasScorchedEarth;
+    } else if (effect.step === 'select_province_for_bonus') {
+      // Крок 2: Тільки власні провінції (і не можна вибрати ту саму, що щойно спалили)
+      return province.controllingClan === this.activePlayerClan && province.id !== effect.scorchedProvinceId;
+    }
+    return false;
+  }
+
+  onPirateRaidsProvinceClick(province: Province): void {
+    const effect = this.regionCardService.pirateRaidsEffect;
+    if (!effect) return;
+    const gameState = this.gameStateService.getGameState();
+    if (!gameState) return;
+
+    if (effect.step === 'select_target_province') {
+      if (province.hasScorchedEarth) return;
+      this.regionCardService.executePirateRaidsScorch(province.id, gameState);
+    } else if (effect.step === 'select_province_for_bonus') {
+      if (province.controllingClan !== this.activePlayerClan || province.id === effect.scorchedProvinceId) return;
+      this.regionCardService.executePirateRaidsBonus(province.id, gameState);
     }
 
     this.gameStateService.saveGame();

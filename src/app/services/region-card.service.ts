@@ -228,6 +228,16 @@ export class RegionCardService {
     timerInterval?: any;
   } | null = null;
 
+  // Стан виконання карти регіону "Піратські набіги" (Острови Шовкових Шляхів)
+  public pirateRaidsEffect: {
+    cardId: string;
+    clan: string;
+    step: 'select_target_province' | 'select_province_for_bonus';
+    scorchedProvinceId?: string; // Провінція, яку спалили
+    timer: number;
+    timerInterval?: any;
+  } | null = null;
+
   // Активні картки регіонів, задіяні в поточній партії (по 1 на кожен регіон)
   private activeGameRegionCards: RegionCard[] = [];
 
@@ -1691,5 +1701,106 @@ export class RegionCardService {
     // Завершуємо роботу карти
     this.useRegionCard(this.devilContractEffect.cardId, this.devilContractEffect.clan);
     this.cancelDevilContractEffect();
+  }
+
+  /* Піратські набіги  Острови Шовкових Шляхів */
+  startPirateRaidsEffect(cardId: string, clan: string, onTimeout: () => void): boolean {
+    this.pirateRaidsEffect = {
+      cardId: cardId,
+      clan: clan,
+      step: 'select_target_province',
+      timer: 10
+    };
+
+    if (this.pirateRaidsEffect.timerInterval) {
+      clearInterval(this.pirateRaidsEffect.timerInterval);
+    }
+
+    this.pirateRaidsEffect.timerInterval = setInterval(() => {
+      this.ngZone.run(() => {
+        if (this.pirateRaidsEffect && this.pirateRaidsEffect.timer > 0) {
+          this.pirateRaidsEffect.timer--;
+        } else {
+          if (this.pirateRaidsEffect) {
+            this.useRegionCard(this.pirateRaidsEffect.cardId, this.pirateRaidsEffect.clan);
+          }
+          this.cancelPirateRaidsEffect();
+          onTimeout();
+        }
+        this.closeRokirovkaModalSubject.next();
+      });
+    }, 1000);
+
+    return true;
+  }
+
+  cancelPirateRaidsEffect(): void {
+    if (this.pirateRaidsEffect && this.pirateRaidsEffect.timerInterval) {
+      clearInterval(this.pirateRaidsEffect.timerInterval);
+    }
+    this.pirateRaidsEffect = null;
+    this.closeRokirovkaModalSubject.next();
+  }
+
+  /**
+   * Крок 1: Спалюємо обрану провінцію (ставить жетон випаленої землі та робить нейтральною)
+   */
+  executePirateRaidsScorch(provinceId: string, gameState: any): void {
+    if (!this.pirateRaidsEffect || this.pirateRaidsEffect.step !== 'select_target_province') return;
+
+    const province = gameState.provinces[provinceId];
+    if (!province) return;
+
+    const clan = this.pirateRaidsEffect.clan;
+    const wasPlayerOwned = (province.controllingClan === clan);
+
+    // Перетворюємо провінцію на випалену землю
+    province.hasScorchedEarth = true;
+    province.controllingClan = 'Neutral';
+    province.controlTokensFaceUp = 0;
+    province.placedTokens = [];
+    province.hasPeaceToken = false;
+    province.hasShrine = false;
+    province.hasGlory = false;
+
+    gameState.roundLog.push(`🏴‍☠️ Піратські набіги: провінцію ${province.name} спалено (жетон випаленої землі).`);
+
+    // Якщо провінція належала гравцю, переводимо ефект на крок вибору іншої власної провінції для +3 контролю
+    if (wasPlayerOwned) {
+      this.pirateRaidsEffect.step = 'select_province_for_bonus';
+      this.pirateRaidsEffect.scorchedProvinceId = provinceId;
+      gameState.roundLog.push(`🏴‍☠️ Оскільки провінція була вашою, оберіть іншу свою провінцію для отримання +3 жетонів контролю.`);
+    } else {
+      // Якщо чужа/нейтральна — ефект одразу завершено
+      this.useRegionCard(this.pirateRaidsEffect.cardId, clan);
+      this.cancelPirateRaidsEffect();
+    }
+
+    this.closeRokirovkaModalSubject.next();
+  }
+
+  /**
+   * Крок 2: Додавання +3 жетонів контролю в іншу власну провінцію
+   */
+  executePirateRaidsBonus(provinceId: string, gameState: any): void {
+    if (!this.pirateRaidsEffect || this.pirateRaidsEffect.step !== 'select_province_for_bonus') return;
+
+    const province = gameState.provinces[provinceId];
+    if (!province || province.controllingClan !== this.pirateRaidsEffect.clan) return;
+
+    const clan = this.pirateRaidsEffect.clan;
+    
+    // Клан Краба отримує +2 захисту за кожен жетон контролю, інші клани — +1
+    const defenseBonusPerToken = (clan === 'Crab') ? 2 : 1;
+    const tokensToAdd = 3; 
+    const totalDefenseIncrease = tokensToAdd * defenseBonusPerToken; // Для Краба це буде 3 * 2 = 6
+
+    province.controlTokensFaceUp = (province.controlTokensFaceUp || 0) + totalDefenseIncrease;
+
+    gameState.roundLog.push(`🏴‍☠️ Піратські набіги: у провінцію ${province.name} додано 3 жетони контролю (+${totalDefenseIncrease} до захисту для клану ${clan}).`);
+
+    // Списуємо картку регіону та завершуємо ефект
+    this.useRegionCard(this.pirateRaidsEffect.cardId, clan);
+    this.cancelPirateRaidsEffect();
   }
 }

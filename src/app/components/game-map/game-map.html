@@ -194,6 +194,7 @@
             || isTerrorRuleTarget(prov)
             || isMurderOfWeakTarget(prov)
             || isDevilContractTarget(prov)  
+            || isPirateRaidsTarget(prov)
             "
             
           >
@@ -698,6 +699,33 @@
 
     <p class="rokirovka-instruction" *ngIf="regionCardService.devilContractEffect.step === 'select_tent_to_destroy'">
       Намети відкрито! Натисніть на один із розкритих ворожих наметів, щоб відправити його у скид.
+    </p>
+  </div>
+</div>
+<!-- БАНЕР ТАЙМЕРА ДЛЯ ЕФЕКТУ "ПІРАТСЬКІ НАБІГИ" -->
+<div class="rokirovka-fullscreen-overlay" *ngIf="regionCardService.pirateRaidsEffect">
+  <div class="rokirovka-modal bamboo-mat harbor-modal-box">
+    <div class="rokirovka-header">
+      <div class="rokirovka-title-box">
+        <span class="rokirovka-icon">🏴‍☠️</span>
+        <h3 class="mat-title-text">
+          {{ regionCardService.pirateRaidsEffect.step === 'select_target_province' ? 'ПІРАТСЬКІ НАБІГИ: ОБЕРІТЬ ПРОВІНЦІЮ ДЛЯ СПАЛЕННЯ' : 'ПІРАТСЬКІ НАБІГИ: ОБЕРІТЬ ПРОВІНЦІЮ ДЛЯ +3 КОНТРОЛЮ' }}
+        </h3>
+      </div>
+      <div class="rokirovka-header-right">
+        <div class="rokirovka-timer" [class.danger]="regionCardService.pirateRaidsEffect.timer <= 3">
+          ⏱️ 0:{{ regionCardService.pirateRaidsEffect.timer < 10 ? '0' + regionCardService.pirateRaidsEffect.timer : regionCardService.pirateRaidsEffect.timer }}
+        </div>
+        <button class="rokirovka-cancel-btn" (click)="regionCardService.cancelPirateRaidsEffect()">Відмінити</button>
+      </div>
+    </div>
+    
+    <p class="rokirovka-instruction" *ngIf="regionCardService.pirateRaidsEffect.step === 'select_target_province'">
+      Оберіть будь-яку провінцію на мапі, щоб перетворити її на випалену землю.
+    </p>
+
+    <p class="rokirovka-instruction" *ngIf="regionCardService.pirateRaidsEffect.step === 'select_province_for_bonus'">
+      Оскільки спалена провінція була вашою, виберіть іншу свою провінцію, щоб отримати +3 жетони контролю.
     </p>
   </div>
 </div>
