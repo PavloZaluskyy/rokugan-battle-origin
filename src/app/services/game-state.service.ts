@@ -914,7 +914,7 @@ export class GameStateService {
       clan: 'Lion',
       strength: 3,
       token: { id: 'test-tok-lion', type: 'Army', strength: 3, clan: 'Lion' },
-      isFaceUp: true
+      isFaceUp: false // ⛺ Замасковано під намет (закритою стороною)
     });
     this.saveGame();
   }
@@ -931,7 +931,7 @@ export class GameStateService {
       clan: 'Crane',
       strength: 3,
       token: { id: 'test-tok-crane', type: 'Army', strength: 3, clan: 'Crane' },
-      isFaceUp: true
+      isFaceUp: false // ⛺ Замасковано під намет (закритою стороною)
     });
     this.saveGame();
   }

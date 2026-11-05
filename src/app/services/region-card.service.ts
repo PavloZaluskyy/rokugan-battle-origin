@@ -218,6 +218,16 @@ export class RegionCardService {
     timerInterval?: any;
   } | null = null;
 
+  public devilContractEffect: {
+    cardId: string;
+    clan: string;
+    step: 'select_province_for_sacrifice' | 'select_4_enemy_tents' | 'select_tent_to_destroy';
+    selectedTentsToReveal: Array<{ provinceId: string; tokenIndex: number; token: any }>; // Зібрані гравцем 4 намети
+    revealedTents: Array<{ provinceId: string; tokenIndex: number; token: any }>; // Відкриті намети для фінального вибору
+    timer: number;
+    timerInterval?: any;
+  } | null = null;
+
   // Активні картки регіонів, задіяні в поточній партії (по 1 на кожен регіон)
   private activeGameRegionCards: RegionCard[] = [];
 
@@ -1536,5 +1546,150 @@ export class RegionCardService {
     }
 
     this.closeRokirovkaModalSubject.next();
+  }
+
+  /*Карта регіону Договір з дияволом */
+ startDevilContractEffect(cardId: string, clan: string, onTimeout: () => void): boolean {
+    this.devilContractEffect = {
+      cardId: cardId,
+      clan: clan,
+      step: 'select_province_for_sacrifice',
+      selectedTentsToReveal: [],
+      revealedTents: [],
+      timer: 15
+    };
+
+    if (this.devilContractEffect.timerInterval) {
+      clearInterval(this.devilContractEffect.timerInterval);
+    }
+
+    this.devilContractEffect.timerInterval = setInterval(() => {
+      this.ngZone.run(() => {
+        if (this.devilContractEffect && this.devilContractEffect.timer > 0) {
+          this.devilContractEffect.timer--;
+        } else {
+          if (this.devilContractEffect) {
+            this.useRegionCard(this.devilContractEffect.cardId, this.devilContractEffect.clan);
+          }
+          this.cancelDevilContractEffect();
+          onTimeout();
+        }
+        this.closeRokirovkaModalSubject.next();
+      });
+    }, 1000);
+
+    return true;
+  }
+
+  cancelDevilContractEffect(): void {
+    if (this.devilContractEffect && this.devilContractEffect.timerInterval) {
+      clearInterval(this.devilContractEffect.timerInterval);
+    }
+    this.devilContractEffect = null;
+    this.closeRokirovkaModalSubject.next();
+  }
+
+  /**
+   * Крок 1: Жертвуємо жетон контролю з власної провінції (не тіньові землі)
+   */
+  sacrificeTokenForDevilContract(provinceId: string, gameState: any): void {
+    if (!this.devilContractEffect || this.devilContractEffect.step !== 'select_province_for_sacrifice') return;
+
+    const province = gameState.provinces[provinceId];
+    if (!province) return;
+
+    const sacrificeCost = province.controllingClan === 'Crab' ? 2 : 1;
+    if ((province.controlTokensFaceUp || 0) < sacrificeCost) return;
+
+    // Знімаємо жетон контролю
+    province.controlTokensFaceUp -= sacrificeCost;
+    if (province.controlTokensFaceUp <= 0) {
+      province.controlTokensFaceUp = 0;
+      province.controllingClan = 'Neutral';
+      if (!province.isCapital) {
+        province.baseDefense = 0;
+      }
+    }
+
+    // Переходимо до кроку ручного вибору 4 ворожих наметів
+    this.devilContractEffect.step = 'select_4_enemy_tents';
+    gameState.roundLog.push(`📜 Контракт з дияволом: з провінції ${province.name} знято жетон контролю. Тепер виберіть 4 ворожі намети на мапі.`);
+    this.closeRokirovkaModalSubject.next();
+  }
+
+  /**
+   * Крок 2: Гравець клікає на ворожі намети по одному (до 4 штук)
+   */
+  selectTentToRevealForDevilContract(provinceId: string, tokenIndex: number, gameState: any): void {
+    if (!this.devilContractEffect || this.devilContractEffect.step !== 'select_4_enemy_tents') return;
+
+    const province = gameState.provinces[provinceId];
+    if (!province || !province.placedTokens) return;
+
+    const token = province.placedTokens[tokenIndex];
+    if (!token || token.clan === this.devilContractEffect.clan) return;
+
+    // Перевіряємо, чи цей намет ще не був обраний
+    const alreadySelected = this.devilContractEffect.selectedTentsToReveal.some(
+      t => t.provinceId === provinceId && t.tokenIndex === tokenIndex
+    );
+    if (alreadySelected) return;
+
+    // Додаємо до списку вибраних для розкриття
+    this.devilContractEffect.selectedTentsToReveal.push({
+      provinceId,
+      tokenIndex,
+      token
+    });
+
+    // Якщо набрали рівно 4 намети — відкриваємо їх і переходимо до фінального вибору
+    if (this.devilContractEffect.selectedTentsToReveal.length === 4) {
+      this.devilContractEffect.selectedTentsToReveal.forEach(item => {
+        const prov = gameState.provinces[item.provinceId];
+        if (prov && prov.placedTokens[item.tokenIndex]) {
+          prov.placedTokens[item.tokenIndex].isFaceUp = true;
+        }
+      });
+
+      this.devilContractEffect.revealedTents = [...this.devilContractEffect.selectedTentsToReveal];
+      this.devilContractEffect.step = 'select_tent_to_destroy';
+      gameState.roundLog.push(`📜 Контракт з дияволом: обрано та відкрито 4 ворожі намети. Оберіть один для знищення.`);
+    }
+
+    this.closeRokirovkaModalSubject.next();
+  }
+
+  /**
+   * Крок 3: Гравець обирає один із 4 розкритих наметів для відправки у скид
+   */
+  destroySelectedRevealedTent(provinceId: string, tokenIndex: number, gameState: any): void {
+    if (!this.devilContractEffect || this.devilContractEffect.step !== 'select_tent_to_destroy') return;
+
+    // Перевіряємо, чи клікнутий намет входить до числа 4 розкритих
+    const targetItem = this.devilContractEffect.revealedTents.find(
+      t => t.provinceId === provinceId && t.tokenIndex === tokenIndex
+    );
+    if (!targetItem) return;
+
+    const province = gameState.provinces[provinceId];
+    if (!province || !province.placedTokens) return;
+
+    const tokenToRemove = province.placedTokens[tokenIndex];
+    if (!tokenToRemove) return;
+
+    // Видаляємо загін з провінції та відправляємо у скид власника
+    province.placedTokens.splice(tokenIndex, 1);
+
+    const ownerPlayer = gameState.players[tokenToRemove.clan];
+    if (ownerPlayer) {
+      if (!ownerPlayer.discardPile) ownerPlayer.discardPile = [];
+      ownerPlayer.discardPile.push(tokenToRemove);
+    }
+
+    gameState.roundLog.push(`📜 Контракт з дияволом: знищено загін клану ${tokenToRemove.clan} у провінції ${province.name} та відправлено у скид.`);
+
+    // Завершуємо роботу карти
+    this.useRegionCard(this.devilContractEffect.cardId, this.devilContractEffect.clan);
+    this.cancelDevilContractEffect();
   }
 }

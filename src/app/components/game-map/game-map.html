@@ -193,6 +193,7 @@
             || isResurrectionTarget(prov)
             || isTerrorRuleTarget(prov)
             || isMurderOfWeakTarget(prov)
+            || isDevilContractTarget(prov)  
             "
             
           >
@@ -249,6 +250,7 @@
       *ngFor="let pt of prov.placedTokens" 
       class="army-unit-sprite"
       [ngClass]="[pt.clan.toLowerCase(), pt.isFaceUp ? pt.token.type.toLowerCase() : 'hidden-camp']"
+      [style.cursor]="regionCardService.devilContractEffect  ? 'pointer' : 'default'"
     >
       <div class="sashimono-flag"></div>
       
@@ -661,6 +663,41 @@
 
     <p class="rokirovka-instruction" *ngIf="regionCardService.murderOfWeakEffect.step === 'remove_enemy_tents'">
       Натискайте на підсвічені провінції з ворожими наметами, щоб відправити їх у скид (до 2 наметів).
+    </p>
+  </div>
+</div>
+<!-- БАНЕР ТАЙМЕРА ДЛЯ ЕФЕКТУ "КОНТРАКТ З ДИЯВОЛОМ" -->
+<div class="rokirovka-fullscreen-overlay" *ngIf="regionCardService.devilContractEffect">
+  <div class="rokirovka-modal bamboo-mat harbor-modal-box">
+    <div class="rokirovka-header">
+      <div class="rokirovka-title-box">
+        <span class="rokirovka-icon">📜</span>
+        <h3 class="mat-title-text">
+          {{ 
+            regionCardService.devilContractEffect.step === 'select_province_for_sacrifice' ? 'КОНТРАКТ З ДИЯВОЛОМ: ОБЕРІТЬ СВІЮ ПРОВІНЦІЮ' :
+            regionCardService.devilContractEffect.step === 'select_4_enemy_tents' ? 'КОНТРАКТ З ДИЯВОЛОМ: ОБЕРІТЬ 4 ВОРОЖІ НАМЕТИ (' + regionCardService.devilContractEffect.selectedTentsToReveal.length + '/4)' :
+            'КОНТРАКТ З ДИЯВОЛОМ: ВИБЕРІТЬ ОДИН НАМЕТ ДЛЯ ЗНИЩЕННЯ'
+          }}
+        </h3>
+      </div>
+      <div class="rokirovka-header-right">
+        <div class="rokirovka-timer" [class.danger]="regionCardService.devilContractEffect.timer <= 3">
+          ⏱️ 0:{{ regionCardService.devilContractEffect.timer < 10 ? '0' + regionCardService.devilContractEffect.timer : regionCardService.devilContractEffect.timer }}
+        </div>
+        <button class="rokirovka-cancel-btn" (click)="regionCardService.cancelDevilContractEffect()">Відмінити</button>
+      </div>
+    </div>
+    
+    <p class="rokirovka-instruction" *ngIf="regionCardService.devilContractEffect.step === 'select_province_for_sacrifice'">
+      Оберіть власну провінцію (<strong>крім тіньових земель</strong>), щоб зняти з неї жетон контролю.
+    </p>
+
+    <p class="rokirovka-instruction" *ngIf="regionCardService.devilContractEffect.step === 'select_4_enemy_tents'">
+      По черзі натисніть на 4 ворожі намети на мапі, щоб підготувати їх до розкриття.
+    </p>
+
+    <p class="rokirovka-instruction" *ngIf="regionCardService.devilContractEffect.step === 'select_tent_to_destroy'">
+      Намети відкрито! Натисніть на один із розкритих ворожих наметів, щоб відправити його у скид.
     </p>
   </div>
 </div>

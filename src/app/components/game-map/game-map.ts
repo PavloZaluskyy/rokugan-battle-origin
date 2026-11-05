@@ -485,7 +485,13 @@ onTouchStart(event: TouchEvent) {
       this.onMurderOfWeakProvinceClick(province);
       return;
     }
+    // 14. ПЕРЕВІРКА ЕФЕКТУ "КОНТРАКТ З ДИЯВОЛОМ"
+    if (this.regionCardService.devilContractEffect) {
+      this.onDevilContractProvinceClick(province);
+      return;
+    }
   }
+  
 
   
  async executeBattleCinematicSequence() {
@@ -845,10 +851,12 @@ onTouchStart(event: TouchEvent) {
       const success = this.regionCardService.startTerrorRuleEffect(card.id, this.activePlayerClan, () => {});
     } else if (card.title === 'Вбивство слабких') {
      const success = this.regionCardService.startMurderOfWeakEffect(card.id, this.activePlayerClan, () => {});
-      if (success) {
-        if (this.activePlayerClan !== 'Neutral') {
+     if (this.activePlayerClan !== 'Neutral') {
           (this.gameStateService as any).openPlayerScreenTrigger = true;
         }
+    } else if (card.title === 'Контракт з дияволом') {
+      const success = this.regionCardService.startDevilContractEffect(card.id, this.activePlayerClan, () => {});
+      if (success) { 
         this.cdr.detectChanges();        
       }
     } else {
@@ -1526,6 +1534,61 @@ onTouchStart(event: TouchEvent) {
     if (!gameState) return;
 
     this.regionCardService.removeEnemyTentForMurderOfWeak(province.id, gameState);
+    this.gameStateService.saveGame();
+    this.loadGameState();
+    this.cdr.detectChanges();
+  }
+
+  /* КАРТА РЕГІОНУ "КОНТРАКТ З ДИЯВОЛОМ" */
+  isDevilContractTarget(province: Province): boolean {
+    const effect = this.regionCardService.devilContractEffect;
+    if (!effect) return false;
+
+    if (effect.step === 'select_province_for_sacrifice') {
+      // Крок 1: Власні провінції (крім тіньових земель) з жетонами контролю
+      const isShadowlands = province.regionId.toLowerCase().includes('shadowlands') || province.regionId.includes('Тіньових Земель');
+      return !isShadowlands && province.controllingClan === this.activePlayerClan && (province.controlTokensFaceUp || 0) > 0;
+    } else if (effect.step === 'select_4_enemy_tents') {
+      // Крок 2: Провінції, де є хоча б один ворожий намет (не наш)
+      return (province.placedTokens || []).some((t: any) => t.clan !== this.activePlayerClan);
+    } else if (effect.step === 'select_tent_to_destroy') {
+      // Крок 3: Тільки ті провінції, де знаходяться 4 розкриті для вибору намети
+      return (effect.revealedTents || []).some(t => t.provinceId === province.id);
+    }
+    return false;
+  }
+
+  onDevilContractProvinceClick(province: Province, event?: MouseEvent): void {
+    const effect = this.regionCardService.devilContractEffect;
+    if (!effect) return;
+    const gameState = this.gameStateService.getGameState();
+    if (!gameState) return;
+
+    if (effect.step === 'select_province_for_sacrifice') {
+      const isShadowlands = province.regionId.toLowerCase().includes('shadowlands') || province.regionId.includes('Тіньових Земель');
+      if (isShadowlands || province.controllingClan !== this.activePlayerClan || (province.controlTokensFaceUp || 0) <= 0) return;
+      
+      this.regionCardService.sacrificeTokenForDevilContract(province.id, gameState);
+    } else if (effect.step === 'select_4_enemy_tents') {
+      // Знаходимо перший ворожий намет у провінції, який ще не вибрано
+      const tokenIndex = province.placedTokens.findIndex(
+        (t: any) => t.clan !== this.activePlayerClan && 
+        !effect.selectedTentsToReveal.some(sel => sel.provinceId === province.id && sel.tokenIndex === province.placedTokens.indexOf(t))
+      );
+      if (tokenIndex !== -1) {
+        this.regionCardService.selectTentToRevealForDevilContract(province.id, tokenIndex, gameState);
+      }
+    } else if (effect.step === 'select_tent_to_destroy') {
+      // Знаходимо індекс конкретного розкритого намету в цій провінції
+      const revealedMatch = effect.revealedTents.find(t => t.provinceId === province.id);
+      if (revealedMatch) {
+        const tokenIndex = province.placedTokens.findIndex((t: any) => t.id === revealedMatch.token.id);
+        if (tokenIndex !== -1) {
+          this.regionCardService.destroySelectedRevealedTent(province.id, tokenIndex, gameState);
+        }
+      }
+    }
+
     this.gameStateService.saveGame();
     this.loadGameState();
     this.cdr.detectChanges();
