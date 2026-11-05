@@ -33,6 +33,13 @@ export class DiscardSelectionModal  implements OnInit, OnDestroy{
   @Output() cancelReinforcement = new EventEmitter<void>();
 
 
+
+  // Вхідні дані для Воскресіння мертвих
+  @Input() resurrectionEffect: any = null;
+  @Input() filteredResurrectionDiscard: any[] = [];
+  // Події для Воскресіння мертвих
+  @Output() selectResurrectionToken = new EventEmitter<any>();
+  @Output() cancelResurrection = new EventEmitter<void>();
   private componentInterval: any = null;
 
   constructor(private cdr: ChangeDetectorRef) {}

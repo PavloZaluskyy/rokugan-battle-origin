@@ -159,3 +159,48 @@
     </div>
   </div>
 </div>
+
+<!-- ВИБІР КАРТИ ЗІ СКИНУ ДЛЯ ВОСКРЕСІННЯ МЕРТВИХ -->
+<!-- ВИБІР КАРТИ ЗІ СКИНУ ДЛЯ ВОСКРЕСІННЯ МЕРТВИХ -->
+<div class="rokirovka-overlay" *ngIf="resurrectionEffect && resurrectionEffect.step === 'select_card_from_discard'">
+  <div class="rokirovka-modal bamboo-mat">
+    
+    <div class="rokirovka-header">
+      <div class="rokirovka-title-box">
+        <span class="rokirovka-icon">💀</span>
+        <h3 class="mat-title-text">ВОСКРЕСІННЯ МЕРТВИХ: ВИБЕРІТЬ КАРТУ ЗІ СКИНУ</h3>
+      </div>
+      <div class="rokirovka-header-right">
+        <div class="rokirovka-timer" [class.danger]="resurrectionEffect.timer <= 3">
+          ⏱️ 0:{{ resurrectionEffect.timer < 10 ? '0' + resurrectionEffect.timer : resurrectionEffect.timer }}
+        </div>
+        <button class="rokirovka-cancel-btn" (click)="cancelResurrection.emit()">Відмінити</button>
+      </div>
+    </div>
+
+    <p class="rokirovka-instruction">
+      Виберіть одну картку атаки зі свого скиду, щоб повернути її в активну руку (ширму):
+    </p>
+
+    <div class="cards-grid">
+      <div class="clan-card discard-selectable" 
+           *ngFor="let token of filteredResurrectionDiscard"
+           (click)="selectResurrectionToken.emit(token)">
+        
+        <div class="card-illustration" [style.backgroundImage]="'url(assets/images/tokens/' + token.type.toLowerCase() + '_cart.jpg)'">
+          <div class="card-overlay"></div>
+          <div class="card-strength" *ngIf="token.strength && token.strength > 0">{{ token.strength }}</div>
+        </div>
+        <div class="card-footer">
+          <div class="card-type-name">{{ getTokenLabel(token) }} <span *ngIf="token.strength > 0">({{ token.strength }})</span></div>
+        </div>
+
+      </div>
+    </div>
+
+    <div class="no-cards-msg" *ngIf="filteredResurrectionDiscard.length === 0" style="text-align: center; color: #ffd699; margin-top: 20px;">
+      У вашому скиді немає відповідних карток для воскресіння.
+    </div>
+
+  </div>
+</div>

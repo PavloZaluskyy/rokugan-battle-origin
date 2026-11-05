@@ -46,9 +46,13 @@ export class RegionCardService {
     { id: 'unicorn-1', regionId: 'Територія Єдинорога', title: 'Підкріплення', description: 'Виберіть дві картки армії у вашому скиді і верніть його у ваш актив (у ширму). Потім виберіть 2 жетони битви і або викиньте їх у скид або розмістіть у ваш запас.', status: 'pool' },
     { id: 'unicorn-2', regionId: 'Територія Єдинорога', title: 'Культурний обмін', description: 'Виберіть провінцію під вашим контролем і провінцію під контролем вашого супротивника і поміняйте всі жетони контролю місцями після чого власність провінцій теж поміняється.', status: 'pool' },
 
+    
     // ТІНЬОВІ ЗЕМЛІ (Територія Тіньових Земель) — оскільки в базі це один регіон на дві провінції, розіб'ємо на дві карти під цей regionId
-    { id: 'shadowlands-1', regionId: 'Територія північних Тіньових Земель', title: 'Воскресіння мертвих / Вбивство слабких', description: 'Заберіть один жетон контролю з вашої провінції і скиньте його в скид, після чого з скиду виберіть картку атаки і помістіть на карту гри.', status: 'pool' },
-    { id: 'shadowlands-2', regionId: 'Територія південних Тіньових Земель', title: 'Влада жаху / Контракт з дияволом', description: 'Заберіть ваш жетон контролю з любої вашої провінції після чого можете забрати особливі жетони з карти.', status: 'pool' },
+    { id: 'nords-shadowlands-1', regionId: 'Територія північних Тіньових Земель', title: 'Вбивство слабких', description: 'Скиньте карту битви з вашого активу в скид, в цьому ході ви не можете розміщувати карти атаки, потім виберіть 2 любих намета ворогів на карті і відправте їх у скид.', status: 'pool' },
+    { id: 'nords-shadowlands-2', regionId: 'Територія північних Тіньових Земель', title: 'Контракт з дияволом', description: 'Заберіть один жетон контролю з вашої провінції  (крім тіньових земель), потім відкрийте 4 ворожі намети на карті, і виберіть один з них який піде у скид.', status: 'pool' },
+
+    { id: 'south-shadowlands-1', regionId: 'Територія південних Тіньових Земель', title: 'Воскресіння мертвих', description: 'Заберіть один жетон контролю з вашої провінції і скиньте його в скид, після чого з скиду виберіть картку атаки і помістіть на карту гри.', status: 'pool' },
+    { id: 'south-shadowlands-2', regionId: 'Територія південних Тіньових Земель', title: 'Влада жаху', description: 'Заберіть ваш жетон контролю з любої вашої провінції після чого можете забрати особливі жетони з карти.', status: 'pool' },
 
     // ОСТРОВИ ШОВКОВИХ ШЛЯХІВ
     { id: 'silk-1', regionId: 'Острови Шовкових Шляхів', title: 'Піратські набіги', description: 'Виберіть любу провінцію, і помістіть у неї жетон випаленої землі. Якщо провінція Ваша — помістіть 3 жетони контролю в іншу вашу провінцію.', status: 'pool' },
@@ -179,6 +183,17 @@ export class RegionCardService {
     clan: string;
     step: 'select_own_province' | 'select_enemy_province';
     ownProvinceId?: string;
+    timer: number;
+    timerInterval?: any;
+  } | null = null;
+
+  // Стан виконання карти регіону "Воскресіння мертвих" (Південні Тіньові Землі)
+  public resurrectionEffect: {
+    cardId: string;
+    clan: string;
+    step: 'select_province_for_sacrifice' | 'select_card_from_discard' | 'place_on_map';
+    sacrificedProvinceId?: string;
+    selectedAttackCard?: any;
     timer: number;
     timerInterval?: any;
   } | null = null;
@@ -1156,5 +1171,112 @@ export class RegionCardService {
     }
 
     this.cancelCulturalExchangeEffect();
+  }
+
+  /*Карта регіону "Воскресіння мертвих (Південні Тіньові Землі) */
+  /* Карта регіону: ВОСКРЕСІННЯ МЕРТВИХ (Південні Тіньові Землі) */
+  startResurrectionEffect(cardId: string, clan: string, onTimeout: () => void): boolean {
+    this.resurrectionEffect = {
+      cardId: cardId,
+      clan: clan,
+      step: 'select_province_for_sacrifice',
+      timer: 10
+    };
+
+    if (this.resurrectionEffect.timerInterval) {
+      clearInterval(this.resurrectionEffect.timerInterval);
+    }
+
+    this.resurrectionEffect.timerInterval = setInterval(() => {
+      this.ngZone.run(() => {
+        if (this.resurrectionEffect && this.resurrectionEffect.timer > 0) {
+          this.resurrectionEffect.timer--;
+        } else {
+          if (this.resurrectionEffect) {
+            this.useRegionCard(this.resurrectionEffect.cardId, this.resurrectionEffect.clan);
+          }
+          this.cancelResurrectionEffect();
+          onTimeout();
+        }
+        this.closeRokirovkaModalSubject.next();
+      });
+    }, 1000);
+
+    return true;
+  }
+
+  cancelResurrectionEffect(): void {
+    if (this.resurrectionEffect && this.resurrectionEffect.timerInterval) {
+      clearInterval(this.resurrectionEffect.timerInterval);
+    }
+    this.resurrectionEffect = null;
+    this.closeRokirovkaModalSubject.next();
+  }
+
+  /**
+   * Крок 1: Жертвуємо жетон контролю з провінції і переходимо до вибору карти зі скиду
+   */
+  sacrificeTokenForResurrection(provinceId: string, gameState: any): void {
+    if (!this.resurrectionEffect) return;
+
+    const province = gameState.provinces[provinceId];
+    if (!province) return;
+
+    // Визначаємо вартість пожертви: для Краба — 2, для інших — 1
+    const sacrificeCost = province.controllingClan === 'Crab' ? 2 : 1;
+
+    // Перевіряємо, чи достатньо жетонів на провінції для пожертви
+    const currentTokens = province.controlTokensFaceUp || 0;
+    if (currentTokens < sacrificeCost) {
+      return; // Жетонів замало для пожертви
+    }
+
+    // Віднімаємо жетони захисту
+    province.controlTokensFaceUp -= sacrificeCost;
+
+    // Якщо після зняття жетонів додатковий захист став 0 або менше, провінція стає нейтральною
+    if (province.controlTokensFaceUp <= 0) {
+      province.controlTokensFaceUp = 0;
+      province.controllingClan = 'Neutral';
+      // Скидаємо базовий захист до дефолтного (якщо це була не столиця)
+      if (!province.isCapital) {
+        province.baseDefense = province.regionId?.includes('shadowlands') ? 1 : 0;
+      }
+    }
+
+    this.resurrectionEffect.sacrificedProvinceId = provinceId;
+    this.resurrectionEffect.step = 'select_card_from_discard';
+
+    gameState.roundLog.push(`💀 Воскресіння мертвих: з провінції ${province.name} знято ${sacrificeCost} жетон(и) контролю для ритуалу.`);
+    
+    // Закриваємо модалку мапи та відкриваємо вибір зі скиду
+    this.closeRokirovkaModalSubject.next();
+  }
+
+  /**
+   * Крок 2: Вибір картки атаки зі скиду та перенесення її в активну руку
+   */
+  selectCardFromDiscardForResurrection(token: any, gameState: any, gameStateService: any): void {
+    if (!this.resurrectionEffect) return;
+
+    const clan = this.resurrectionEffect.clan;
+    const player = gameState.players[clan];
+    if (!player) return;
+
+    // 1. Видаляємо картку зі скиду
+    player.discardPile = player.discardPile.filter((t: any) => t.id !== token.id);
+
+    // 2. Робимо цю карту поточною вибраною картою для розміщення (як через gameStateService.setSelectedToken)
+    // Зберігаємо її початкову силу, якщо потрібно
+    const resurrectionCard = { ...token, isResurrected: true };
+    gameStateService.setSelectedToken(resurrectionCard);
+
+    // 3. Списуємо картку регіону
+    this.useRegionCard(this.resurrectionEffect.cardId, clan);
+
+    gameState.roundLog.push(`💀 Воскресіння мертвих: карту ${token.type} забрано зі скиду. Оберіть провінцію на мапі для її розміщення.`);
+
+    // 4. Повністю закриваємо ефект Воскресіння
+    this.cancelResurrectionEffect();
   }
 }

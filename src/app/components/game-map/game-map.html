@@ -190,6 +190,7 @@
             || isCleansingTarget(prov)
             || isFiresOfRebellionTarget(prov)
             || isCulturalExchangeTarget(prov)
+            || isResurrectionTarget(prov)
             "
             
           >
@@ -324,6 +325,7 @@
         regionCardService.rokirovkaEffect 
         || regionCardService.spyNetworkEffect 
         || regionCardService.reinforcementEffect 
+        || regionCardService.resurrectionEffect 
         ">
   <app-discard-selection-modal
     [rokirovkaEffect]="regionCardService.rokirovkaEffect"
@@ -334,13 +336,17 @@
     [targetPlayerHandTokens]="targetPlayerHandTokens"
     [reinforcementEffect]="regionCardService.reinforcementEffect"
     [filteredReinforcementDiscard]="filteredReinforcementDiscardForModal"
+    [resurrectionEffect]="regionCardService.resurrectionEffect"
+    [filteredResurrectionDiscard]="filteredResurrectionDiscardForModal"
     (selectDiscardToken)="onSelectDiscardTokenForRokirovka($event)"
     (selectHandToken)="onSelectHandTokenToDiscard($event)"
     (cancelRokirovka)="onCancelRokirovka()"
     (selectSpyClan)="onSelectSpyClan($event)"
     (closeSpyModal)="onCloseSpyModal()"
     (selectReinforcementToken)="onSelectReinforcementToken($event)"
-    (cancelReinforcement)="onCancelReinforcement()"> 
+    (cancelReinforcement)="onCancelReinforcement()"
+    (selectResurrectionToken)="onSelectResurrectionToken($event)"
+    (cancelResurrection)="onCancelResurrection()"> 
   </app-discard-selection-modal>
 </div>
 <!-- БАНЕР ТАЙМЕРА ДЛЯ ЕФЕКТУ "ВИХІД ДО МОРЯ" -->
@@ -573,6 +579,26 @@
     </div>
     <p class="rokirovka-instruction">
       {{ regionCardService.culturalExchangeEffect.step === 'select_own_province' ? 'Оберіть одну зі своїх провінцій для обміну.' : 'Оберіть провінцію супротивника, щоб помінятися з нею жетонами контролю та володінням.' }}
+    </p>
+  </div>
+</div>
+<!-- БАНЕР ТАЙМЕРА ДЛЯ ЕФЕКТУ "ВОСКРЕСІННЯ МЕРТВИХ" -->
+<div class="rokirovka-fullscreen-overlay" *ngIf="regionCardService.resurrectionEffect">
+  <div class="rokirovka-modal bamboo-mat harbor-modal-box">
+    <div class="rokirovka-header">
+      <div class="rokirovka-title-box">
+        <span class="rokirovka-icon">💀</span>
+        <h3 class="mat-title-text">ВОСКРЕСІННЯ МЕРТВИХ: ВИБЕРІТЬ ПРОВІНЦІЮ ДЛЯ ЖЕРТВИ</h3>
+      </div>
+      <div class="rokirovka-header-right">
+        <div class="rokirovka-timer" [class.danger]="regionCardService.resurrectionEffect.timer <= 3">
+          ⏱️ 0:{{ regionCardService.resurrectionEffect.timer < 10 ? '0' + regionCardService.resurrectionEffect.timer : regionCardService.resurrectionEffect.timer }}
+        </div>
+        <button class="rokirovka-cancel-btn" (click)="regionCardService.cancelResurrectionEffect()">Відмінити</button>
+      </div>
+    </div>
+    <p class="rokirovka-instruction">
+      Оберіть свою провінцію, щоб зняти з неї один жетон контролю і перейти до вибору картки атаки зі скиду.
     </p>
   </div>
 </div>

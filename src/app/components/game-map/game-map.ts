@@ -456,6 +456,19 @@ onTouchStart(event: TouchEvent) {
       this.onCulturalExchangeProvinceClick(province);
       return;
     }
+    // 11. ПЕРЕВІРКА ЕФЕКТУ "ВОСКРЕСІННЯ МЕРТВИХ"
+    if (this.regionCardService.resurrectionEffect && this.regionCardService.resurrectionEffect.step === 'select_province_for_sacrifice') {
+      if (province.controllingClan === this.activePlayerClan && (province.controlTokensFaceUp || 0) > 0) {
+        const gameState = this.gameStateService.getGameState();
+        if (gameState) {
+          this.regionCardService.sacrificeTokenForResurrection(province.id, gameState);
+          this.gameStateService.saveGame();
+          this.loadGameState();
+          this.cdr.detectChanges(); // Примусово оновлюємо UI, щоб з'явилася модалка вибору зі скиду
+        }
+      }
+      return;
+    }
   }
 
   
@@ -810,6 +823,8 @@ onTouchStart(event: TouchEvent) {
       const success = this.regionCardService.startReinforcementEffect(card.id, this.activePlayerClan, () => {});
     }else if (card.title === 'Культурний обмін') {
       const success = this.regionCardService.startCulturalExchangeEffect(card.id, this.activePlayerClan, () => {});
+    } else if (card.title.includes('Воскресіння мертвих')) {
+      const success = this.regionCardService.startResurrectionEffect(card.id, this.activePlayerClan, () => {});
       if (success) {
         this.cdr.detectChanges();        // Примусово оновлюємо інтерфейс
       }
@@ -1377,5 +1392,45 @@ onTouchStart(event: TouchEvent) {
 
   cancelCulturalExchangeEffect(): void {
     this.regionCardService.cancelCulturalExchangeEffect();
+  }
+
+  /* КАРТА РЕГІОНУ "ВОСКРЕСІННЯ МЕРТВИХ" */
+  isResurrectionTarget(province: Province): boolean {
+    const effect = this.regionCardService.resurrectionEffect;
+    if (!effect) return false;
+
+    if (effect.step === 'select_province_for_sacrifice') {
+      // Можна вибрати тільки власні провінції, де є жетони контролю
+      return province.controllingClan === this.activePlayerClan && (province.controlTokensFaceUp || 0) > 0;
+    }
+    return false;
+  }
+  // Фільтруємо скид гравця для Воскресіння мертвих (будь-які бойові карти або карти атаки)
+  get filteredResurrectionDiscardForModal() {
+    const effect = this.regionCardService.resurrectionEffect;
+    if (!effect) return [];
+    const gameState = this.gameStateService.getGameState();
+    const player = gameState?.players[effect.clan as keyof NonNullable<typeof gameState>['players']];
+    if (!player || !player.discardPile) return [];
+    // Можна вибирати бойові карти (Армія, Флот, Синобі тощо)
+    return player.discardPile.filter((t: any) => ['Army', 'Navy', 'Shinobi', 'Blessing'].includes(t.type));
+  }
+
+  // Обробка вибору карти зі скиду для Воскресіння мертвих
+  onSelectResurrectionToken(token: any): void {
+    const gameState = this.gameStateService.getGameState();
+    if (!gameState) return;
+    
+    // Викликаємо оновлений метод з передачею gameStateService
+    this.regionCardService.selectCardFromDiscardForResurrection(token, gameState, this.gameStateService);
+    this.gameStateService.saveGame();
+    this.loadGameState();
+    this.cdr.detectChanges();
+  }
+
+  onCancelResurrection(): void {
+    this.regionCardService.cancelResurrectionEffect();
+    this.loadGameState();
+    this.cdr.detectChanges();
   }
 }
